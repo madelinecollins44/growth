@@ -5,6 +5,21 @@
 -- create or replace temp table buyer_segments as (select * from etsy-data-warehouse-prod.rollups.buyer_segmentation_vw where as_of_date >= current_date-60);
 -- end 
 
+select
+  buyer_segment,
+  count(distinct visit_id) as traffic,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits,
+  sum(total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+left join 
+  etsy-data-warehouse-prod.user_mart.user_mapping um  
+    on v.user_id=um.user_id
+left join 
+   etsy-bigquery-adhoc-prod._script3576c1913cc22d4fc3fb94858e603229f9ebd6c6.buyer_segments bs
+    on um.mapped_user_id=bs.mapped_user_id
+where _date >= current_date-30
+group by all 
 
 ------------------------------------------------------------
 --REPORTING CHANNEL
