@@ -1,6 +1,10 @@
 ------------------------------------------------------------
 --BUYER SEGMENT
 ------------------------------------------------------------
+-- begin
+-- create or replace temp table buyer_segments as (select * from etsy-data-warehouse-prod.rollups.buyer_segmentation_vw where as_of_date >= current_date-60);
+-- end 
+
 
 ------------------------------------------------------------
 --REPORTING CHANNEL
