@@ -21,6 +21,16 @@ left join
 where _date >= current_date-30
 group by all 
 
+  --signed in vs signed out 
+select
+  case when user_id is not null or user_id != 0 then 'signed in' else 'signed out' end as user_status,
+  count(distinct visit_id) as traffic,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits,
+  sum(total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+where _date >= current_date-30
+group by all 
 ------------------------------------------------------------
 --REPORTING CHANNEL
 ------------------------------------------------------------
