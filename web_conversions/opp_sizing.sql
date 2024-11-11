@@ -95,4 +95,18 @@ from
 where _date >= current_date-30
 group by all 
 
---referrers to listing page
+--understanding traffic of site
+select
+  e.event_type,
+  count(distinct v.visit_id) as total_visits,
+  count(v.visit_id) as pageviews,
+  sum(total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+left join 
+  etsy-data-warehouse-prod.weblog.events e
+    using (visit_id)
+where
+  page_view= 1 -- only looks at primary events 
+  and v._date >= current_date-30
+group by all 
