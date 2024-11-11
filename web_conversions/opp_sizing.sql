@@ -101,18 +101,41 @@ group by all
 
 
 --understanding traffic of site
+with primary_events as (
+select
+  event_type,
+  visit_id,
+  count(visit_id) as pageviews
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  page_view =1 
+  and _date >= current_date-30
+group by all 
+)
+with primary_events as (
+select
+  event_type,
+  visit_id,
+  count(visit_id) as pageviews
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  page_view =1 
+  and _date >= current_date-30
+group by all 
+)
 select
   e.event_type,
-  count(distinct v.visit_id) as total_visits,
-  count(v.visit_id) as pageviews,
+  count(distinct e.visit_id) as total_visits,
+  sum(pageviews) as pageviews,
   sum(total_gms) as total_gms
-from 
-  etsy-data-warehouse-prod.weblog.visits v
+from   
+  primary_events e
 left join 
-  etsy-data-warehouse-prod.weblog.events e
+  etsy-data-warehouse-prod.weblog.visits v
     using (visit_id)
 where
-  page_view= 1 -- only looks at primary events 
-  and v._date >= current_date-30
+  v._date >= current_date-30
   and v.platform in ('mobile_web','desktop')
 group by all 
