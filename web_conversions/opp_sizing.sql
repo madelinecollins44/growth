@@ -19,6 +19,7 @@ left join
    etsy-bigquery-adhoc-prod._script3576c1913cc22d4fc3fb94858e603229f9ebd6c6.buyer_segments bs
     on um.mapped_user_id=bs.mapped_user_id
 where _date >= current_date-30
+and v.platform in ('mobile_web','desktop')
 group by all 
 
   --signed in vs signed out 
@@ -30,6 +31,7 @@ select
 from 
   etsy-data-warehouse-prod.weblog.visits v
 where _date >= current_date-30
+and v.platform in ('mobile_web','desktop')
 group by all 
 ------------------------------------------------------------
 --REPORTING CHANNEL
