@@ -113,18 +113,6 @@ where
   and _date >= current_date-30
 group by all 
 )
-with primary_events as (
-select
-  event_type,
-  visit_id,
-  count(visit_id) as pageviews
-from 
-  etsy-data-warehouse-prod.weblog.events
-where 
-  page_view =1 
-  and _date >= current_date-30
-group by all 
-)
 select
   e.event_type,
   count(distinct e.visit_id) as total_visits,
