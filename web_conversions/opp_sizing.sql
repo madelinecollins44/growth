@@ -96,7 +96,9 @@ select
 from 
   etsy-data-warehouse-prod.weblog.visits v
 where _date >= current_date-30
+and v.platform in ('mobile_web','desktop')
 group by all 
+
 
 --understanding traffic of site
 select
