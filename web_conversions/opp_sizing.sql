@@ -109,4 +109,5 @@ left join
 where
   page_view= 1 -- only looks at primary events 
   and v._date >= current_date-30
+  and v.platform in ('mobile_web','desktop')
 group by all 
