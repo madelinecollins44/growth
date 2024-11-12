@@ -69,7 +69,107 @@ group by all
 ------------------------------------------------------------
 --LISTING CATEGORY
 ------------------------------------------------------------
-
+with listing_views as (
+select
+  listing_id,
+  count(listing_id) as views,
+  sum(purchased_after_view) as purchases,
+  avg(price_usd) as average_listing_price_usd
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+, active_listings as (
+SELECT 
+  listing_id, 
+  a.is_active, 
+  taxonomy_id,  
+SPLIT(t.full_path, '.')[safe_offset(0)] AS top_level_taxonomy,
+SPLIT(t.full_path, '.')[safe_offset(1)] AS l2_taxonomy--, -- subcategory  
+FROM 
+  `etsy-data-warehouse-prod.listing_mart.listing_attributes`  a
+JOIN 
+  `etsy-data-warehouse-prod.structured_data.taxonomy` t 
+    USING (taxonomy_id)
+WHERE 
+  a.is_active = 1 
+)
+select
+  a.top_level_taxonomy,
+  count(distinct a.listing_id) as active_listings,
+  count(distinct v.listing_id) as listings_viewed,
+  sum(v.views) as listing_views,
+  sum(v.purchases) as purchases,
+  sum(v.purchases) / sum(v.views) as conversion_rate,
+  avg(average_listing_price_usd) as average_listing_price_usd,
+  max(average_listing_price_usd) as max_listing_price_usd
+from  
+  active_listings a
+left join 
+  listing_views v using (listing_id)
+group by all 
+  
+  --including transaction
+  with listing_views as (
+select
+  listing_id,
+  count(listing_id) as views,
+  sum(purchased_after_view) as purchases,
+  avg(price_usd) as average_listing_price_usd
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+-- , listing_transactions as (
+-- select
+--   listing_id,
+--   count(transaction_id) as transactions,
+--   avg(usd_price) as avg_trans_price_usd,
+--   sum(quantity) as total_listings_bought
+-- from  
+--   etsy-data-warehouse-prod.transaction_mart.all_transactions
+-- where 
+--   date >= current_date-30
+-- group by all 
+-- )
+, active_listings as (
+SELECT 
+  listing_id, 
+  a.is_active, 
+  taxonomy_id,  
+SPLIT(t.full_path, '.')[safe_offset(0)] AS top_level_taxonomy,
+SPLIT(t.full_path, '.')[safe_offset(1)] AS l2_taxonomy--, -- subcategory  
+FROM 
+  `etsy-data-warehouse-prod.listing_mart.listing_attributes`  a
+JOIN 
+  `etsy-data-warehouse-prod.structured_data.taxonomy` t 
+    USING (taxonomy_id)
+WHERE a.is_active = 1 
+)
+select
+  a.top_level_taxonomy,
+  count(distinct a.listing_id) as active_listings,
+  count(distinct v.listing_id) as listings_viewed,
+  sum(v.views) as listing_views,
+  sum(t.transactions) as transactions,
+  avg(average_price_usd) as avg_average_price_usd,
+  sum(v.purchases) / sum(v.views) as conversion_rate_2,
+  sum(t.transactions) / sum(v.views) as conversion_rate,
+  sum(t.total_listings_bought) as total_listings_bought,
+  avg(t.avg_trans_price_usd) as avg_trans_price_usd
+from  
+  active_listings a
+left join 
+  listing_views v using (listing_id)
+left join listing_transactions t 
+  on a.listing_id=t.listing_id
+group by all 
 ------------------------------------------------------------
 --PLATFORM
 ------------------------------------------------------------
@@ -98,7 +198,6 @@ from
 where _date >= current_date-30
 and v.platform in ('mobile_web','desktop')
 group by all 
-
 
 --understanding traffic of site
 with primary_events as (
