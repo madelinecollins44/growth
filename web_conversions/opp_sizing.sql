@@ -105,7 +105,8 @@ select
   sum(v.purchases) as purchases,
   sum(v.purchases) / sum(v.views) as conversion_rate,
   avg(average_listing_price_usd) as average_listing_price_usd,
-  max(average_listing_price_usd) as max_listing_price_usd
+  max(average_listing_price_usd) as max_listing_price_usd,
+  min(average_listing_price_usd) as min_listing_price_usd
 from  
   active_listings a
 left join 
