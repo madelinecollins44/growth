@@ -113,12 +113,73 @@ select
   avg(average_shipping_price_usd) as average_shipping_price_usd,
   max(average_shipping_price_usd) as max_shipping_price_usd,
   min(average_shipping_price_usd) as min_shipping_price_usd
-
 from  
   active_listings a
 left join 
   listing_views v using (listing_id)
 group by all 
+
+--including listing gms
+  with listing_views as (
+select
+  listing_id,
+  count(listing_id) as views,
+  sum(purchased_after_view) as purchases,
+  avg(price_usd) as average_listing_price_usd,
+  avg(shipping_price_usd) as average_shipping_price_usd
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  -- and platform in ('mobile_web','desktop')
+group by all 
+)
+, active_listings as (
+SELECT 
+  listing_id, 
+  a.is_active, 
+  taxonomy_id,  
+SPLIT(t.full_path, '.')[safe_offset(0)] AS top_level_taxonomy,
+SPLIT(t.full_path, '.')[safe_offset(1)] AS l2_taxonomy--, -- subcategory  
+FROM 
+  `etsy-data-warehouse-prod.listing_mart.listing_attributes`  a
+JOIN 
+  `etsy-data-warehouse-prod.structured_data.taxonomy` t 
+    USING (taxonomy_id)
+WHERE 
+  a.is_active = 1 
+)
+, listing_orders as (
+select
+  listing_id,
+  sum(total_orders) as total_orders,
+  sum(total_gms) as total_gms,
+  sum(total_quantity_sold) as total_quantity_sold
+from 
+  etsy-data-warehouse-prod.listing_mart.listing_gms
+where 
+  is_active=1 
+group by all 
+)
+select
+  top_level_taxonomy,
+  count(distinct a.listing_id) as active_listings,
+  count(distinct v.listing_id) as viewed_listings,
+  avg(v.average_listing_price_usd) as average_listing_price_usd, 
+  sum(v.views) as listing_views,
+  sum(v.purchases) as purchases,
+  sum(o.total_orders) as total_orders,
+  sum(o.total_gms) as total_gms,
+  sum(o.total_quantity_sold) as total_quantity_sold,
+from
+  active_listings a
+left join 
+  listing_views v using (listing_id) --only looks at listings viewed in the last 30 days, but purchase metrics forever
+left join 
+  listing_orders o
+    on v.listing_id=o.listing_id
+group by all 
+  
   --including transaction
   with listing_views as (
 select
