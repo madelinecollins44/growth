@@ -74,7 +74,8 @@ select
   listing_id,
   count(listing_id) as views,
   sum(purchased_after_view) as purchases,
-  avg(price_usd) as average_listing_price_usd
+  avg(price_usd) as average_listing_price_usd,
+  avg(shipping_price_usd) as average_shipping_price_usd
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
@@ -103,16 +104,21 @@ select
   count(distinct v.listing_id) as listings_viewed,
   sum(v.views) as listing_views,
   sum(v.purchases) as purchases,
-  sum(v.purchases) / sum(v.views) as conversion_rate,
+  sum(v.purchases) / sum(v.views) as purchase_rate,
+  --price 
   avg(average_listing_price_usd) as average_listing_price_usd,
   max(average_listing_price_usd) as max_listing_price_usd,
-  min(average_listing_price_usd) as min_listing_price_usd
+  min(average_listing_price_usd) as min_listing_price_usd,
+    --shipping costs
+  avg(average_shipping_price_usd) as average_shipping_price_usd,
+  max(average_shipping_price_usd) as max_shipping_price_usd,
+  min(average_shipping_price_usd) as min_shipping_price_usd
+
 from  
   active_listings a
 left join 
   listing_views v using (listing_id)
 group by all 
-  
   --including transaction
   with listing_views as (
 select
