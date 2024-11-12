@@ -16,10 +16,10 @@ left join
   etsy-data-warehouse-prod.user_mart.user_mapping um  
     on v.user_id=um.user_id
 left join 
-   etsy-bigquery-adhoc-prod._script3576c1913cc22d4fc3fb94858e603229f9ebd6c6.buyer_segments bs
+   etsy-bigquery-adhoc-prod._script1dbdadf400b7c4c2ad8ee807a3e3ac5028d9345c.buyer_segments bs
     on um.mapped_user_id=bs.mapped_user_id
 where _date >= current_date-30
-and v.platform in ('mobile_web','desktop')
+-- and v.platform in ('mobile_web','desktop')
 group by all 
 
   --signed in vs signed out 
