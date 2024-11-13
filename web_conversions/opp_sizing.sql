@@ -362,6 +362,9 @@ group by all
 --183063113, past year gms between 70-80, 27 visits, 5.15 gms, 2 coverted visits
 
 select * from `etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans` where mapped_user_id = 83955870
+select sum(gms_net) from `etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans` where mapped_user_id = 183063113 and date >= '2023-11-10'
+--83955870: 71.49583862
+--183063113: 74.752552
 
 select
   platform,
@@ -376,7 +379,9 @@ left join
   etsy-data-warehouse-prod.user_mart.user_mapping um  
     on v.user_id=um.user_id
 where _date >= current_date-30
-and mapped_user_id = 455809418
+and mapped_user_id = 183063113
 group by all
 --389342374: last visit date was 11.6 where they made a purchase, but last purchase before that was 7/1/23 which was more than a year before last visit 
 --455809418: last visit date was 11.10 where they made a purchase, but last purchase before that was 3/6/23 which was more than a year before last visit 
+--83955870: last visit date was 11.05
+--183063113: last visit date was 11.10
