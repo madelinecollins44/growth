@@ -349,7 +349,7 @@ select
     when past_year_gms > 700 and past_year_gms <= 800 then '10. 700-800'
     when past_year_gms > 800 and past_year_gms <= 900 then '11. 800-900'
     when past_year_gms > 900 and past_year_gms <= 1000 then '12. 900-1000'
-    else '1000+'
+    else '13. 1000+'
   end as past_year_gms,
   sum(total_visits) as total_visits,
   sum(total_gms) as gms,
