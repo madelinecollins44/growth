@@ -294,3 +294,57 @@ where
   v._date >= current_date-30
   and v.platform in ('mobile_web','desktop')
 group by all 
+  
+------------------------------------------------------------
+--PAST YEAR GMS
+------------------------------------------------------------
+-- create or replace table etsy-data-warehouse-dev.madelinecollins.past_year_gms_visits as (
+-- with all_visits as (
+-- select
+--   platform,
+--   mapped_user_id,
+--   visit_id,
+--   _date,
+--   total_gms, 
+--   converted
+-- from 
+--   etsy-data-warehouse-prod.weblog.visits v
+-- left join 
+--   etsy-data-warehouse-prod.user_mart.user_mapping um  
+--     on v.user_id=um.user_id
+-- where _date >= current_date-30
+-- )
+-- -- , past_year_gms as (
+-- select
+--   platform,
+--   a.mapped_user_id,
+--   count(distinct visit_id) as total_visits,
+--   sum(total_gms) as total_gms,
+--   count(distinct case when converted > 0 then visit_id end) as converted_visits, 
+--   cast(coalesce(sum(CASE WHEN date between date_sub(_date, interval 365 DAY) and _date THEN gms_net END), 0) as int64) AS past_year_gms
+-- from    
+--   all_visits a
+-- left join 
+--   `etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans` e
+--     on a.mapped_user_id = e.mapped_user_id 
+--     and e.date <= a._date-1 
+--     and market <> 'ipp'
+-- group by all
+-- );
+
+select
+  platform,
+  case
+    when past_year_gms <= 50 then '< 50'
+    when past_year_gms > 50 and past_year_gms <= 100 then '50-100'
+      when past_year_gms > 50 and past_year_gms <= 100 then '50-100'
+    when past_year_gms > 50 and past_year_gms <= 100 then '50-100'
+    when past_year_gms > 50 and past_year_gms <= 100 then '50-100'
+    when past_year_gms > 50 and past_year_gms <= 100 then '50-100'
+
+    end as past_year_gms,
+  sum(total_visits) as total_visits,
+  sum(total_gms) as gms,
+  sum(converted_visits) as converted_visits
+from etsy-data-warehouse-dev.madelinecollins.past_year_gms_visits
+group by all 
