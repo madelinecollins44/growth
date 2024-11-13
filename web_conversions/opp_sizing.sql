@@ -6,6 +6,7 @@
 -- end 
 
 select
+  platform,
   buyer_segment,
   count(distinct visit_id) as traffic,
   count(distinct case when converted > 0 then visit_id end) as converted_visits,
@@ -16,11 +17,12 @@ left join
   etsy-data-warehouse-prod.user_mart.user_mapping um  
     on v.user_id=um.user_id
 left join 
-   etsy-bigquery-adhoc-prod._script1dbdadf400b7c4c2ad8ee807a3e3ac5028d9345c.buyer_segments bs
+   etsy-bigquery-adhoc-prod._script34f131c38b31b437875299832d5f0091efc12506.buyer_segments bs
     on um.mapped_user_id=bs.mapped_user_id
 where _date >= current_date-30
--- and v.platform in ('mobile_web','desktop')
+and v.platform in ('mobile_web','desktop','boe')
 group by all 
+
 
   --signed in vs signed out 
 select
