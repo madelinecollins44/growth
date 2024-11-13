@@ -299,62 +299,64 @@ group by all
 --PAST YEAR GMS
 ---pulls past year gms from most recent visit in last 30 days
 ------------------------------------------------------------
-create or replace table etsy-data-warehouse-dev.madelinecollins.past_year_gms_visits as (
-with all_visits as (
-select
-  platform,
-  mapped_user_id,
-  max(_date) as _date, --> most recent visit date
-  count(distinct visit_id) as total_visits,
-  sum(total_gms) as total_gms,
-  count(distinct case when converted > 0 then visit_id end) as converted_visits, 
-from 
-  etsy-data-warehouse-prod.weblog.visits v
-left join 
-  etsy-data-warehouse-prod.user_mart.user_mapping um  
-    on v.user_id=um.user_id
-where _date >= current_date-30
-group by all
-)
--- , past_year_gms as (
-select
-  platform,
-  a.mapped_user_id,
-  total_visits,
-  total_gms,
-  converted_visits, 
-  cast(coalesce(sum(CASE WHEN date between date_sub(_date, interval 365 DAY) and _date THEN gms_net END), 0) as int64) AS past_year_gms
-from    
-  all_visits a
-left join 
-  `etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans` e
-    on a.mapped_user_id = e.mapped_user_id 
-    and e.date <= a._date-1 
-    and market <> 'ipp'
-group by all
-);
+-- create or replace table etsy-data-warehouse-dev.madelinecollins.past_year_gms_visits as (
+-- with all_visits as (
+-- select
+--   platform,
+--   mapped_user_id,
+--   max(_date) as _date, --> most recent visit date
+--   count(distinct visit_id) as total_visits,
+--   sum(total_gms) as total_gms,
+--   count(distinct case when converted > 0 then visit_id end) as converted_visits, 
+-- from 
+--   etsy-data-warehouse-prod.weblog.visits v
+-- left join 
+--   etsy-data-warehouse-prod.user_mart.user_mapping um  
+--     on v.user_id=um.user_id
+-- where _date >= current_date-30
+-- group by all
+-- )
+-- -- , past_year_gms as (
+-- select
+--   platform,
+--   a.mapped_user_id,
+--   total_visits,
+--   total_gms,
+--   converted_visits, 
+--   cast(coalesce(sum(CASE WHEN date between date_sub(_date, interval 365 DAY) and _date THEN gms_net END), 0) as int64) AS past_year_gms
+-- from    
+--   all_visits a
+-- left join 
+--   `etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans` e
+--     on a.mapped_user_id = e.mapped_user_id 
+--     and e.date <= a._date-1 
+--     and market <> 'ipp'
+-- group by all
+-- );
 
 select
-  -- platform,
+  platform,
   case
-    when past_year_gms <=100 then '< 100'
-    when past_year_gms > 100 and past_year_gms <= 200 then '100-200'
-    when past_year_gms > 200 and past_year_gms <= 300 then '200-300'
-    when past_year_gms > 300 and past_year_gms <= 400 then '300-400'
-    when past_year_gms > 400 and past_year_gms <= 500 then '400-500'
-    when past_year_gms > 500 and past_year_gms <= 600 then '500-600'
-    when past_year_gms > 600 and past_year_gms <= 700 then '600-700'
-    when past_year_gms > 700 and past_year_gms <= 800 then '700-800'
-    when past_year_gms > 800 and past_year_gms <= 900 then '800-900'
-    when past_year_gms > 900 and past_year_gms <= 1000 then '900-1000'
+    when past_year_gms <=0 then '1. 0'
+    when past_year_gms > 0 and past_year_gms <= 50 then '2. 0-50'
+    when past_year_gms > 50 and past_year_gms <= 100 then '3. 50-100'
+    when past_year_gms > 100 and past_year_gms <= 200 then '4. 100-200'
+    when past_year_gms > 200 and past_year_gms <= 300 then '5. 200-300'
+    when past_year_gms > 300 and past_year_gms <= 400 then '6. 300-400'
+    when past_year_gms > 400 and past_year_gms <= 500 then '7. 400-500'
+    when past_year_gms > 500 and past_year_gms <= 600 then '8. 500-600'
+    when past_year_gms > 600 and past_year_gms <= 700 then '9. 600-700'
+    when past_year_gms > 700 and past_year_gms <= 800 then '10. 700-800'
+    when past_year_gms > 800 and past_year_gms <= 900 then '11. 800-900'
+    when past_year_gms > 900 and past_year_gms <= 1000 then '12. 900-1000'
     else '1000+'
-    end as past_year_gms,
+  end as past_year_gms,
   sum(total_visits) as total_visits,
   sum(total_gms) as gms,
-  sum(converted_visits) as converted_visits
+  sum(converted_visits) as converted_visits,
+  count(distinct mapped_user_id) as users
 from etsy-data-warehouse-dev.madelinecollins.past_year_gms_visits
 group by all 
-
 --testing 
 --389342374, past year gms = 0, gms = 124.42
 --455809418, past year gms = 0, gms = 0
