@@ -354,3 +354,29 @@ select
   sum(converted_visits) as converted_visits
 from etsy-data-warehouse-dev.madelinecollins.past_year_gms_visits
 group by all 
+
+--testing 
+--389342374, past year gms = 0, gms = 124.42
+--455809418, past year gms = 0, gms = 0
+--83955870, 46 visits, convert 0, past_year_gms between 70-80 ,gms 0
+--183063113, past year gms between 70-80, 27 visits, 5.15 gms, 2 coverted visits
+
+select * from `etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans` where mapped_user_id = 83955870
+
+select
+  platform,
+  mapped_user_id,
+  max(_date) as _date, --> most recent visit date
+  count(distinct visit_id) as total_visits,
+  sum(total_gms) as total_gms,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits, 
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+left join 
+  etsy-data-warehouse-prod.user_mart.user_mapping um  
+    on v.user_id=um.user_id
+where _date >= current_date-30
+and mapped_user_id = 455809418
+group by all
+--389342374: last visit date was 11.6 where they made a purchase, but last purchase before that was 7/1/23 which was more than a year before last visit 
+--455809418: last visit date was 11.10 where they made a purchase, but last purchase before that was 3/6/23 which was more than a year before last visit 
