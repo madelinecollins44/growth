@@ -289,7 +289,7 @@ select
   sum(total_gms) as total_gms
 from   
   primary_events e
-left join 
+inner join 
   etsy-data-warehouse-prod.weblog.visits v
     using (visit_id)
 where
