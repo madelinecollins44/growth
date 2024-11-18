@@ -13,6 +13,16 @@ group by all
 -------------------------------------------------------
 --LISTING LANDINGS
 -------------------------------------------------------
+select
+  count(distinct visit_id) as listing_landing_visits,
+  sum(total_gms) as listing_landing_gms
+from 
+  etsy-data-warehouse-prod.weblog.visits 
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+  and landing_event in ("view_listing", "image_zoom",'listing_page_recommendations','view_sold_listing','view_unavailable_listing','listing__listing_hub__tapped','appreciation_photo_detail')
+group by all
 
 -------------------------------------------------------
 --SHOP HOME VISITS 
