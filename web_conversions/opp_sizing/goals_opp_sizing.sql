@@ -10,6 +10,15 @@ group by all
 -- total_visits	gms
 -- 1130685375	987510850.32
 
+select
+  count(distinct visit_id) as total_visits,
+  sum(total_gms) as gms
+from etsy-data-warehouse-prod.weblog.visits
+where _date >= current_date-90
+group by all
+-- total_visits	gms
+-- 3286564937	2757370099.95
+
 -------------------------------------------------------
 --LISTING LANDINGS
 -------------------------------------------------------
@@ -19,13 +28,13 @@ select
 from 
   etsy-data-warehouse-prod.weblog.visits 
 where 
-  _date >= current_date-30
+  _date >= current_date-90
   and platform in ('mobile_web','desktop')
   and landing_event in ("view_listing", "image_zoom",'listing_page_recommendations','view_sold_listing','view_unavailable_listing','listing__listing_hub__tapped','appreciation_photo_detail')
 group by all
 -- listing_landing_visits	listing_landing_gms
--- 376449494	190373591.24
---33.29% of visit coverage, 19.27% of gms coverage
+-- 1089366238	537405474.99
+-- 33.14% of visit coverage, 19.48% of gms coverage
 
 
 -------------------------------------------------------
