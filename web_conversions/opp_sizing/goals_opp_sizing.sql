@@ -37,3 +37,6 @@ where
   b._date >= current_date-30
   and b.platform in ('mobile_web','desktop')
 group by all
+-- shop_home_visits	shop_home_gms
+-- 118112155	188864678.03
+---10.45% of visit coverage, 19.13% of gms coverage
