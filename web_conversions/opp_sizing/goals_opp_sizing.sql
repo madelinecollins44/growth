@@ -10,7 +10,7 @@ group by all
 -- total_visits	gms
 -- 1130685375	987510850.32
 
--------------------------------------------------------
+  -------------------------------------------------------
 --LISTING LANDINGS
 -------------------------------------------------------
 select
@@ -23,6 +23,10 @@ where
   and platform in ('mobile_web','desktop')
   and landing_event in ("view_listing", "image_zoom",'listing_page_recommendations','view_sold_listing','view_unavailable_listing','listing__listing_hub__tapped','appreciation_photo_detail')
 group by all
+-- listing_landing_visits	listing_landing_gms
+-- 376449494	190373591.24
+--33.29% of visit coverage, 19.27% of gms coverage
+
 
 -------------------------------------------------------
 --SHOP HOME VISITS 
