@@ -20,7 +20,7 @@ group by all
 -- 3286564937	2757370099.95
 
 -------------------------------------------------------
---LISTING LANDINGS
+--LISTING LANDINGS (last 90 days)
 -------------------------------------------------------
 select
   count(distinct visit_id) as listing_landing_visits,
@@ -38,7 +38,7 @@ group by all
 
 
 -------------------------------------------------------
---SHOP HOME VISITS 
+--SHOP HOME VISITS (last 30 days)
 -------------------------------------------------------
 with shop_home_visits as (
 select
