@@ -254,7 +254,41 @@ where
 group by all 
 -- review_status	unique_visits	    views	     
 -- no_reviews	    166157241	      379754094	    
--- has_reviews	  486092205	      1783556677	  
+-- has_reviews	  486092205	      1783556677	
+
+
+--reviews seen by platform
+  with lp_reviews_seen as (
+select
+  distinct visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  _date >= current_date-30
+  and event_type in ('listing_page_reviews_seen')
+)
+select
+  platform,
+  count(distinct a.visit_id) as lp_reviews_seen_visits,
+  sum(total_gms) as lp_reviews_seen_gms
+from 
+  lp_reviews_seen a
+inner join 
+  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
+where 
+  b._date >= current_date-30
+  and b.platform in ('mobile_web','desktop')
+group by all
+--  platform	    lp_reviews_seen_visits	    lp_reviews_seen_gms
+-- mobile_web	    89826933	                      142524194.16
+-- desktop	      50682973	                        188206356.8
+-- mobile_web: 7.8% of visit coverage, 14.2% of gms coverage
+-- desktop: 4.4% of visits coverage, 18.7% of gms 
+  -------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1140444332	1004663981.54
+
+  
 -----------------------------------------------------------------
 --USERS THAT ADDED TO CART IN SAME LISTING VIEW (last 30 days)
 -----------------------------------------------------------------
