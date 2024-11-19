@@ -184,3 +184,30 @@ group by all
 -------global visits / gms coverage for this calc 
 -- total_visits	gms
 -- 1140444332	1004663981.54
+
+-----------------------------------------------------------------
+--USERS THAT ADDED TO CART IN SAME LISTING VIEW (last 30 days)
+-----------------------------------------------------------------
+with atc_lv as (
+select
+  visit_id,
+  count(listing_id) as listing_views,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and added_to_cart > 0
+group by all
+)
+select
+  count(distinct visit_id) as atc_lv_visits,
+  sum(total_gms) as atc_lv_gms
+from 
+  atc_lv
+inner join 
+  etsy-data-warehouse-prod.weblog.visits 
+    using (visit_id)
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all
