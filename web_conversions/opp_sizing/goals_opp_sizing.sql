@@ -128,6 +128,7 @@ inner join
 where 
     _date >= current_date-30
     and platform in ('mobile_web','desktop')
+    and listings_w_review > 0 
 -- visits	gms
 -- 351153936	456158232.69
 -- 30.1 of visit coverage, 45.4% of gms coverage 
