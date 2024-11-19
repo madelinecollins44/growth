@@ -155,7 +155,51 @@ where
 -- total_visits	gms
 -- 1140444332	1004663981.54
 
--------------------------------------------------------
+
+--% of listings with reviews
+with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+select 
+  count(distinct listing_id) as total_listings,
+  count(distinct case when total_reviews = 0 then listing_id end) as listings_wo_reviews,
+  count(distinct case when total_reviews > 0 then listing_id end) as listings_w_reviews
+from reviews
+-- total_listings	listings_wo_reviews	listings_w_reviews
+-- 318310912	178270489	140040423
+---- 56% of listings dont have a review, 44% of listings have at least one review
+
+--% of listing views by review status
+  with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+-- , lv_with_reviews as (
+select
+  case 
+    when total_reviews = 0 then 'no_reviews' 
+    else 'has_reviews'
+  end as review_status,
+  count(distinct visit_id) as unique_visits,
+  count(visit_id) as views,
+  count(listing_id) as lv
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+group by all 
+
+  
+  -------------------------------------------------------
 --LISTING REVIEWS SEEN (last 30 days)
 -------------------------------------------------------
 with lp_reviews_seen as (
