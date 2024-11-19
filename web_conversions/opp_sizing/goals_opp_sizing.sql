@@ -128,9 +128,9 @@ inner join
 where 
     _date >= current_date-30
     and platform in ('mobile_web','desktop')
---   visits	gms
--- 486092205	820550428.35
--- 42.6% of visit coverage, 32.9% of gms coverage 
+-- visits	gms
+-- 351153936	456158232.69
+-- 30.1 of visit coverage, 45.4% of gms coverage 
 -------global visits / gms coverage for this calc 
 -- total_visits	gms
 -- 1140444332	1004663981.54
