@@ -211,3 +211,9 @@ where
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
 group by all
+-- atc_lv_visits	atc_lv_gms
+-- 17066834	210159949.78
+-- 1.5% of visits coverage, 20.9% of gms covererage 
+-------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1140444332	1004663981.54
