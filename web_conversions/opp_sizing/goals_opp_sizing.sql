@@ -279,14 +279,23 @@ where
   b._date >= current_date-30
   and b.platform in ('mobile_web','desktop')
 group by all
+-------listing reviews seen by platform
 --  platform	    lp_reviews_seen_visits	    lp_reviews_seen_gms
 -- mobile_web	    89826933	                      142524194.16
 -- desktop	      50682973	                        188206356.8
--- mobile_web: 7.8% of visit coverage, 14.2% of gms coverage
--- desktop: 4.4% of visits coverage, 18.7% of gms 
-  -------global visits / gms coverage for this calc 
+-------listings seen by platform
+-- platform	    lp_visits	    lp_gms
+-- desktop	     138986848	   289372317.29
+-- mobile_web	   335078617	   227353498.97
+---- mobile_web: 26.8% of lv saw the reviews, 62.7% of lv gams saw the review
+---- desktop: 36.4% of lv saw the reviews, 65.0% of lv gms saw the review
+  
+-------global visits / gms coverage for this calc 
 -- total_visits	gms
 -- 1140444332	1004663981.54
+---- mobile_web: 7.8% of visit coverage, 14.2% of gms coverage
+---- desktop: 4.4% of visits coverage, 18.7% of gms 
+
 
   
 -----------------------------------------------------------------
