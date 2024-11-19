@@ -20,7 +20,7 @@ group by all
 -- 3286564937	2757370099.95
 
 -------------------------------------------------------
---LISTING LANDINGS (last 90 days)
+--LISTING PAGE LANDINGS (last 90 days)
 -------------------------------------------------------
 select
   count(distinct visit_id) as listing_landing_visits,
@@ -63,3 +63,33 @@ group by all
 -- shop_home_visits	shop_home_gms
 -- 118112155	188864678.03
 ---10.45% of visit coverage, 19.13% of gms coverage
+
+-------------------------------------------------------
+--LISTING PAGE (last 30 days)
+-------------------------------------------------------
+with lp_visits as (
+select
+  distinct visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  _date >= current_date-30
+  and event_type in ('view_listing')
+)
+select
+  count(distinct a.visit_id) as lp_visits,
+  sum(total_gms) as lp_gms
+from 
+  lp_visits a
+inner join 
+  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
+where 
+  b._date >= current_date-30
+  and b.platform in ('mobile_web','desktop')
+group by all
+-- lp_visits	lp_gms
+-- 474065465	516725816.26
+--- 47.2% of visit coverage, 51.4% of gms coverage
+-------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1140444332	1004663981.54
