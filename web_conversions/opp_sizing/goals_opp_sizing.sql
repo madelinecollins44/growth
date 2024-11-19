@@ -93,3 +93,74 @@ group by all
 -------global visits / gms coverage for this calc 
 -- total_visits	gms
 -- 1140444332	1004663981.54
+
+-------------------------------------------------------
+--LISTING PAGE WHERE LISTING HAD A REVIEW (last 30 days)
+-------------------------------------------------------
+with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+, lv_with_reviews as (
+select
+  visit_id,
+  count(listing_id) as listings_w_review
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+  and r.total_reviews > 0 -- only looks at listings with reviews  
+group by all 
+)
+select
+  count(distinct visit_id) as visits,
+  sum(total_gms) as gms
+from 
+  etsy-data-warehouse-prod.weblog.visits
+inner join 
+  lv_with_reviews 
+   using (visit_id)
+where 
+    _date >= current_date-30
+    and platform in ('mobile_web','desktop')
+--   visits	gms
+-- 486092205	820550428.35
+-- 42.6% of visit coverage, 32.9% of gms coverage 
+-------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1140444332	1004663981.54
+
+-------------------------------------------------------
+--LISTING REVIEWS SEEN (last 30 days)
+-------------------------------------------------------
+with lp_reviews_seen as (
+select
+  distinct visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  _date >= current_date-30
+  and event_type in ('listing_page_reviews_seen')
+)
+select
+  count(distinct a.visit_id) as lp_reviews_seen_visits,
+  sum(total_gms) as lp_reviews_seen_gms
+from 
+  lp_reviews_seen a
+inner join 
+  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
+where 
+  b._date >= current_date-30
+  and b.platform in ('mobile_web','desktop')
+group by all
+-- lp_reviews_seen_visits	lp_reviews_seen_gms
+-- 140509906	330730550.96
+-- 12.3% of visit coverage, 32.9% of gms coverage 
+-------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1140444332	1004663981.54
