@@ -199,7 +199,7 @@ where
 group by all 
 
   
-  -------------------------------------------------------
+-------------------------------------------------------
 --LISTING REVIEWS SEEN (last 30 days)
 -------------------------------------------------------
 with lp_reviews_seen as (
@@ -229,6 +229,32 @@ group by all
 -- total_visits	gms
 -- 1140444332	1004663981.54
 
+--% of lv by review status
+  with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+select
+  case 
+    when total_reviews = 0 then 'no_reviews' 
+    else 'has_reviews'
+  end as review_status,
+  count(distinct visit_id) as unique_visits,
+  count(visit_id) as views,
+  count(listing_id) as lv
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+group by all 
+-- review_status	unique_visits	    views	     
+-- no_reviews	    166157241	      379754094	    
+-- has_reviews	  486092205	      1783556677	  
 -----------------------------------------------------------------
 --USERS THAT ADDED TO CART IN SAME LISTING VIEW (last 30 days)
 -----------------------------------------------------------------
