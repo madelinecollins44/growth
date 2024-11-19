@@ -35,7 +35,26 @@ group by all
 -- listing_landing_visits	listing_landing_gms
 -- 1089366238	537405474.99
 -- 33.14% of visit coverage, 19.48% of gms coverage
-
+  
+-------------------------------------------------------
+--SHOP HOME LANDINGS (last 90 days)
+-------------------------------------------------------
+select
+  count(distinct visit_id) as shop_home_landings,
+  sum(total_gms) as shop_home_gms
+from 
+  etsy-data-warehouse-prod.weblog.visits 
+where 
+  _date >= current_date-90
+  and platform in ('mobile_web','desktop')
+  and landing_event in ('shop_home')
+group by all
+-- shop_home_landings	shop_home_gms
+-- 212904025	69090772.87
+-- 6.5% of visits , 2.5% of gms coverage 
+  -------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 3292706877	2771011114.56
 
 -------------------------------------------------------
 --SHOP HOME VISITS (last 30 days)
