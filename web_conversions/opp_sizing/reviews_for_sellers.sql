@@ -1,4 +1,21 @@
 ----------------------------------------------------------------------------------
+-- What % of reviews come from each buyer_segment? 
+----------------------------------------------------------------------------------
+select
+  buyer_segment,
+  sum(has_review) as total_listing_reviews,
+  count(listing_id) as listings_purchased,
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+-- buyer_segment	    total_listing_reviews	        listings_purchased
+-- Signed Out           76456111	                    655346082
+-- Repeat	              171680871	                    795843899
+-- Not Active	          93946331	                    595369827
+-- High Potential	        1080826	                      7170958
+-- Habitual	          187408259	                          741632160
+-- Active	          47424564	                      265309720
+
+----------------------------------------------------------------------------------
 -- How many sellers have item reviews? 
 -----1-5, 5-10, 11+?
 ----------------------------------------------------------------------------------
