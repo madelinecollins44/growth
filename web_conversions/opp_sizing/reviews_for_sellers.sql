@@ -27,16 +27,21 @@ select
 from etsy-data-warehouse-prod.rollups.transaction_reviews
 group by all 
 ) 
+--7643311
 select
   count(distinct b.user_id) as total_sellers,
-  count(distinct case when total_listing_reviews >= 1 or total_listing_reviews < 5 then b.user_id end) sellers_w_1_to_5_listing_reviews,
-  count(distinct case when total_listing_reviews >= 5 or total_listing_reviews < 10 then b.user_id end) sellers_w_5_to_10_listing_reviews,
+  count(distinct case when r.seller_user_id is null then b.user_id end) sellers_wo_transactions,
+  count(distinct case when total_listing_reviews = 0 then b.user_id end) sellers_wo_listing_reviews,
+  count(distinct case when total_listing_reviews >= 1 and total_listing_reviews < 5 then b.user_id end) sellers_w_5_to_10_listing_reviews,
+  -- count(distinct case when total_listing_reviews between 1 and 5 then b.user_id end) sellers_w_1_to_5_listing_reviews,
+  count(distinct case when total_listing_reviews >= 5 and total_listing_reviews < 10 then b.user_id end) sellers_w_5_to_10_listing_reviews,
   count(distinct case when total_listing_reviews >= 10 then b.user_id end) as sellers_w_10_or_more_listing_reviews
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b 
 left join 
   seller_listing_reviews r 
     on b.user_id=r.seller_user_id
+
 
 
 -----------------TESTING
