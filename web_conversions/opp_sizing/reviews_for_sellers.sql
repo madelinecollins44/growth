@@ -6,6 +6,23 @@ select count(distinct seller_user_id), count(distinct transaction_id), max(date)
 
 select count(distinct seller_user_id), count(distinct transaction_id), max(transaction_date) from etsy-data-warehouse-prod.rollups.transaction_reviews
 -- 7643311,	3062444660, 2024-11-20
+
+---------------------------------------------------------------------------------
+-- What % of sellers dont have a transaction? 
+----------------------------------------------------------------------------------
+select
+  count(distinct b.user_id) as total_sellers,
+  count(distinct r.seller_user_id) as sellers_w_trans,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b 
+left join 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions r 
+    on b.user_id=r.seller_user_id
+group by all
+-- total_sellers	sellers_w_trans
+-- 51017402	8722260
+-- select 1-(8722260/51017402) --> 83%
+  
 ----------------------------------------------------------------------------------
 -- What % of reviews come from each buyer_segment? 
 ----------------------------------------------------------------------------------
