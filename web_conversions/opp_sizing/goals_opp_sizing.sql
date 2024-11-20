@@ -338,7 +338,6 @@ inner join
   listings_with_variations v using (listing_id)
 where 
   lv._date >= current_date-30 -- listing views in last 30 days 
-  -- and v.variation_count > 0 -- only looks at listings with reviews  
 group by all 
 )
 select
