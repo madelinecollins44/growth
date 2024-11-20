@@ -1,4 +1,12 @@
 ----------------------------------------------------------------------------------
+-- Comparing tables
+----------------------------------------------------------------------------------
+select count(distinct seller_user_id), count(distinct transaction_id), max(date) from etsy-data-warehouse-prod.transaction_mart.all_transactions
+-- 8722260,	3408219171, 2024-11-20
+
+select count(distinct seller_user_id), count(distinct transaction_id), max(transaction_date) from etsy-data-warehouse-prod.rollups.transaction_reviews
+-- 7643311,	3062444660, 2024-11-20
+----------------------------------------------------------------------------------
 -- What % of reviews come from each buyer_segment? 
 ----------------------------------------------------------------------------------
 select
