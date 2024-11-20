@@ -23,17 +23,16 @@ with seller_listing_reviews as (
 select
   seller_user_id,
   sum(has_review) as total_listing_reviews,
-  count(listing_id) as listings_purchased,
+  count(transaction_id) as transactions, 
+  sum(quantity) as total_listing_purchased
 from etsy-data-warehouse-prod.rollups.transaction_reviews
 group by all 
 ) 
---7643311
 select
   count(distinct b.user_id) as total_sellers,
   count(distinct case when r.seller_user_id is null then b.user_id end) sellers_wo_transactions,
   count(distinct case when total_listing_reviews = 0 then b.user_id end) sellers_wo_listing_reviews,
   count(distinct case when total_listing_reviews >= 1 and total_listing_reviews < 5 then b.user_id end) sellers_w_5_to_10_listing_reviews,
-  -- count(distinct case when total_listing_reviews between 1 and 5 then b.user_id end) sellers_w_1_to_5_listing_reviews,
   count(distinct case when total_listing_reviews >= 5 and total_listing_reviews < 10 then b.user_id end) sellers_w_5_to_10_listing_reviews,
   count(distinct case when total_listing_reviews >= 10 then b.user_id end) as sellers_w_10_or_more_listing_reviews
 from 
@@ -62,6 +61,20 @@ select * from seller_listing_reviews where total_listing_reviews =11 limit 5
 -- 76891391	11
 
 SELECT * FROM etsy-data-warehouse-prod.rollups.transaction_reviews WHERE SELLER_USER_ID = 76891391
+
+with seller_listing_reviews as (
+select
+  seller_user_id,
+  sum(has_review) as total_listing_reviews,
+  count(transaction_id) as transactions, 
+  sum(quantity) as total_listing_purchased
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+) 
+select * from seller_listing_reviews where seller_user_id = 76891391
+-- seller_user_id	total_listing_reviews	transactions	total_listing_purchased
+-- 76891391	11	55	84
+select * from etsy-data-warehouse-prod.rollups.transaction_reviews where seller_user_id = 76891391
 
 ----------------------------------------------------------------------------------
 -- How many sellers have shop reviews? 
