@@ -321,7 +321,7 @@ with listing_variation_level_attributes as (
     and i.is_deleted = 0
     and listing_id = 169273071
 )
-, listings_with_variations as (
+, listings_with_variations as ( -- this only looks at listings with variants
   select 
     listing_id,
     count(distinct variation_name) as variation_count, 
@@ -338,7 +338,7 @@ inner join
   listings_with_variations v using (listing_id)
 where 
   lv._date >= current_date-30 -- listing views in last 30 days 
-  and v.variation_count > 0 -- only looks at listings with reviews  
+  -- and v.variation_count > 0 -- only looks at listings with reviews  
 group by all 
 )
 select
@@ -352,4 +352,41 @@ inner join
 where 
     _date >= current_date-30
     and platform in ('mobile_web','desktop')
+-- visits	gms
+-- 259151031	411876077.77
+-- 22.5% of visit coverage, 40.2% of gms coverage 
+-------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1148397390	1018931767.4
 
+---- what % of listing views are for listings w variations? 
+with listing_variation_level_attributes as (
+  select 
+    v.*, 
+    i.image_id, 
+    i.create_date, 
+    i.is_deleted
+  from `etsy-data-warehouse-prod.rollups.listing_variations_extended` v
+  left join `etsy-data-warehouse-prod.etsy_shard.variation_images` i
+    on v.listing_variation_id = i.listing_variation_id
+    and i.is_deleted = 0
+)
+, listings_with_variations as (
+  select 
+    listing_id,
+    count(distinct variation_name) as variation_count, 
+  from listing_variation_level_attributes
+  group by all
+)
+select
+  count(lv.listing_id) as listings_views,
+  count(case when v.listing_id is not null then lv.listing_id end) as listings_w_variation_viewed,
+  count(distinct lv.listing_id) as listings_viewed,
+  count(distinct v.listing_id) as listings_w_variation_viewed
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+left join 
+  listings_with_variations v using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+group by all 
