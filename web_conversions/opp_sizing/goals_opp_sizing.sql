@@ -390,3 +390,6 @@ left join
 where 
   lv._date >= current_date-30 -- listing views in last 30 days 
 group by all 
+-- listings_views	listings_w_variation_views	listings_viewed	listings_w_variation_viewed_1
+-- 2541086019	1431514897	90613485	32573022
+--56.3% of listing views are for listings with a variation, 35.9% of all listings viewed have a variation
