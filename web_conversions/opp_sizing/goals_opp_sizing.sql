@@ -382,3 +382,34 @@ group by all
 -- listings_views	listings_w_variation_views	listings_viewed	listings_w_variation_viewed_1
 -- 2541086019	1431514897	90613485	32573022
 --56.3% of listing views are for listings with a variation, 35.9% of all listings viewed have a variation
+
+---what % of active listings have a variation?
+with listing_variation_level_attributes as (
+  select 
+    v.*, 
+    i.image_id, 
+    i.create_date, 
+    i.is_deleted
+  from `etsy-data-warehouse-prod.rollups.listing_variations_extended` v
+  left join `etsy-data-warehouse-prod.etsy_shard.variation_images` i
+    on v.listing_variation_id = i.listing_variation_id
+    and i.is_deleted = 0
+)
+, listings_with_variations as (
+  select 
+    listing_id,
+    count(distinct variation_name) as variation_count, 
+  from listing_variation_level_attributes
+  group by all
+)
+select
+  count(distinct lv.listing_id) as active_listings,
+  count(distinct v.listing_id) as active_listings_w_variation,
+from  
+  etsy-data-warehouse-prod.rollups.active_listing_basics lv
+left join 
+  listings_with_variations v using (listing_id)
+group by all 
+-- active_listings	active_listings_w_variation
+-- 128976555	53210049
+-- 41.2% of active listings have a variation
