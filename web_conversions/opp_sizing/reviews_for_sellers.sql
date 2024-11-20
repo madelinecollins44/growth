@@ -18,10 +18,11 @@ from
 left join 
   etsy-data-warehouse-prod.transaction_mart.all_transactions r 
     on b.user_id=r.seller_user_id
+where active_seller_status = 1
 group by all
 -- total_sellers	sellers_w_trans
--- 51017402	8722260
--- select 1-(8722260/51017402) --> 83%
+-- 6011692	3302676
+-- select 1-(3302676/6011692) --> 45.5%
   
 ----------------------------------------------------------------------------------
 -- What % of reviews come from each buyer_segment? 
@@ -66,8 +67,8 @@ from
 left join 
   seller_listing_reviews r 
     on b.user_id=r.seller_user_id
+where active_seller_status = 1 -- only active sellers
 group by all
-
 
 -----------------TESTING
 with seller_listing_reviews as (
