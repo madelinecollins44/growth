@@ -413,3 +413,17 @@ group by all
 -- active_listings	active_listings_w_variation
 -- 128976555	53210049
 -- 41.2% of active listings have a variation
+------listings without variation check 
+-- listing_id
+-- 120077541
+-- 122565401
+-- 120135306
+-- 124023659
+-- 122801546
+------listings with variation check 
+-- listing_id
+-- 1130064496
+-- 1131452534
+-- 1131052195
+-- 1131319028
+-- 1130977707
