@@ -37,6 +37,7 @@ from etsy-data-warehouse-prod.rollups.transaction_reviews
 group by all 
 ) 
 select
+  -- seller_tier_new,
   count(distinct b.user_id) as total_sellers,
   count(distinct case when r.seller_user_id is null then b.user_id end) sellers_wo_transactions,
   count(distinct case when total_listing_reviews = 0 then b.user_id end) sellers_wo_listing_reviews,
@@ -48,6 +49,7 @@ from
 left join 
   seller_listing_reviews r 
     on b.user_id=r.seller_user_id
+group by all
 
 
 -----------------TESTING
