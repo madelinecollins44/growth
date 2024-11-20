@@ -305,3 +305,51 @@ group by all
 -------global visits / gms coverage for this calc 
 -- total_visits	gms
 -- 1140444332	1004663981.54
+
+-----------------------------------------------------------------
+--LISTINGS VIEW COVERAGE OF LISTINGS WITH VARIATIONS (last 30 days)
+-----------------------------------------------------------------
+with listing_variation_level_attributes as (
+  select 
+    v.*, 
+    i.image_id, 
+    i.create_date, 
+    i.is_deleted
+  from `etsy-data-warehouse-prod.rollups.listing_variations_extended` v
+  left join `etsy-data-warehouse-prod.etsy_shard.variation_images` i
+    on v.listing_variation_id = i.listing_variation_id
+    and i.is_deleted = 0
+    and listing_id = 169273071
+)
+, listings_with_variations as (
+  select 
+    listing_id,
+    count(distinct variation_name) as variation_count, 
+  from listing_variation_level_attributes
+  group by all
+)
+, lv_with_variations as (
+select
+  visit_id,
+  count(listing_id) as listings_w_review
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  listings_with_variations v using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+  and v.variation_count > 0 -- only looks at listings with reviews  
+group by all 
+)
+select
+  count(distinct visit_id) as visits,
+  sum(total_gms) as gms
+from 
+  etsy-data-warehouse-prod.weblog.visits
+inner join 
+  lv_with_variations
+   using (visit_id)
+where 
+    _date >= current_date-30
+    and platform in ('mobile_web','desktop')
+
