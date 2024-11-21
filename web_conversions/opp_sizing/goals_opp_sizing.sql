@@ -520,3 +520,42 @@ group by all
 -- 1131052195
 -- 1131319028
 -- 1130977707
+
+--------------------------------------------------------------------
+--LISTINGS VIEWS OF HIGH STAKE LISTINGS + HAVE REVIEWS
+--------------------------------------------------------------------
+with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+, lv_with_reviews as (
+select
+  visit_id,
+  count(listing_id) as listings_w_review
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+  and r.total_reviews > 0 -- only looks at listings with reviews  
+  and price_usd > 100 -- looks at only high stakes items 
+group by all 
+)
+select
+  platform,
+  count(distinct visit_id) as visits,
+  sum(total_gms) as gms
+from 
+  etsy-data-warehouse-prod.weblog.visits
+inner join 
+  lv_with_reviews 
+   using (visit_id)
+where 
+    _date >= current_date-30
+    and platform in ('mobile_web','desktop')
+    and listings_w_review > 0 
+group by all
