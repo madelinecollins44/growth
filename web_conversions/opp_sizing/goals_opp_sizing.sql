@@ -649,3 +649,28 @@ where
   and b.platform in ('mobile_web','desktop')
 group by all
 
+--------------------------------------------------------------------
+--CART VIEW COVERAGE
+--------------------------------------------------------------------
+with checkout_nudges as (
+select
+  distinct visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  _date >= current_date-30
+  and event_type in ('cart_view')
+)
+select
+  -- platform,
+  count(distinct a.visit_id) as checkout_nudges_visits,
+  sum(total_gms) as checkout_nudges_gms
+from 
+  checkout_nudges a
+inner join 
+  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
+where 
+  b._date >= current_date-30
+  and b.platform in ('mobile_web','desktop')
+group by all
+
