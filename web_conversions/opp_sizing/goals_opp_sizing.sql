@@ -191,10 +191,10 @@ select
 from etsy-data-warehouse-prod.rollups.transaction_reviews
 group by all
 )
-, lv_with_reviews as (
+, lv_wo_reviews as (
 select
   visit_id,
-  count(listing_id) as listings_w_review
+  count(listing_id) as listings_wo_review
 from  
   etsy-data-warehouse-prod.analytics.listing_views lv
 inner join 
@@ -205,24 +205,18 @@ where
 group by all 
 )
 select
+  platform,
   count(distinct visit_id) as visits,
   sum(total_gms) as gms
 from 
   etsy-data-warehouse-prod.weblog.visits
 inner join 
-  lv_with_reviews 
+  lv_wo_reviews 
    using (visit_id)
 where 
     _date >= current_date-30
     and platform in ('mobile_web','desktop')
-    and listings_w_review > 0 
-
--- visits	gms
--- 116436679	236519016.57
--- 10.1% of visit coverage, 22.9% of gms coverage
--------global visits / gms coverage for this calc 
--- total_visits	gms
--- 1153125915	1031255754.54
+group by all
 
 ----TESTING
   with reviews as (
@@ -317,6 +311,7 @@ where
   and event_type in ('listing_page_reviews_seen')
 )
 select
+  platform,
   count(distinct a.visit_id) as lp_reviews_seen_visits,
   sum(total_gms) as lp_reviews_seen_gms
 from 
@@ -327,12 +322,6 @@ where
   b._date >= current_date-30
   and b.platform in ('mobile_web','desktop')
 group by all
--- lp_reviews_seen_visits	lp_reviews_seen_gms
--- 140509906	330730550.96
--- 12.3% of visit coverage, 32.9% of gms coverage 
--------global visits / gms coverage for this calc 
--- total_visits	gms
--- 1140444332	1004663981.54
 
 
 --reviews seen by platform
@@ -390,6 +379,7 @@ where
 group by all
 )
 select
+  platform,
   count(distinct visit_id) as atc_lv_visits,
   sum(total_gms) as atc_lv_gms
 from 
@@ -401,12 +391,6 @@ where
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
 group by all
--- atc_lv_visits	atc_lv_gms
--- 17066834	210159949.78
--- 1.5% of visits coverage, 20.9% of gms covererage 
--------global visits / gms coverage for this calc 
--- total_visits	gms
--- 1140444332	1004663981.54
 
 --------------------------------------------------------------------
 --LISTINGS VIEW COVERAGE OF LISTINGS WITH VARIATIONS (last 30 days)
@@ -430,25 +414,32 @@ with listing_variation_level_attributes as (
   from listing_variation_level_attributes
   group by all
 )
+, listings_w_variations as (
 select
-  count(lv.listing_id) as listings_views,
-  count(case when v.listing_id is not null then lv.listing_id end) as listings_w_variation_views,
-  count(distinct lv.listing_id) as listings_viewed,
-  count(distinct v.listing_id) as listings_w_variation_viewed
+  visit_id,
+  count(listing_id) as listings_wo_review
 from  
   etsy-data-warehouse-prod.analytics.listing_views lv
-left join 
-  listings_with_variations v using (listing_id)
+inner join 
+  listings_with_variations r using (listing_id)
 where 
   lv._date >= current_date-30 -- listing views in last 30 days 
+  and r.variation_count > 0 -- only looks at listings with variations  
 group by all 
-
--- visits	gms
--- 259151031	411876077.77
--- 22.5% of visit coverage, 40.2% of gms coverage 
--------global visits / gms coverage for this calc 
--- total_visits	gms
--- 1148397390	1018931767.4
+)
+select
+  platform,
+  count(distinct visit_id) as visits,
+  sum(total_gms) as gms
+from 
+  etsy-data-warehouse-prod.weblog.visits
+inner join 
+  listings_w_variations 
+   using (visit_id)
+where 
+    _date >= current_date-30
+    and platform in ('mobile_web','desktop')
+group by all
 
 ---- what % of listing views are for listings w variations? 
 with listing_variation_level_attributes as (
