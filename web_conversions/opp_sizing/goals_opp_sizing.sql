@@ -236,7 +236,14 @@ where
     _date >= current_date-30
     and platform in ('mobile_web','desktop')
     and listings_w_review > 0 
-  
+
+-- visits	gms
+-- 116436679	236519016.57
+-- 10.1% of visit coverage, 22.9% of gms coverage
+-------global visits / gms coverage for this calc 
+-- total_visits	gms
+-- 1153125915	1031255754.54
+
 -------------------------------------------------------
 --LISTING REVIEWS SEEN (last 30 days)
 -------------------------------------------------------
