@@ -623,3 +623,28 @@ where
   and b.platform in ('mobile_web','desktop')
 group by all
 
+--------------------------------------------------------------------
+--PROCEED TO CHECKOUT IN CART
+--------------------------------------------------------------------
+with checkout_from_cart as (
+select
+  distinct visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  _date >= current_date-30
+  and event_type like ('proceed_to_checkout_with%')
+)
+select
+  platform,
+  count(distinct a.visit_id) as checkout_visits,
+  sum(total_gms) as checkout_gms
+from 
+  checkout_from_cart a
+inner join 
+  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
+where 
+  b._date >= current_date-30
+  and b.platform in ('mobile_web','desktop')
+group by all
+
