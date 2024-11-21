@@ -650,7 +650,7 @@ where
 group by all
 
 --------------------------------------------------------------------
---CART VIEW COVERAGE
+--CHECKOUT START COVERAGE
 --------------------------------------------------------------------
 with checkout_nudges as (
 select
@@ -659,7 +659,7 @@ from
   etsy-data-warehouse-prod.weblog.events
 where 
   _date >= current_date-30
-  and event_type in ('cart_view')
+  and event_type in ('checkout_start')
 )
 select
   -- platform,
