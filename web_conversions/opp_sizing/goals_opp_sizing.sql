@@ -559,3 +559,41 @@ where
     and platform in ('mobile_web','desktop')
     and listings_w_review > 0 
 group by all
+
+--------------------------------------------------------------------
+--LISTINGS VIEWS OF HIGH STAKE LISTINGS + DONT HAVE REVIEWS
+--------------------------------------------------------------------
+with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+, lv_wo_reviews as (
+select
+  visit_id,
+  count(listing_id) as listings_wo_review
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+  and r.total_reviews < 1 -- only looks at listings without reviews  
+  and price_usd > 100
+group by all 
+)
+select
+  platform,
+  count(distinct visit_id) as visits,
+  sum(total_gms) as gms
+from 
+  etsy-data-warehouse-prod.weblog.visits
+inner join 
+  lv_wo_reviews 
+   using (visit_id)
+where 
+    _date >= current_date-30
+    and platform in ('mobile_web','desktop')
+group by all
