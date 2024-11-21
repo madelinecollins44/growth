@@ -244,6 +244,43 @@ where
 -- total_visits	gms
 -- 1153125915	1031255754.54
 
+----TESTING
+  with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+select * from reviews where listing_id = 1675270968
+-- listing_id without reviews 
+-- 1718881800
+-- 1689001150
+-- 1771603778
+-- 1675270968
+-- 1759252800
+
+-- listing_ids w reviews
+-- 1142035121
+-- 951381169
+-- 1316226954
+-- 784930715
+-- 473800867
+, lv_without_reviews as (
+select
+  visit_id,
+  listing_id
+  -- count(listing_id) as listings_w_review
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+  and r.total_reviews < 1 -- only looks at listings without reviews  
+group by all 
+)
+select distinct listing_id from lv_without_reviews limit 5
 -------------------------------------------------------
 --LISTING REVIEWS SEEN (last 30 days)
 -------------------------------------------------------
@@ -313,7 +350,6 @@ group by all
 -- 1140444332	1004663981.54
 ---- mobile_web: 7.8% of visit coverage, 14.2% of gms coverage
 ---- desktop: 4.4% of visits coverage, 18.7% of gms 
-
 
   
 -----------------------------------------------------------------
