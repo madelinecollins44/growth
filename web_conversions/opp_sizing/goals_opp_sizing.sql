@@ -47,8 +47,9 @@ where
   _date >= current_date-90
   and platform in ('mobile_web','desktop')
   and landing_event in ('shop_home')
+  --and top_channel like ('social_%')
 group by all
-
+  
 -------------------------------------------------------
 --SHOP HOME VISITS (last 30 days)
 -------------------------------------------------------
