@@ -561,6 +561,17 @@ where
     and listings_w_review > 0 
 group by all
 
+  --how many listings viewed are high stakes
+  select
+  count(visit_id) as listing_views,
+  count(case when price_usd > 100 then visit_id end) as highstakes_listing_views,
+  count(distinct listing_id) as listings_viewed,
+  count(distinct case when price_usd > 100 then listing_id end) as highstakes_listings_viewed,
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+group by all 
 --------------------------------------------------------------------
 --LISTINGS VIEWS OF HIGH STAKE LISTINGS + DONT HAVE REVIEWS
 --------------------------------------------------------------------
