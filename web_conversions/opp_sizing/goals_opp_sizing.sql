@@ -87,6 +87,7 @@ where
   and event_type in ('view_listing')
 )
 select
+  platform,
   count(distinct a.visit_id) as lp_visits,
   sum(total_gms) as lp_gms
 from 
@@ -97,12 +98,6 @@ where
   b._date >= current_date-30
   and b.platform in ('mobile_web','desktop')
 group by all
--- lp_visits	lp_gms
--- 474065465	516725816.26
---- 47.2% of visit coverage, 51.4% of gms coverage
--------global visits / gms coverage for this calc 
--- total_visits	gms
--- 1140444332	1004663981.54
 
 -------------------------------------------------------
 --LISTING PAGE WHERE LISTING HAD A REVIEW (last 30 days)
@@ -128,6 +123,7 @@ where
 group by all 
 )
 select
+  platform,
   count(distinct visit_id) as visits,
   sum(total_gms) as gms
 from 
@@ -139,13 +135,6 @@ where
     _date >= current_date-30
     and platform in ('mobile_web','desktop')
     and listings_w_review > 0 
--- visits	gms
--- 351153936	456158232.69
--- 30.1 of visit coverage, 45.4% of gms coverage 
--------global visits / gms coverage for this calc 
--- total_visits	gms
--- 1140444332	1004663981.54
-
 
 --% of listings with reviews
 with reviews as (
