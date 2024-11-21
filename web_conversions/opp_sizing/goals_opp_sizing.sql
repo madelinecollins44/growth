@@ -23,6 +23,7 @@ group by all
 --LISTING PAGE LANDINGS (last 90 days)
 -------------------------------------------------------
 select
+  platform,
   count(distinct visit_id) as listing_landing_visits,
   sum(total_gms) as listing_landing_gms
 from 
@@ -32,14 +33,12 @@ where
   and platform in ('mobile_web','desktop')
   and landing_event in ("view_listing", "image_zoom",'listing_page_recommendations','view_sold_listing','view_unavailable_listing','listing__listing_hub__tapped','appreciation_photo_detail')
 group by all
--- listing_landing_visits	listing_landing_gms
--- 1089366238	537405474.99
--- 33.14% of visit coverage, 19.48% of gms coverage
-  
+
 -------------------------------------------------------
 --SHOP HOME LANDINGS (last 90 days)
 -------------------------------------------------------
 select
+  platform,
   count(distinct visit_id) as shop_home_landings,
   sum(total_gms) as shop_home_gms
 from 
@@ -49,12 +48,6 @@ where
   and platform in ('mobile_web','desktop')
   and landing_event in ('shop_home')
 group by all
--- shop_home_landings	shop_home_gms
--- 212904025	69090772.87
--- 6.5% of visits , 2.5% of gms coverage 
-  -------global visits / gms coverage for this calc 
--- total_visits	gms
--- 3292706877	2771011114.56
 
 -------------------------------------------------------
 --SHOP HOME VISITS (last 30 days)
@@ -69,6 +62,7 @@ where
   and event_type in ('shop_home')
 )
 select
+  platform,
   count(distinct a.visit_id) as shop_home_visits,
   sum(total_gms) as shop_home_gms
 from 
@@ -79,9 +73,6 @@ where
   b._date >= current_date-30
   and b.platform in ('mobile_web','desktop')
 group by all
--- shop_home_visits	shop_home_gms
--- 118112155	188864678.03
----10.45% of visit coverage, 19.13% of gms coverage
 
 -------------------------------------------------------
 --LISTING PAGE (last 30 days)
