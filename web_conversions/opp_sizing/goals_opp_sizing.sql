@@ -612,8 +612,8 @@ where
 )
 select
   platform,
-  count(distinct a.visit_id) as shop_home_visits,
-  sum(total_gms) as shop_home_gms
+  count(distinct a.visit_id) as checkout_nudges_visits,
+  sum(total_gms) as checkout_nudges_gms
 from 
   checkout_nudges a
 inner join 
