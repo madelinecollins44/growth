@@ -281,6 +281,49 @@ where
 group by all 
 )
 select distinct listing_id from lv_without_reviews limit 5
+
+--avg transaction stats for listings without any reviews
+with reviews as (
+select
+  listing_id,
+  count(distinct transaction_id) as total_transactions,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+select
+  count(distinct listing_id) as listings,
+  sum(total_transactions) as total_transactions,
+  avg(total_transactions) as avg_transactions
+from
+  reviews
+where total_reviews < 1
+-- listings	total_transactions	avg_transactions
+-- 178419690	323511140	1.8132031279731542
+
+--viewed listings without reviews
+  with reviews as (
+select
+  listing_id,
+  count(distinct transaction_id) as transactions,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+select
+  count(distinct listing_id) as listings,
+  sum(transactions) as total_transactions,
+  avg(transactions) as avg_transactions,
+  count(lv.visit_id) as views
+from  
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  reviews r using (listing_id)
+where 
+  lv._date >= current_date-30 -- listing views in last 30 days 
+  and r.total_reviews < 1 -- only looks at listings without reviews  
+group by all 
+
 -------------------------------------------------------
 --LISTING REVIEWS SEEN (last 30 days)
 -------------------------------------------------------
