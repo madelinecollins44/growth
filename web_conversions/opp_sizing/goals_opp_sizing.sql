@@ -155,7 +155,7 @@ from reviews
 ---- 56% of listings dont have a review, 44% of listings have at least one review
 
 --% of listing views by review status
-  with reviews as (
+with reviews as (
 select
   listing_id,
   sum(has_review) as total_reviews
@@ -165,19 +165,20 @@ group by all
 -- , lv_with_reviews as (
 select
   case 
-    when total_reviews = 0 then 'no_reviews' 
-    else 'has_reviews'
+    when total_reviews = 0 then 'no_reviews'
+    when total_reviews > 0 then 'has_reviews'
+    else 'no_transactions'
   end as review_status,
   count(distinct visit_id) as unique_visits,
   count(visit_id) as views,
-  count(listing_id) as lv
+  count(distinct listing_id) as viewed_listings
 from  
   etsy-data-warehouse-prod.analytics.listing_views lv
-inner join 
+left join 
   reviews r using (listing_id)
 where 
   lv._date >= current_date-30 -- listing views in last 30 days 
-group by all 
+group by all
 -- review_status	unique_visits	views	lv
 -- no_reviews	166157241	379754094	379754094
 -- has_reviews	486092205	1783556677	1783556677
