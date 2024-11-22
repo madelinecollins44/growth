@@ -325,6 +325,33 @@ where
   and b.platform in ('mobile_web','desktop')
 group by all
 
+-- listing reviews seen on high stakes items 
+with seen_reviews as (
+select
+  visit_id,
+  regexp_extract(beacon.loc,r'listing/([0-9]+)') as listing_id
+from 
+  etsy-visit-pipe-prod.canonical.visit_id_beacons
+where
+  date(_partitiontime) >= current_date-30
+  and beacon.event_name = "listing_page_reviews_seen"
+)
+select
+  b.top_category,
+  count(distinct r.visit_id) unique_visits_w_reviews_seen,
+  count(r.visit_id) reviews_seen_events,
+  count(distinct b.listing_id) as total_listings_w_reviews_viewed,
+  -- sum(b.total_orders) as total_orders,
+  -- sum(b.total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b
+inner join 
+  seen_reviews r 
+    on b.listing_id = cast(r.listing_id as int64)
+where 
+  price_usd > 100
+group by all
+order by 2 desc
 
 --reviews seen by platform
   with lp_reviews_seen as (
