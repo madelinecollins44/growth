@@ -573,6 +573,43 @@ from
 where 
   lv._date >= current_date-30 -- listing views in last 30 days 
 group by all 
+
+-- which category has the most high stakes listings
+  select
+  top_category,
+  count(distinct listing_id) as total_listings,
+  sum(total_orders) as total_orders,
+  sum(total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics
+where 
+  price_usd > 100
+group by all
+order by 2 desc
+
+--which high stakes listings have the most reviews
+with reviews as (
+select
+  listing_id,
+  sum(has_review) as total_reviews
+from etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+select
+  b.top_category,
+  count(distinct b.listing_id) as total_listings,
+  sum(r.total_reviews) as total_reviews,
+  sum(b.total_orders) as total_orders,
+  sum(b.total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b
+left join 
+  reviews r using (listing_id)
+where 
+  price_usd > 100
+group by all
+order by 2 desc
+
 --------------------------------------------------------------------
 --LISTINGS VIEWS OF HIGH STAKE LISTINGS + DONT HAVE REVIEWS
 --------------------------------------------------------------------
