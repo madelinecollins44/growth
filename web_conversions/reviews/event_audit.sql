@@ -1,4 +1,5 @@
 -- find events counts associated with review process by platform
+------submit
 select
   event_type,
   count(case when platform in ('mobile_web') then visit_id end) as mweb_event_count,
