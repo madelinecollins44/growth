@@ -104,8 +104,11 @@ from shop_metrics
 
 ----Review stars at top of page
 ----See more description link seen / See more description link clicked
+
 ----Seller people link
 shop_home_seller_people_link_click
+property: ref = shop_home_header
+
 ----Contact seller link
 shop_home_contact_clicked
 
