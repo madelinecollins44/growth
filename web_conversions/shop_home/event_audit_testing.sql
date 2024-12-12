@@ -1,6 +1,13 @@
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --LANDINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
+ select
+  count(distinct case when landing_event like ('%shop_home%') then visit_id end) as shop_home_landings,
+  count(distinct visit_id) as total_visits,
+  count(distinct case when landing_event like ('%shop_home%') then visit_id end)/ count(distinct visit_id) as share_of_visits
+from etsy-data-warehouse-prod.weblog.visits  
+where _date >= current_date-30
+
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --NAVIGATION
 ---------------------------------------------------------------------------------------------------------------------------------------------
