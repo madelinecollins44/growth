@@ -41,6 +41,7 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --HEADER
 ---------------------------------------------------------------------------------------------------------------------------------------------
+----How many shops have announcements? 
 ----Follow shop / unfollow shop (this is not shop specific-- this is looking at overall shop_home views + favorites / unfavorites. due to this, some visits might be double counted)
 select
    -- date(_partitiontime) as _date, 
