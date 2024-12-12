@@ -43,21 +43,31 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Follow shop / unfollow shop (this is not shop specific-- this is looking at overall shop_home views + favorites / unfavorites. due to this, some visits might be double counted)
 select
-		-- date(_partitiontime) as _date, 
-		beacon.event_name, 
-    count(visit_id) as views, 
-    count(distinct visit_id) as visits
-	from
-		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
-	where
-		date(_partitiontime) >= current_date-7
-    and ((beacon.event_name in ('shop_home'))
-		-- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed')
-    -- looking at favoriting on shop_home page
-	      or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
-        and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
+     -- date(_partitiontime) as _date, 
+     beacon.event_name, 
+     count(visit_id) as views, 
+     count(distinct visit_id) as visits
+from
+     `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+     date(_partitiontime) >= current_date-7
+     and ((beacon.event_name in ('shop_home'))
+     -- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed') --favorite_shop_removed is missing
+-- looking at favoriting on shop_home page
+     or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
+     and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
 group by all
 
+
+\\-- event_name	views	visits
+\\-- favorite_shop	545831	398963
+\\-- remove_favorite_shop	78189	27421
+\\-- shop_home	124575822	50697982
+
+\\-- event_name	views	visits
+\\-- favorite_shop_added	1993813	1545537
+\\-- shop_home	124575822	50697982
+	 
 ----Review stars at top of page
 ----See more description link seen / See more description link clicked
 ----Seller people link
