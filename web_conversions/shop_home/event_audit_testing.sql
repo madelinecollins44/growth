@@ -81,6 +81,21 @@ property: sort_param
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Listing clicked
 ----Listing favorited / unfavorited
+select
+-- date(_partitiontime) as _date, 
+beacon.event_name, 
+(select value from unnest(beacon.properties.key_value) where key = "is_add"), -- will say adding or unadding
+count(visit_id) as views, 
+count(distinct visit_id) as visits
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+	date(_partitiontime) >= current_date-7
+	and ((beacon.event_name in ('shop_home','favorite_toast_notification_shown'))
+   	 -- looking at favoriting on shop_home page
+	    or (beacon.event_name in ('neu_favorite_click')
+      	    and (select value from unnest(beacon.properties.key_value) where key = "page_type") in ('shop')))
+group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --REVIEWS
