@@ -41,19 +41,20 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --HEADER
 ---------------------------------------------------------------------------------------------------------------------------------------------
-----Follow shop / unfollow shop
+----Follow shop / unfollow shop (this is not shop specific-- this is looking at overall shop_home views + favorites / unfavorites. due to this, some visits might be double counted)
 select
--- date(_partitiontime) as _date, 
-beacon.event_name, 
-count(visit_id) as views, 
-count(distinct visit_id) as visits
-from
-	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
-where
-date(_partitiontime) >= current_date-7
-and ((beacon.event_name in ('shop_home'))
--- looking at favoriting on shop_home page
-	or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
+		-- date(_partitiontime) as _date, 
+		beacon.event_name, 
+    count(visit_id) as views, 
+    count(distinct visit_id) as visits
+	from
+		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+	where
+		date(_partitiontime) >= current_date-7
+    and ((beacon.event_name in ('shop_home'))
+		-- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed')
+    -- looking at favoriting on shop_home page
+	      or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
         and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
 group by all
 
