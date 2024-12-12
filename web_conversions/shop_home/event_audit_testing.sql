@@ -98,6 +98,17 @@ property: sort_param
 --BROWSE
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Listing clicked
+select
+  referring_page_event,
+  count(listing_id) as listing_views,
+  count(case when purchased_after_view > 0 then listing_id end) as purchased_listings
+from 
+	etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and referring_page_event like ('%shop_home%')
+group by all 
+
 ----Listing favorited / unfavorited
 select
 -- date(_partitiontime) as _date, 
