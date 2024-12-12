@@ -65,7 +65,43 @@ group by all
 \\-- event_name	views	visits
 \\-- favorite_shop_added	1993813	1545537
 \\-- shop_home	124575822	50697982
-	 
+
+--this is favoriting at the shop_id level 
+with get_shop_ids as (
+select
+  beacon.event_name,
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  visit_id, 
+  count(visit_id) as views
+from
+		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+	where
+		date(_partitiontime) >= current_date-7
+    and ((beacon.event_name in ('shop_home'))
+    -- looking at favoriting on shop_home page
+	    or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
+      and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
+group by all
+)
+, shop_metrics as (
+select
+  shop_id,
+  sum(case when event_name in ('shop_home') then views end) as shop_home_pageviews,
+  sum(case when event_name in ('favorite_shop') then views end) as favorite_events,
+  sum(case when event_name in ('remove_favorite_shop') then views end) as unfavorite_events,
+  count(distinct case when event_name in ('shop_home') then views end) as shop_home_visits,
+  count(distinct case when event_name in ('favorite_shop') then views end) as favorite_visits,
+  count(distinct case when event_name in ('remove_favorite_shop') then views end) as unfavorite_visits
+from get_shop_ids
+group by all 
+)
+select
+  count(distinct shop_id) as unique_shops,
+  sum(shop_home_pageviews) as shop_home_pageviews,
+  sum(favorite_events) as favorite_events,
+  sum(unfavorite_events) as unfavorite_events,
+from shop_metrics
+
 ----Review stars at top of page
 ----See more description link seen / See more description link clicked
 ----Seller people link
