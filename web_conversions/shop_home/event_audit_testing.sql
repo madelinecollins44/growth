@@ -58,13 +58,23 @@ shop_home_seller_people_link_click
 shop_home_contact_clicked
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
---SEARCH
+--SEARCH LISTINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Search box clicked
+shop_home_search_input_focused
+
 ----Search box typed in
+shop_home_search_input_changed
+
 ----Search clicked
+shop_home_search_items
+
 ----Sort drop down clicked
+shop_home_dropdown_open
+
 ----Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
+shop_home_dropdown_engagement 
+property: sort_param
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --BROWSE
@@ -76,9 +86,19 @@ shop_home_contact_clicked
 --REVIEWS
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Reviews seen (property to surface how many reviews shop has)
+shop_home_reviews_section_top_seen, shop_home_reviews_section_seen (see more than 50%) 
+property: shop_review_count
+	
 ----Pagination
+shop_home_reviews_pagination
+property: page
+
 ----Review sort drop down option clicked
+sort_reviews_menu_opened
+
 ----Review sort drop down option selected (Most recent / Suggested)
+sort_reviews
+property: sort_selected
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --OTHER
