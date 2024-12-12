@@ -16,9 +16,9 @@ select
   event_type,
   count(distinct visit_id) as visits
 from 
-    etsy-data-warehouse-prod.weblog.events e  
+  etsy-data-warehouse-prod.weblog.events e  
 inner join 
-    etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where 
   v._date >= current_date-30
   and v.platform in ('mobile_web','desktop')
@@ -43,22 +43,20 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Follow shop / unfollow shop (this is not shop specific-- this is looking at overall shop_home views + favorites / unfavorites. due to this, some visits might be double counted)
 select
-     -- date(_partitiontime) as _date, 
-     beacon.event_name, 
-     count(visit_id) as views, 
-     count(distinct visit_id) as visits
+   -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
 from
-     `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
-     date(_partitiontime) >= current_date-7
-     and ((beacon.event_name in ('shop_home'))
-     -- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed') --favorite_shop_removed is missing
+  date(_partitiontime) >= current_date-7
+  and ((beacon.event_name in ('shop_home'))
+  -- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed') --favorite_shop_removed is missing
 -- looking at favoriting on shop_home page
-     or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
-     and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
+  or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
+  and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
 group by all
-
-
 \\-- event_name	views	visits
 \\-- favorite_shop	545831	398963
 \\-- remove_favorite_shop	78189	27421
@@ -104,7 +102,7 @@ select
   count(listing_id) as listing_views,
   count(case when purchased_after_view > 0 then listing_id end) as purchased_listings
 from 
-	etsy-data-warehouse-prod.analytics.listing_views
+  etsy-data-warehouse-prod.analytics.listing_views
 where 
   _date >= current_date-30
   and referring_page_event like ('%shop_home%')
@@ -112,19 +110,19 @@ group by all
 
 ----Listing favorited / unfavorited
 select
--- date(_partitiontime) as _date, 
-beacon.event_name, 
-(select value from unnest(beacon.properties.key_value) where key = "is_add"), -- will say adding or unadding
-count(visit_id) as views, 
-count(distinct visit_id) as visits
+  -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "is_add"), -- will say adding or unadding
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
 from
-	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
-	date(_partitiontime) >= current_date-7
-	and ((beacon.event_name in ('shop_home','favorite_toast_notification_shown'))
-   	 -- looking at favoriting on shop_home page
-	    or (beacon.event_name in ('neu_favorite_click')
-      	    and (select value from unnest(beacon.properties.key_value) where key = "page_type") in ('shop')))
+  date(_partitiontime) >= current_date-7
+  and ((beacon.event_name in ('shop_home','favorite_toast_notification_shown'))
+  -- looking at favoriting on shop_home page
+  or (beacon.event_name in ('neu_favorite_click')
+   and (select value from unnest(beacon.properties.key_value) where key = "page_type") in ('shop')))
 group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
