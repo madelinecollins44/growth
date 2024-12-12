@@ -36,17 +36,17 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 ----Follow shop / unfollow shop
 select
-		date(_partitiontime) as _date, 
-		beacon.event_name, 
-    count(visit_id) as views, 
-    count(distinct visit_id) as visits
-	from
-		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
-	where
-		date(_partitiontime) >= current_date-7
-    and ((beacon.event_name in ('shop_home'))
-    -- looking at favoriting on shop_home page
-	      or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
+-- date(_partitiontime) as _date, 
+beacon.event_name, 
+count(visit_id) as views, 
+count(distinct visit_id) as visits
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+date(_partitiontime) >= current_date-7
+and ((beacon.event_name in ('shop_home'))
+-- looking at favoriting on shop_home page
+	or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
         and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
 group by all
 
