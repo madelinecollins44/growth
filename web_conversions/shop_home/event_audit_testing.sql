@@ -100,6 +100,7 @@ property: sort_param
 ----Listing clicked
 select
   referring_page_event,
+  -- REGEXP_EXTRACT(ref_tag, r'^([^_]+_[^_]+_[^_]+)') AS ref_tag_main, -- get the root of the ref tag
   count(listing_id) as listing_views,
   count(case when purchased_after_view > 0 then listing_id end) as purchased_listings
 from 
