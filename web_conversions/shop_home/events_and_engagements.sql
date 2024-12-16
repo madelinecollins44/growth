@@ -1,30 +1,27 @@
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --LANDINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
+-- what % of landings are shop home
 select
   count(distinct case when landing_event in ('shop_home') then visit_id end) as shop_home_landings,
   count(distinct visit_id) as total_visits,
   count(distinct case when landing_event in ('shop_home') then visit_id end)/ count(distinct visit_id) as share_of_visits
 from etsy-data-warehouse-prod.weblog.visits  
-where _date >= current_date-30
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
 
+-- what other events are associated with a shop home?
 select 
   landing_event,
   count(distinct visit_id) as total_visits
 from etsy-data-warehouse-prod.weblog.visits  
 where _date >= current_date-30
-and landing_event like ('%shop_home%')
+  and platform in ('mobile_web','desktop')
+  and landing_event like ('%shop_home%')
 group by all
 order by 2 desc
 
-select 
-  landing_event,
-  count(distinct visit_id) as total_visits
-from etsy-data-warehouse-prod.weblog.visits  
-where _date >= current_date-30
--- and landing_event like ('%shop_home%')
-group by all
-order by 2 desc
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --NAVIGATION
 ---------------------------------------------------------------------------------------------------------------------------------------------
