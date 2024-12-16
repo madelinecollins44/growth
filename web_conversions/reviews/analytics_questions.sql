@@ -22,14 +22,27 @@
 ---- have image
 ---- seller feedback 
 --------------------------------------------------
--- word count
-etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
+-- word count, seller feedback
+select
+  count(distinct transaction_id) as transactions,
+  count(distinct shop_id) as shops,
+  count(distinct buyer_user_id) as buyers,
+  avg(rating) as average_rating,
+  count(case when rating = 0 then transaction_id end) as reviews_w_ratings_of_0,
+  count(case when rating = 1 then transaction_id end) as reviews_w_ratings_of_1,
+  count(case when rating = 2 then transaction_id end) as reviews_w_ratings_of_2,
+  count(case when rating = 3 then transaction_id end) as reviews_w_ratings_of_3,
+  count(case when rating = 4 then transaction_id end) as reviews_w_ratings_of_4,
+  count(case when rating = 5 then transaction_id end) as reviews_w_ratings_of_5,
+  count(case when seller_feedback != '' then transaction_id end) as reviews_w_seller_feedback,
+  avg(array_length(split(seller_feedback, ' '))) AS avg_words_per_seller_feedback,
+  avg(array_length(split(review, ' '))) AS avg_words_per_review
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
+where 
+  is_deleted = 0 --  only includes active reviews 
 
 -- rating (yes/ no) 
-
--- seller feedback
-  use seller_feedback from etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
-  
 -- have image 
 select
 	t.*
