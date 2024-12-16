@@ -66,6 +66,7 @@ where
   v._date >= current_date-30
   and v.platform in ('mobile_web','desktop')
   and event_type in (
+    'shop_home'
     'shop_home_announcement_section_seen', -- optional, fires top of page 
     'shop_home_branding_section_seen', -- top of page
     'shop_home_listings_section_seen', -- listing section, middle of page
@@ -75,7 +76,7 @@ where
     'shop_home_about_section_seen',-- bottom
     'shop_home_policies_section_seen',-- bottom
     'shop_home_updates_section_seen', -- is this optional?
-    'shop_home_faqs_section_seen',-- bottom
+    'shop_home_faqs_section_seen'-- bottom
 )
 group by all
 
