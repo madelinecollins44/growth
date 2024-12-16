@@ -58,34 +58,34 @@ order by 2 desc
 create or replace table etsy-data-warehouse-dev.madelinecollins.shop_basics as (
 select
   sd.shop_id,
-  sum(case when sd.branding_option is not null then 1 else 0 end) as branding_banner,
-  sum(case when sd.message is not null then 1 else 0 end) as annoucement, 
-  sum(case when ss.shop_id is not null then 1 else 0 end) as shop_sections,
-  sum(case when faq.shop_id is not null then 1 else 0 end) as faq_section,
-  sum(case when ssi.shop_id is not null then 1 else 0 end) as updates,
-  sum(case when spd.shop_id is not null then 1 else 0 end) as seller_details,
-  sum(case when sset.shop_id is not null and sset.name in ('machine_translation') and sset.value in ('off') then 1 else 0 end) as machine_translation,
-  sum(case when sset.shop_id is not null and sset.name in ('custom_orders_opt_in') and sset.value in ('t') then 1 else 0 end) as custom_orders,
-  sum(case when sset.shop_id is not null and sset.name in ('hide_shop_home_page_sold_items') and sset.value in ('t') then 1 else 0 end) as show_sold_items,
-  sum(case when smpo.shop_id is not null then 1 else 0 end) as offers_shop_coupon 
+  max(case when sd.branding_option is not null then 1 else 0 end) as branding_banner,
+  max(case when sd.message is not null then 1 else 0 end) as annoucement, 
+  max(case when ss.shop_id is not null then 1 else 0 end) as shop_sections,
+  max(case when faq.shop_id is not null then 1 else 0 end) as faq_section,
+  max(case when ssi.shop_id is not null then 1 else 0 end) as updates,
+  max(case when spd.shop_id is not null then 1 else 0 end) as seller_details,
+  max(case when sset.name = 'machine_translation' and sset.value = 'off' then 1 else 0 end) as machine_translation,
+  max(case when sset.name = 'custom_orders_opt_in' and sset.value = 't' then 1 else 0 end) as accepts_custom_orders,
+  max(case when sset.name = 'hide_shop_home_page_sold_items' and sset.value = 't' then 1 else 0 end) as show_sold_items,
+  max(case when smpo.shop_id is not null then 1 else 0 end) as offers_shop_coupon 
 from 
   etsy-data-warehouse-prod.etsy_shard.shop_data sd 
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_sections ss using (shop_id)
+    etsy-data-warehouse-prod.etsy_shard.shop_settings ss using (shop_id)
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions) faq using (shop_id)
+  etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq using (shop_id)
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "") abt using (shop_id) -- excludes shops where these things are null 
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details) spd using (shop_id)
+  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_setting) sset using (shop_id)
+  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd using (shop_id)
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer) smpo using (shop_id)
-group by all 
-);
-
-select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
+  etsy-data-warehouse-prod.etsy_shard.shop_settings sset using (shop_id)
+left join 
+  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo using (shop_id)
+group by all );
+-- select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
 
 
 --scroll depth
@@ -119,7 +119,6 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --HEADER
 ---------------------------------------------------------------------------------------------------------------------------------------------
-----How many shops have announcements? 
 ----Follow shop / unfollow shop (this is not shop specific-- this is looking at overall shop_home views + favorites / unfavorites. due to this, some visits might be double counted)
 select
    -- date(_partitiontime) as _date, 
