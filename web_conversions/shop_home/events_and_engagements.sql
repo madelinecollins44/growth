@@ -55,7 +55,7 @@ order by 2 desc
 --NAVIGATION
 ---------------------------------------------------------------------------------------------------------------------------------------------
 -- how many shops opted in to all of the optional fields?
-with shop_basics as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.shop_basics as (
 select
   sd.shop_id,
   sum(case when sd.branding_option is not null then 1 else 0 end) as branding_banner,
@@ -73,17 +73,20 @@ from
 left join 
   etsy-data-warehouse-prod.etsy_shard.shop_sections ss using (shop_id)
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq using (shop_id)
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions) faq using (shop_id)
 left join 
-  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd using (shop_id)
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details) spd using (shop_id)
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_settings sset using (shop_id)
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_setting) sset using (shop_id)
 left join 
-  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo using (shop_id)
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer) smpo using (shop_id)
 group by all 
-)
+);
+
+select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
+
 
 --scroll depth
 select
