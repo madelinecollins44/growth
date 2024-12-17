@@ -43,7 +43,7 @@ where
   is_deleted = 0 --  only includes active reviews 
 
 -- rating (yes/ no) 
--- have image 
+-- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql)
 select
 	t.*
 	,p.buyer_segment
