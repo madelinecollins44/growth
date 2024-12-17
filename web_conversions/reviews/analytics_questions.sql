@@ -68,7 +68,7 @@ select
 	t.*
 	,p.buyer_segment
 	,case when r.transaction_id is not null then 1 else 0 end as has_review
-  ,case when r.seller_feedback != "" then 1 else 0 end as has_seller_feedback
+  ,case when r.seller_feedback != " " or r.seller_feedback is not null then 1 else 0 end as has_seller_feedback
 	,case when r.review is not null or r.review != '' then 1 else 0 end as has_text_review
 	,case when i.transaction_id is not null then 1 else 0 end as has_image
 	,rating
