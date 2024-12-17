@@ -268,7 +268,7 @@ group by all
 -- select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
 
 select
-  sb.shop_id,
+  count(distinct sb.shop_id) as total_active_shops,
   count(distinct case when sd.branding_option is not null then sb.shop_id end) as branding_banner,
   count(distinct case when sd.message is not null then sb.shop_id end) as annoucement, 
   count(distinct case when ss.shop_id is not null then sb.shop_id end) as shop_sections,
