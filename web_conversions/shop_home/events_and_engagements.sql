@@ -54,40 +54,6 @@ order by 2 desc
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --NAVIGATION
 ---------------------------------------------------------------------------------------------------------------------------------------------
--- how many shops opted in to all of the optional fields?
-create or replace table etsy-data-warehouse-dev.madelinecollins.shop_basics as (
-select
-  sd.shop_id,
-  max(case when sd.branding_option is not null then 1 else 0 end) as branding_banner,
-  max(case when sd.message is not null then 1 else 0 end) as annoucement, 
-  max(case when ss.shop_id is not null then 1 else 0 end) as shop_sections,
-  max(case when faq.shop_id is not null then 1 else 0 end) as faq_section,
-  max(case when ssi.shop_id is not null then 1 else 0 end) as updates,
-  max(case when spd.shop_id is not null then 1 else 0 end) as seller_details,
-  max(case when sset.name = 'machine_translation' and sset.value = 'off' then 1 else 0 end) as machine_translation,
-  max(case when sset.name = 'custom_orders_opt_in' and sset.value = 't' then 1 else 0 end) as accepts_custom_orders,
-  max(case when sset.name = 'hide_shop_home_page_sold_items' and sset.value = 't' then 1 else 0 end) as show_sold_items,
-  max(case when smpo.shop_id is not null then 1 else 0 end) as offers_shop_coupon 
-from 
-  etsy-data-warehouse-prod.etsy_shard.shop_data sd 
-left join 
-    etsy-data-warehouse-prod.etsy_shard.shop_settings ss using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq using (shop_id)
-left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "") abt using (shop_id) -- excludes shops where these things are null 
-left join 
-  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_settings sset using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo using (shop_id)
-group by all );
--- select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
-
-
 --scroll depth
 select
   event_type,
@@ -267,4 +233,38 @@ property: sort_selected
 ----Contact shop owner clicked
 ----Sales clicked (property to show how many sales)
 ----Admirers clicked (property to show how many admirers)
+-- how many shops opted in to all of the optional fields?
+create or replace table etsy-data-warehouse-dev.madelinecollins.shop_basics as (
+select
+  sd.shop_id,
+  max(case when sd.branding_option is not null then 1 else 0 end) as branding_banner,
+  max(case when sd.message is not null then 1 else 0 end) as annoucement, 
+  max(case when ss.shop_id is not null then 1 else 0 end) as shop_sections,
+  max(case when faq.shop_id is not null then 1 else 0 end) as faq_section,
+  max(case when ssi.shop_id is not null then 1 else 0 end) as updates,
+  max(case when spd.shop_id is not null then 1 else 0 end) as seller_details,
+  max(case when sset.name = 'machine_translation' and sset.value = 'off' then 1 else 0 end) as machine_translation,
+  max(case when sset.name = 'custom_orders_opt_in' and sset.value = 't' then 1 else 0 end) as accepts_custom_orders,
+  max(case when sset.name = 'hide_shop_home_page_sold_items' and sset.value = 't' then 1 else 0 end) as show_sold_items,
+  max(case when smpo.shop_id is not null then 1 else 0 end) as offers_shop_coupon 
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_data sd 
+left join 
+    etsy-data-warehouse-prod.etsy_shard.shop_settings ss using (shop_id)
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq using (shop_id)
+left join 
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "") abt using (shop_id) -- excludes shops where these things are null 
+left join 
+  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd using (shop_id)
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_settings sset using (shop_id)
+left join 
+  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo using (shop_id)
+group by all 
+	);
+-- select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
+
 
