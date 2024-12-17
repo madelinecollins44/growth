@@ -275,3 +275,16 @@ left join
   (select * from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer where is_active = 1) promoted_offer
     on basics.shop_id=promoted_offer.shop_id
 group by all);
+
+with shop_counts as (
+select 
+  shop_id,
+  sum(branding_banner+annoucement+shop_sections+about_section+faq_section+updates+seller_details+machine_translation+accepts_custom_orders+show_sold_items+offers_active_shop_coupon) as total_elements_opted_into
+from 
+  etsy-data-warehouse-dev.madelinecollins.shop_basics 
+group by all)
+select
+  total_elements_opted_into,
+  count(distinct shop_id)
+from shop_counts
+group by all order by 1 desc
