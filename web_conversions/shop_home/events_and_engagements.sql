@@ -276,6 +276,25 @@ left join
     on basics.shop_id=promoted_offer.shop_id
 group by all);
 
+-- % of shops opted into each elements 
+select 
+  count(distinct shop_id) as total_active_shops,
+  sum(branding_banner) as branding_banner, 
+  sum(annoucement) as annoucement,
+  sum(shop_sections) as shop_sections,
+  sum(about_section) as about_section,
+  sum(faq_section) as faq_section,
+  sum(updates) as updates,
+  sum(seller_details) as seller_details,
+  sum(machine_translation) as machine_translation,
+  sum(accepts_custom_orders) as accepts_custom_orders,
+  sum(show_sold_items) as show_sold_items,
+  sum(offers_active_shop_coupon) as offers_active_shop_coupon
+from 
+  etsy-data-warehouse-dev.madelinecollins.shop_basics 
+group by all
+	
+-- distro of elements opted into 
 with shop_counts as (
 select 
   shop_id,
