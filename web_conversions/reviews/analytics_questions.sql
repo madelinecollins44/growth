@@ -44,6 +44,26 @@ where
 
 -- rating (yes/ no) 
 -- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql)
+with trans as (
+select
+	t.transaction_id
+	,t.buyer_user_id
+	,t.usd_subtotal_price
+	,t.usd_price as item_price
+	,t.quantity
+	,t.listing_id
+	,c.new_category as top_category
+	,t.creation_tsz
+from 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions t
+join 
+etsy-data-warehouse-prod.transaction_mart.all_transactions_categories c
+  on t.transaction_id = c.transaction_id
+  and t.listing_id = c.listing_id
+where 
+  extract(year from date(creation_tsz))>= 2022
+)
+, reviews as (
 select
 	t.*
 	,p.buyer_segment
@@ -53,13 +73,33 @@ select
 	,rating
 	,review
 	,r.language
-	,to_timestamp(r.create_date) review_date
-	,min(to_timestamp(i.create_date)) first_image_date
-	,max(to_timestamp(i.create_date)) last_image_date
-from trans t
-left join etsy_shard.shop_transaction_review r
-on t.buyer_user_id = r.buyer_user_id
-and t.transaction_id = r.transaction_id
-left join etsy_shard.user_appreciation_images 
+	-- ,timestamp(r.create_date) review_date
+	-- ,min(timestamp(i.create_date)) first_image_date
+	-- ,max(timestamp(i.create_date)) last_image_date
+from 
+  trans t
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review r
+    on t.buyer_user_id = r.buyer_user_id
+    and t.transaction_id = r.transaction_id
+left join 
+  etsy-data-warehouse-prod.etsy_shard.user_appreciation_images i
+    on t.transaction_id = i.transaction_id
+    and t.buyer_user_id = i.buyer_user_id
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile p
+    on t.buyer_user_id = p.mapped_user_id
+group by all
+)
+select
+  top_category,
+  buyer_segment,
+  has_review,
+  has_text_review,
+  has_image,
+  count(distinct transaction_id) as transactions
+from reviews
+group by all
+
 
 -- image on low stakes vs high stakes items 
