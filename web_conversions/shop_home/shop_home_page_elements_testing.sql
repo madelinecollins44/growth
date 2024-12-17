@@ -73,13 +73,33 @@ select * from etsy-data-warehouse-prod.etsy_shard.shop_about where  story = "" a
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_share_items 
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- not unique
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted !=1
+-- 6512091	393792
+
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted !=1 and text is null 
+-- 0	0, text is never null so this table only has updates 
+
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_share_items where text is null 
+--0,0
 
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- not unique on shop_id
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details
+-- 632270	632142
 
+select shop_id, count(details_id) from etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details group by all order by 2 desc limit 5 
+-- shop_id	f0_
+-- 39064048	9
+-- 35191079	4
+-- 45452331	3
+-- 24016558	3
+-- 30010444	3
+
+select count(distinct details_id) from etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details 
+--632270
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_sections
 ----------------------------------------------------------------
@@ -93,4 +113,9 @@ select count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_sec
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer 
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- not unique on shop id
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer where is_active = 1 
+-- 2629036 shops with active discounts
+
+select count(shop_id) from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer where promoted_offer_id is null 
+-- no instances where promoted_offer_id is null 
