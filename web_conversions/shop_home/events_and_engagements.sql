@@ -233,75 +233,43 @@ property: sort_selected
 ----Contact shop owner clicked
 ----Sales clicked (property to show how many sales)
 ----Admirers clicked (property to show how many admirers)
--- how many shops opted in to all of the optional fields?
-create or replace table etsy-data-warehouse-dev.madelinecollins.shop_basics as (
-select
-  sd.shop_id,
-  max(case when sd.branding_option is not null then 1 else 0 end) as branding_banner,
-  max(case when sd.message is not null then 1 else 0 end) as annoucement, 
-  max(case when ss.shop_id is not null then 1 else 0 end) as shop_sections,
-  max(case when faq.shop_id is not null then 1 else 0 end) as faq_section,
-  max(case when ssi.shop_id is not null then 1 else 0 end) as updates,
-  max(case when spd.shop_id is not null then 1 else 0 end) as seller_details,
-  max(case when sset.name = 'machine_translation' and sset.value = 'off' then 1 else 0 end) as machine_translation,
-  max(case when sset.name = 'custom_orders_opt_in' and sset.value = 't' then 1 else 0 end) as accepts_custom_orders,
-  max(case when sset.name = 'hide_shop_home_page_sold_items' and sset.value = 't' then 1 else 0 end) as show_sold_items,
-  max(case when smpo.shop_id is not null then 1 else 0 end) as offers_shop_coupon 
-from 
-  etsy-data-warehouse-prod.etsy_shard.shop_data sd 
-left join 
-    etsy-data-warehouse-prod.etsy_shard.shop_settings ss using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq using (shop_id)
-left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "") abt using (shop_id) -- excludes shops where these things are null 
-left join 
-  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_settings sset using (shop_id)
-left join 
-  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo using (shop_id)
-group by all 
-	);
--- select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
 
+-- How many shops opted in to all of the optional fields?
 select
-  count(distinct sb.shop_id) as total_active_shops,
-  count(distinct case when sd.branding_option is not null then sb.shop_id end) as branding_banner,
-  count(distinct case when sd.message is not null then sb.shop_id end) as annoucement, 
-  count(distinct case when ss.shop_id is not null then sb.shop_id end) as shop_sections,
-  count(distinct case when faq.shop_id is not null then sb.shop_id end) as faq_section,
-  count(distinct case when ssi.shop_id is not null then sb.shop_id end) as updates,
-  count(distinct case when spd.shop_id is not null then sb.shop_id end) as seller_details,
-  count(distinct case when sset.name = 'machine_translation' and sset.value = 'off' then sb.shop_id end) as machine_translation,
-  count(distinct case when sset.name = 'custom_orders_opt_in' and sset.value = 't' then sb.shop_id end) as accepts_custom_orders,
-  count(distinct case when sset.name = 'hide_shop_home_page_sold_items' and sset.value = 't' then sb.shop_id end) as show_sold_items,
-  count(distinct case when smpo.shop_id is not null then sb.shop_id end) as offers_shop_coupon 
+  count(distinct basics.shop_id) as total_active_shops,
+  count(distinct case when shop_data.branding_option != 0 then basics.shop_id end) as branding_banner, -- can we confirm 0 means this shop does not have branding? 
+  count(distinct case when shop_data.message is not null then basics.shop_id end) as annoucement, 
+  count(distinct case when sections.shop_id is not null then basics.shop_id end) as shop_sections,
+  count(distinct case when abt.shop_id is not null then basics.shop_id end) as about_section,
+  count(distinct case when faq.shop_id is not null then basics.shop_id end) as faq_section,
+  count(distinct case when share_items.shop_id is not null then basics.shop_id end) as updates,
+  count(distinct case when personal_details.shop_id is not null then basics.shop_id end) as seller_details,
+  count(distinct case when settings.name = 'machine_translation' and settings.value = 'off' then basics.shop_id end) as machine_translation,
+  count(distinct case when settings.name = 'custom_orders_opt_in' and settings.value = 't' then basics.shop_id end) as accepts_custom_orders,
+  count(distinct case when settings.name = 'hide_shop_home_page_sold_items' and settings.value = 'f' then basics.shop_id end) as show_sold_items, -- confirm that false means these are shown 
+  count(distinct case when promoted_offer.shop_id is not null then basics.shop_id end) as offers_active_shop_coupon 
 from 
-  (select * from etsy-data-warehouse-prod.rollups.seller_basics where active_seller_status = 1) sb -- only looks at active shops
+  (select * from etsy-data-warehouse-prod.rollups.seller_basics where active_seller_status = 1) basics -- only looks at active shops
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_data sd using (shop_id)
+  (select * from etsy-data-warehouse-prod.etsy_shard.shop_data where status in ('active')) shop_data using (shop_id) -- only active shops 
 left join 
-    etsy-data-warehouse-prod.etsy_shard.shop_settings ss 
-    on sb.shop_id=ss.shop_id
+    etsy-data-warehouse-prod.etsy_shard.shop_sections sections 
+      on basics.shop_id=sections.shop_id
+left join 
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "" and status in ('active')) abt  -- excludes inactive shops w/o text 
+    on basics.shop_id=abt.shop_id
 left join 
   etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq
-    on sb.shop_id=faq.shop_id
+    on basics.shop_id=faq.shop_id
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "") abt  -- excludes shops where these things are null 
-    on sb.shop_id=abt.shop_id
+  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) share_items -- only looks at shops that currently have updates
+    on basics.shop_id=share_items.shop_id
 left join 
-  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi -- only looks at shops that currently have updates
-    on sb.shop_id=ssi.shop_id
+  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details personal_details -- what does details_id mean here? 
+    on basics.shop_id=personal_details.shop_id
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd
-    on sb.shop_id=spd.shop_id
+  etsy-data-warehouse-prod.etsy_shard.shop_settings settings
+    on basics.shop_id=settings.shop_id
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_settings sset
-    on sb.shop_id=sset.shop_id
-left join 
-  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo
-    on sb.shop_id=smpo.shop_id
-group by all 
+  (select * from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer where is_active = 1) promoted_offer
+    on basics.shop_id=promoted_offer.shop_id
