@@ -238,7 +238,7 @@ property: sort_selected
 select
   count(distinct basics.shop_id) as total_active_shops,
   count(distinct case when shop_data.branding_option != 0 then basics.shop_id end) as branding_banner, -- can we confirm 0 means this shop does not have branding? 
-  count(distinct case when shop_data.message is not null then basics.shop_id end) as annoucement, 
+  count(distinct case when shop_data.message  != " "  then basics.shop_id end) as annoucement, 
   count(distinct case when sections.shop_id is not null then basics.shop_id end) as shop_sections,
   count(distinct case when abt.shop_id is not null then basics.shop_id end) as about_section,
   count(distinct case when faq.shop_id is not null then basics.shop_id end) as faq_section,
