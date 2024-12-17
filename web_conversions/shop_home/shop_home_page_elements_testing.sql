@@ -4,7 +4,6 @@
 select count(distinct shop_id) from etsy-data-warehouse-prod.rollups.seller_basics where active_seller_status = 1
 --5813548 unique shops
 
-
 ---------------------------------------------------------------- 
 --etsy-data-warehouse-prod.etsy_shard.shop_data 
 ----------------------------------------------------------------
@@ -28,6 +27,9 @@ select message, count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard
 -- etsy-data-warehouse-prod.etsy_shard.shop_settings 
 ----------------------------------------------------------------
 -- not unique on shop_id level 
+select count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings
+-- 50260932 unique shops 
+
 select distinct name from etsy-data-warehouse-prod.etsy_shard.shop_settings
 
 select distinct value from etsy-data-warehouse-prod.etsy_shard.shop_settings where name in ('machine_translation')
@@ -49,12 +51,24 @@ select count(distinct shop_id), count(distinct case when name in ('hide_shop_hom
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions 
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- not unique on shop_id level
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions 
+-- 732302 active shops
+
+select count(distinct shop_id), count(shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions where faq_id is null 
+--no cases when faq_id or question is null 
 
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_about 
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- not unique on shop_id level, but is unique when shops are active 
+select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_about where status in ('active')
+--4496729 shops 
+
+select count(distinct case when story != "" and story_headline != "" then shop_id end), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_about where status in ('active')
+-- 2306259	4496729
+
+select * from etsy-data-warehouse-prod.etsy_shard.shop_about where  story = "" and story_headline = "" limit 5
 
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_share_items 
