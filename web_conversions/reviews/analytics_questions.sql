@@ -68,6 +68,7 @@ select
 	t.*
 	,p.buyer_segment
 	,case when r.transaction_id is not null then 1 else 0 end as has_review
+  ,case when r.seller_feedback != "" then 1 else 0 end as has_seller_feedback
 	,case when r.review is not null or r.review != '' then 1 else 0 end as has_text_review
 	,case when i.transaction_id is not null then 1 else 0 end as has_image
 	,rating
@@ -92,11 +93,13 @@ left join
 group by all
 )
 select
-  top_category,
-  buyer_segment,
+  -- top_category,
+  -- buyer_segment,
+  -- case when item_price > 100 then 'high stakes' else 'low stakes' end as item_type,
   has_review,
   has_text_review,
   has_image,
+  has_seller_feedback,
   count(distinct transaction_id) as transactions
 from reviews
 group by all
