@@ -267,4 +267,41 @@ group by all
 	);
 -- select * from etsy-data-warehouse-dev.madelinecollins.shop_basics where shop_id = 9347891 group by all  
 
-
+select
+  sb.shop_id,
+  count(distinct case when sd.branding_option is not null then sb.shop_id end) as branding_banner,
+  count(distinct case when sd.message is not null then sb.shop_id end) as annoucement, 
+  count(distinct case when ss.shop_id is not null then sb.shop_id end) as shop_sections,
+  count(distinct case when faq.shop_id is not null then sb.shop_id end) as faq_section,
+  count(distinct case when ssi.shop_id is not null then sb.shop_id end) as updates,
+  count(distinct case when spd.shop_id is not null then sb.shop_id end) as seller_details,
+  count(distinct case when sset.name = 'machine_translation' and sset.value = 'off' then sb.shop_id end) as machine_translation,
+  count(distinct case when sset.name = 'custom_orders_opt_in' and sset.value = 't' then sb.shop_id end) as accepts_custom_orders,
+  count(distinct case when sset.name = 'hide_shop_home_page_sold_items' and sset.value = 't' then sb.shop_id end) as show_sold_items,
+  count(distinct case when smpo.shop_id is not null then sb.shop_id end) as offers_shop_coupon 
+from 
+  (select * from etsy-data-warehouse-prod.rollups.seller_basics where active_seller_status = 1) sb -- only looks at active shops
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_data sd using (shop_id)
+left join 
+    etsy-data-warehouse-prod.etsy_shard.shop_settings ss 
+    on sb.shop_id=ss.shop_id
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq
+    on sb.shop_id=faq.shop_id
+left join 
+  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "") abt  -- excludes shops where these things are null 
+    on sb.shop_id=abt.shop_id
+left join 
+  (select * from etsy-data-warehouse-prod.etsy_shard.shop_share_items where is_deleted <> 1) ssi -- only looks at shops that currently have updates
+    on sb.shop_id=ssi.shop_id
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_seller_personal_details spd
+    on sb.shop_id=spd.shop_id
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_settings sset
+    on sb.shop_id=sset.shop_id
+left join 
+  etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer smpo
+    on sb.shop_id=smpo.shop_id
+group by all 
