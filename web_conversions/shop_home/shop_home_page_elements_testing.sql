@@ -9,8 +9,10 @@ select count(distinct shop_id) from etsy-data-warehouse-prod.rollups.seller_basi
 --etsy-data-warehouse-prod.etsy_shard.shop_data 
 ----------------------------------------------------------------
 --unique on shop_id level 
-select branding_option, count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_data where status in ('active') group by all 
+select count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_data where status in ('active') group by all 
 --14943192 active shops 
+
+select branding_option, count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_data where status in ('active') group by all 
 -- branding option breakdowns
 -- branding_option	f0_
 -- 2	2792657
@@ -20,10 +22,29 @@ select branding_option, count(distinct shop_id) from etsy-data-warehouse-prod.et
 -- 3	34892
 -- 5	548967
 
+select message, count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_data where status in ('active') group by all order by 2 desc limit 5 
+
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_settings 
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- not unique on shop_id level 
+select distinct name from etsy-data-warehouse-prod.etsy_shard.shop_settings
+
+select distinct value from etsy-data-warehouse-prod.etsy_shard.shop_settings where name in ('machine_translation')
+-- only off
+select distinct value from etsy-data-warehouse-prod.etsy_shard.shop_settings where name in ('custom_orders_opt_in')
+--f, t
+select distinct value from etsy-data-warehouse-prod.etsy_shard.shop_settings where name in ('hide_shop_home_page_sold_items')
+-- f,t
+
+select count(distinct shop_id), count(distinct case when name in ('machine_translation')and value = 'off' then shop_id end), count(distinct case when name in ('machine_translation')and value != 'off' then shop_id end) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- 50260932	79824	0
+
+select count(distinct shop_id), count(distinct case when name in ('custom_orders_opt_in') then shop_id end), count(distinct case when name in ('custom_orders_opt_in') and value = 't' then shop_id end), count(distinct case when name in ('custom_orders_opt_in')and value = 'f' then shop_id end) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- 50260932	3088760	1751139	1337637
+
+select count(distinct shop_id), count(distinct case when name in ('hide_shop_home_page_sold_items') then shop_id end), count(distinct case when name in ('hide_shop_home_page_sold_items') and value = 't' then shop_id end), count(distinct case when name in ('hide_shop_home_page_sold_items')and value = 'f' then shop_id end) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- 50260932	2582904	879869	1703052
 
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions 
@@ -46,9 +67,14 @@ select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.ets
 select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
 
 ----------------------------------------------------------------
--- etsy-data-warehouse-prod.etsy_shard.shop_settings 
+-- etsy-data-warehouse-prod.etsy_shard.shop_sections
 ----------------------------------------------------------------
-select count(shop_id), count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_settings 
+--not unique on shop_id level
+select count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_sections
+-- 7619213 shops with sections 
+
+select count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_sections where name is null  
+-- not instances where name is null, so everything in this table is a shop with a section 
 
 ----------------------------------------------------------------
 -- etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer 
