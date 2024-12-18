@@ -50,7 +50,7 @@ where
   and language in ('en') -- only english reviews
 
 -- rating (yes/ no) 
--- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql)
+-- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql) -- all languages
 with trans as (
 select
 	t.transaction_id
@@ -91,7 +91,7 @@ left join
   etsy-data-warehouse-prod.etsy_shard.shop_transaction_review r
     on t.buyer_user_id = r.buyer_user_id
     and t.transaction_id = r.transaction_id
-    and r.language in ('en')
+    -- and r.language in ('en')
 left join 
   etsy-data-warehouse-prod.etsy_shard.user_appreciation_images i
     on t.transaction_id = i.transaction_id
