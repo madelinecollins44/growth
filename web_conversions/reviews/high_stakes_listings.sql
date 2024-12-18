@@ -1,5 +1,4 @@
--- --listing views of high stake vs low stake 
--- --listing views of high stake vs low stake 
+
 with views as (
 select
   _date, 
@@ -14,7 +13,7 @@ select
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
-  _date >= current_date-30
+  _date >= current_date-2
 group by all 
 )
 , seen_reviews as (
@@ -26,10 +25,26 @@ select
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
-	date(_partitiontime) >= current_date-4
+	date(_partitiontime) >= current_date-2
 	and beacon.event_name = "listing_page_reviews_seen"
 group by all 
 )
+-- , reviews_and_views as (
+select
+  v.listing_type,
+  v.listing_id,
+  count(distinct v.visit_id) as unique_visits,
+  sum(listing_views) as listing_views,
+  sum(purchased_after_view) as purchases,
+  sum(reviews_event_seen) as reviews_seen
+from 
+  views v
+left join 
+  seen_reviews r
+    on v._date=r._date
+    and v.visit_id=r.visit_id
+    and v.listing_id=cast(r.listing_id as int64)
+group by all
 , number_of_reviews as (
 select
   listing_id,
