@@ -81,7 +81,7 @@ select
   ,case when v.transaction_id is not null then 1 else 0 end as has_video
 	,rating
 	,review
-	,r.language
+	-- ,r.language
 	-- ,timestamp(r.create_date) review_date
 	-- ,min(timestamp(i.create_date)) first_image_date
 	-- ,max(timestamp(i.create_date)) last_image_date
@@ -91,6 +91,7 @@ left join
   etsy-data-warehouse-prod.etsy_shard.shop_transaction_review r
     on t.buyer_user_id = r.buyer_user_id
     and t.transaction_id = r.transaction_id
+    and r.language in ('en')
 left join 
   etsy-data-warehouse-prod.etsy_shard.user_appreciation_images i
     on t.transaction_id = i.transaction_id
@@ -102,6 +103,8 @@ left join
 left join 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile p
     on t.buyer_user_id = p.mapped_user_id
+-- where 
+--   r.language in ('en')
 group by all
 )
 select
@@ -115,5 +118,4 @@ select
   has_seller_feedback,
   count(distinct transaction_id) as transactions
 from reviews
-where language in ('en')
 group by all
