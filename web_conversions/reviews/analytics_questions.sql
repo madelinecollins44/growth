@@ -47,6 +47,7 @@ from
   etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
 where 
   is_deleted = 0 --  only includes active reviews 
+  and language in ('en') -- only english reviews
 
 -- rating (yes/ no) 
 -- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql)
@@ -79,7 +80,7 @@ select
 	,case when i.transaction_id is not null then 1 else 0 end as has_image
 	,rating
 	,review
-	,r.language
+	-- ,r.language
 	-- ,timestamp(r.create_date) review_date
 	-- ,min(timestamp(i.create_date)) first_image_date
 	-- ,max(timestamp(i.create_date)) last_image_date
@@ -96,6 +97,7 @@ left join
 left join 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile p
     on t.buyer_user_id = p.mapped_user_id
+where r.language in ('en') -- only english reviews 
 group by all
 )
 select
