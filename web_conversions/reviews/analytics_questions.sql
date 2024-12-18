@@ -8,9 +8,12 @@
 --------------------------------------------------
 -- click stars to access review component 
 ------- listing page event; reviews_anchor_click, loc has 'listing'
-------- shop home event; shop_home_reviews_jump_link_click, loc has 'listing'
+------- shop home event; shop_home_reviews_jump_link_click
 
 -- pagination 
+------- listing page event; listing_page_reviews_pagination
+------- shop home event; shop_home_reviews_pagination
+
 -- # of reviews, avg rating
 -- review photos / videos
 
