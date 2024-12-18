@@ -1,4 +1,5 @@
 -- --listing views of high stake vs low stake 
+-- --listing views of high stake vs low stake 
 with views as (
 select
   _date, 
@@ -28,6 +29,17 @@ where
 	date(_partitiontime) >= current_date-4
 	and beacon.event_name = "listing_page_reviews_seen"
 group by all 
+)
+, number_of_reviews as (
+select
+  listing_id,
+  listing_rating_count,
+  shop_rating_count,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+qualify row_number() over (partition by listing_id order by _date desc) = 1
 )
 
 
