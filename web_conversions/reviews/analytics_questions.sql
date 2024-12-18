@@ -78,9 +78,10 @@ select
   ,case when r.seller_feedback != " " or r.seller_feedback is not null then 1 else 0 end as has_seller_feedback
 	,case when r.review is not null or r.review != '' then 1 else 0 end as has_text_review
 	,case when i.transaction_id is not null then 1 else 0 end as has_image
+  ,case when v.transaction_id is not null then 1 else 0 end as has_video
 	,rating
 	,review
-	-- ,r.language
+	,r.language
 	-- ,timestamp(r.create_date) review_date
 	-- ,min(timestamp(i.create_date)) first_image_date
 	-- ,max(timestamp(i.create_date)) last_image_date
@@ -95,22 +96,24 @@ left join
     on t.transaction_id = i.transaction_id
     and t.buyer_user_id = i.buyer_user_id
 left join 
+  etsy-data-warehouse-prod.etsy_shard.user_appreciation_videos v
+    on t.transaction_id = v.transaction_id
+    and t.buyer_user_id = v.buyer_user_id
+left join 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile p
     on t.buyer_user_id = p.mapped_user_id
-where r.language in ('en') -- only english reviews 
 group by all
 )
 select
   -- top_category,
   -- buyer_segment,
-  -- case when item_price > 100 then 'high stakes' else 'low stakes' end as item_type,
+  case when item_price > 100 then 'high stakes' else 'low stakes' end as item_type,
   has_review,
   has_text_review,
   has_image,
+  has_video,
   has_seller_feedback,
   count(distinct transaction_id) as transactions
 from reviews
+where language in ('en')
 group by all
-
-
--- image on low stakes vs high stakes items 
