@@ -13,7 +13,7 @@ select
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
-  _date >= current_date-2
+  _date >= current_date-4
 group by all 
 )
 , seen_reviews as (
@@ -25,11 +25,11 @@ select
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
-	date(_partitiontime) >= current_date-2
+	date(_partitiontime) >= current_date-4
 	and beacon.event_name = "listing_page_reviews_seen"
 group by all 
 )
--- , reviews_and_views as (
+, reviews_and_views as (
 select
   v.listing_type,
   v.listing_id,
@@ -44,7 +44,8 @@ left join
     on v._date=r._date
     and v.visit_id=r.visit_id
     and v.listing_id=cast(r.listing_id as int64)
-group by all
+group by all 
+)
 , number_of_reviews as (
 select
   listing_id,
@@ -53,11 +54,23 @@ select
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
-  _date >= current_date-30
+  _date >= current_date-4
 qualify row_number() over (partition by listing_id order by _date desc) = 1
 )
-
-
+select
+  rv.listing_type,
+  count(distinct rv.listing_id) as listings_viewed,
+  sum(rv.listing_views) as listing_views,
+  sum(rv.purchases) as purchases,
+  sum(rv.reviews_seen) as reviews_seen,
+  sum(n.listing_rating_count) as listing_reviews,
+  sum(n.shop_rating_count) as shop_reviews
+from
+  reviews_and_views rv
+left join 
+  number_of_reviews n using (listing_id)
+group by all 
+	--STILL NEED TO ADD IN # OF EACH RATING, AVG RATING
 
 ---------------------------------------------------------------
 --TESTING
