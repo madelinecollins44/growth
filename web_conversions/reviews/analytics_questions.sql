@@ -7,6 +7,9 @@
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
 --------------------------------------------------
 -- click stars to access review component 
+------- listing page event; reviews_anchor_click, loc has 'listing'
+------- shop home event; shop_home_reviews_jump_link_click, loc has 'listing'
+
 -- pagination 
 -- # of reviews, avg rating
 -- review photos / videos
