@@ -57,6 +57,19 @@ where
   _date >= current_date-4
 qualify row_number() over (partition by listing_id order by _date desc) = 1
 )
+, review_score as (
+select
+  listing_id,
+  sum(case when rating = 5 then 1 else 0 end) as count_5_star,
+  sum(case when rating = 4 then 1 else 0 end) as count_4_star,
+  sum(case when rating = 3 then 1 else 0 end) as count_3_star,
+  sum(case when rating = 2 then 1 else 0 end) as count_2_star,
+  sum(case when rating = 1 then 1 else 0 end) as count_1_star,
+  avg(rating) as avg_rating
+from `etsy-data-warehouse-prod.rollups.transaction_reviews` r
+where date(review_date) >= "2023-01-01"
+group by all 
+)
 select
   rv.listing_type,
   count(distinct rv.listing_id) as listings_viewed,
@@ -64,13 +77,21 @@ select
   sum(rv.purchases) as purchases,
   sum(rv.reviews_seen) as reviews_seen,
   sum(n.listing_rating_count) as listing_reviews,
-  sum(n.shop_rating_count) as shop_reviews
+  sum(n.shop_rating_count) as shop_reviews,
+  sum(count_5_star) as count_5_star,
+  sum(count_4_star) as count_4_star,
+  sum(count_3_star) as count_3_star,
+  sum(count_2_star) as count_2_star,
+  sum(count_1_star) as count_1_star,
+  avg(avg_rating) as avg_rating
 from
   reviews_and_views rv
 left join 
   number_of_reviews n using (listing_id)
+left join 
+  review_score s 
+    on rv.listing_id=s.listing_id
 group by all 
-	--STILL NEED TO ADD IN # OF EACH RATING, AVG RATING
 
 ---------------------------------------------------------------
 --TESTING
