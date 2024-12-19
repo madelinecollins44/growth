@@ -218,3 +218,67 @@ select * from seen_reviews where visit_id in ('ZpLqvzSRiyJUz1sgFN5SndAMp2HO.1734
 
 select count(distinct url) from etsy-data-warehouse-prod.weblog.events where visit_id in ('ZpLqvzSRiyJUz1sgFN5SndAMp2HO.1734443446941.2') and event_type in ('listing_page_reviews_seen')
 --3
+
+
+---------CHECK TO MAKE SURE VISITS THAT PURCHASE + SEE REVIEWS IS WORKING ACURATELY
+with views as (
+select
+  _date, 
+  listing_id,
+  visit_id, 
+  case
+    when price_usd > 100 then 'high stakes'
+    else 'low stakes'
+    end as listing_type,
+  count(visit_id) as listing_views,
+  sum(purchased_after_view) as purchased_after_view
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-4
+group by all 
+)
+-- select * from views where purchased_after_view > 1 limit 5
+-- _date	listing_id	visit_id	listing_type	listing_views	purchased_after_view
+-- 2024-12-16	1301375070	WOns3NTpIpiyRO_XFEMuMQcEHIik.1734344691788.1	low stakes	2	2
+-- 2024-12-16	1807253083	WWzDUUrypt2zSsE13PUH-LaqWV2G.1734380087930.2	low stakes	2	2
+-- 2024-12-16	1611510725	WTxuoDYnqAx3j3_mSh7rwSJog1gG.1734370502566.1	low stakes	2	2
+-- 2024-12-16	1716908703	5rkq7tRTdEn5t15OnXWLkHaIRxfu.1734369936867.3	low stakes	2	2
+-- 2024-12-16	1401980895	5ttCQ0D9mRizLD3CEAfZRmOE4QTe.1734385718916.1	low stakes	3	3
+, seen_reviews as (
+select
+	date(_partitiontime) as _date,
+	visit_id,
+  regexp_extract(beacon.loc, r'listing/(\d+)') as listing_id,
+  count(visit_id) as reviews_event_seen,
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+	date(_partitiontime) >= current_date-4
+	and beacon.event_name = "listing_page_reviews_seen"
+group by all 
+)
+-- select * from seen_reviews where visit_id in ('WOns3NTpIpiyRO_XFEMuMQcEHIik.1734344691788.1') and listing_id = '1301375070' -- saw reviews 
+-- select * from seen_reviews where visit_id in ('WWzDUUrypt2zSsE13PUH-LaqWV2G.1734380087930.2') and listing_id = '1807253083' -- didnt see reviews 
+select
+  v.listing_type,
+  v.listing_id,
+  count(distinct v.visit_id) as unique_visits,
+  sum(listing_views) as listing_views,
+  sum(purchased_after_view) as purchases,  
+  sum(case when r.visit_id is not null and r.listing_id is not null then purchased_after_view end) as purchases_and_saw_reviews,
+  sum(reviews_event_seen) as reviews_seen
+from 
+  views v
+left join 
+  seen_reviews r
+    on v._date=r._date
+    and v.visit_id=r.visit_id
+    and v.listing_id=cast(r.listing_id as int64)
+where 
+  ((v.visit_id in ('WOns3NTpIpiyRO_XFEMuMQcEHIik.1734344691788.1') and v.listing_id = 1301375070)
+  or (v.visit_id in ('WWzDUUrypt2zSsE13PUH-LaqWV2G.1734380087930.2') and v.listing_id = 1807253083))
+group by all 
+-- listing_type	listing_id	unique_visits	listing_views	purchases	purchases_and_saw_reviews	reviews_seen
+-- low stakes	1301375070	1	2	2	2	1
+-- low stakes	1807253083	1	2	2		
