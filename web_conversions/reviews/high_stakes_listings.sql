@@ -16,6 +16,7 @@ order by 2 desc
 ---------------------------------------------------------------
 --HIGH STAKES LISTING ENGAGEMENTS 
 ---------------------------------------------------------------
+
 with views as (
 select
   _date, 
@@ -77,6 +78,7 @@ qualify row_number() over (partition by listing_id order by _date desc) = 1
 , review_score as (
 select
   listing_id,
+  sum(has_review) as reviews,
   sum(case when rating = 5 then 1 else 0 end) as count_5_star,
   sum(case when rating = 4 then 1 else 0 end) as count_4_star,
   sum(case when rating = 3 then 1 else 0 end) as count_3_star,
@@ -84,7 +86,7 @@ select
   sum(case when rating = 1 then 1 else 0 end) as count_1_star,
   avg(rating) as avg_rating
 from `etsy-data-warehouse-prod.rollups.transaction_reviews` r
-where date(review_date) >= "2023-01-01"
+-- where date(review_date) >= "2023-01-01"
 group by all 
 )
 select
@@ -92,9 +94,12 @@ select
   count(distinct rv.listing_id) as listings_viewed,
   sum(rv.listing_views) as listing_views,
   sum(rv.purchases) as purchases,
+  --listing page 
   sum(rv.reviews_seen) as reviews_seen,
-  sum(n.listing_rating_count) as listing_reviews,
-  sum(n.shop_rating_count) as shop_reviews,
+  sum(n.listing_rating_count) as lp_listing_reviews,
+  sum(n.shop_rating_count) as lp_shop_reviews,
+  --transaction reviews 
+  sum(reviews) as transaction_reviews,
   sum(count_5_star) as count_5_star,
   sum(count_4_star) as count_4_star,
   sum(count_3_star) as count_3_star,
@@ -109,7 +114,7 @@ left join
   review_score s 
     on rv.listing_id=s.listing_id
 group by all 
-
+	
 ---------------------------------------------------------------
 --TESTING
 ---------------------------------------------------------------
