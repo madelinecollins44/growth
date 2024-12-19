@@ -31,7 +31,7 @@ select
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
-  _date >= current_date-4
+  _date >= current_date-30
 group by all 
 )
 , seen_reviews as (
@@ -43,7 +43,7 @@ select
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
-	date(_partitiontime) >= current_date-4
+	date(_partitiontime) >= current_date-30
 	and beacon.event_name = "listing_page_reviews_seen"
 group by all 
 )
@@ -53,7 +53,8 @@ select
   v.listing_id,
   count(distinct v.visit_id) as unique_visits,
   sum(listing_views) as listing_views,
-  sum(purchased_after_view) as purchases,
+  sum(purchased_after_view) as purchases,  
+  sum(case when r.visit_id is not null and r.listing_id is not null then purchased_after_view end) as purchases_and_saw_reviews,
   sum(reviews_event_seen) as reviews_seen
 from 
   views v
@@ -66,13 +67,15 @@ group by all
 )
 , number_of_reviews as (
 select
+  _date,
   listing_id,
-  listing_rating_count,
-  shop_rating_count,
+  max(listing_rating_count) as listing_rating_count,
+   max(shop_rating_count) as shop_rating_count,
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
-  _date >= current_date-4
+  _date >= current_date-30
+group by all
 qualify row_number() over (partition by listing_id order by _date desc) = 1
 )
 , review_score as (
@@ -94,12 +97,16 @@ select
   count(distinct rv.listing_id) as listings_viewed,
   sum(rv.listing_views) as listing_views,
   sum(rv.purchases) as purchases,
+  sum(rv.purchases_and_saw_reviews) as purchases_and_saw_reviews,
   --listing page 
   sum(rv.reviews_seen) as reviews_seen,
   sum(n.listing_rating_count) as lp_listing_reviews,
   sum(n.shop_rating_count) as lp_shop_reviews,
+  avg(n.listing_rating_count) as avg_lp_listing_reviews,
+  avg(n.shop_rating_count) as avg_lp_shop_reviews,
   --transaction reviews 
   sum(reviews) as transaction_reviews,
+  avg(reviews) as avg_transaction_reviews,
   sum(count_5_star) as count_5_star,
   sum(count_4_star) as count_4_star,
   sum(count_3_star) as count_3_star,
@@ -113,8 +120,8 @@ left join
 left join 
   review_score s 
     on rv.listing_id=s.listing_id
-group by all 
-	
+group by all
+
 ---------------------------------------------------------------
 --TESTING
 ---------------------------------------------------------------
