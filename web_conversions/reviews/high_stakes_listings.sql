@@ -282,3 +282,125 @@ group by all
 -- listing_type	listing_id	unique_visits	listing_views	purchases	purchases_and_saw_reviews	reviews_seen
 -- low stakes	1301375070	1	2	2	2	1
 -- low stakes	1807253083	1	2	2		
+
+
+---------CHECK SPECIFIC LISTING
+select
+  _date, 
+  listing_id,
+  visit_id, 
+  case
+    when price_usd > 100 then 'high stakes'
+    else 'low stakes'
+    end as listing_type,
+  count(visit_id) as listing_views,
+  sum(purchased_after_view) as purchased_after_view
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+group by all 
+)
+-- select sum(listing_views), sum(purchased_after_view) from views where listing_id= 637242294
+-- 67036	2241
+, seen_reviews as (
+select
+	date(_partitiontime) as _date,
+	visit_id,
+  regexp_extract(beacon.loc, r'listing/(\d+)') as listing_id,
+  count(visit_id) as reviews_event_seen,
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+	date(_partitiontime) >= current_date-30
+	and beacon.event_name = "listing_page_reviews_seen"
+group by all 
+)
+-- select sum(reviews_event_seen) from seen_reviews where listing_id in ('637242294')
+--7395
+, reviews_and_views as (
+select
+  v.listing_type,
+  v.listing_id,
+  count(distinct v.visit_id) as unique_visits,
+  sum(listing_views) as listing_views,
+  sum(purchased_after_view) as purchases,  
+  sum(case when r.visit_id is not null and r.listing_id is not null then purchased_after_view end) as purchases_and_saw_reviews,
+  sum(reviews_event_seen) as reviews_seen
+from 
+  views v
+left join 
+  seen_reviews r
+    on v._date=r._date
+    and v.visit_id=r.visit_id
+    and v.listing_id=cast(r.listing_id as int64)
+group by all 
+)
+-- select sum(listing_views),  sum(purchases) , sum(purchases_and_saw_reviews) , sum(reviews_seen)  from reviews_and_views where listing_id =637242294
+-- 67036	2241	312	7278
+, 
+with number_of_reviews as (
+select
+  _date,
+  listing_id,
+  max(listing_rating_count) as listing_rating_count,
+   max(shop_rating_count) as shop_rating_count,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+group by all
+qualify row_number() over (partition by listing_id order by _date desc) = 1
+)
+-- select sum(listing_rating_count),  sum(shop_rating_count)  from number_of_reviews where listing_id =637242294
+-- 688	197611
+,
+with review_score as (
+select
+  listing_id,
+  sum(has_review) as reviews,
+  sum(case when rating = 5 then 1 else 0 end) as count_5_star,
+  sum(case when rating = 4 then 1 else 0 end) as count_4_star,
+  sum(case when rating = 3 then 1 else 0 end) as count_3_star,
+  sum(case when rating = 2 then 1 else 0 end) as count_2_star,
+  sum(case when rating = 1 then 1 else 0 end) as count_1_star,
+  avg(rating) as avg_rating
+from `etsy-data-warehouse-prod.rollups.transaction_reviews` r
+-- where date(review_date) >= "2023-01-01"
+group by all 
+)
+select *  from review_score where listing_id =637242294
+-- listing_id	reviews	count_5_star	count_4_star	count_3_star	count_2_star	count_1_star	avg_rating
+-- 637242294	690	647	25	12	2	4	4.897101449275362
+select
+  rv.listing_type,
+  count(distinct rv.listing_id) as listings_viewed,
+  sum(rv.listing_views) as listing_views,
+  sum(rv.purchases) as purchases,
+  sum(rv.purchases_and_saw_reviews) as purchases_and_saw_reviews,
+  --listing page 
+  sum(rv.reviews_seen) as reviews_seen,
+  sum(n.listing_rating_count) as lp_listing_reviews,
+  sum(n.shop_rating_count) as lp_shop_reviews,
+  avg(n.listing_rating_count) as avg_lp_listing_reviews,
+  avg(n.shop_rating_count) as avg_lp_shop_reviews,
+  --transaction reviews 
+  sum(reviews) as transaction_reviews,
+  avg(reviews) as avg_transaction_reviews,
+  sum(count_5_star) as count_5_star,
+  sum(count_4_star) as count_4_star,
+  sum(count_3_star) as count_3_star,
+  sum(count_2_star) as count_2_star,
+  sum(count_1_star) as count_1_star,
+  avg(avg_rating) as avg_rating
+from
+  reviews_and_views rv
+left join 
+  number_of_reviews n using (listing_id)
+left join 
+  review_score s 
+    on rv.listing_id=s.listing_id
+where rv.listing_id = 637242294
+group by all
+-- listing_type	listings_viewed	listing_views	purchases	purchases_and_saw_reviews	reviews_seen	lp_listing_reviews	lp_shop_reviews	avg_lp_listing_reviews	avg_lp_shop_reviews	transaction_reviews	avg_transaction_reviews	count_5_star	count_4_star	count_3_star	count_2_star	count_1_star	avg_rating
+-- low stakes	1	67036	2241	312	7278	688	197611	688.0	197611.0	690	690.0	647	25	12	2	4	4.8971014492753637
