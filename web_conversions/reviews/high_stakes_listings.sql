@@ -1,4 +1,21 @@
-
+---------------------------------------------------------------
+--GENERAL LISTING STATS
+---------------------------------------------------------------
+-- share of active listings by price
+select 
+  case
+    when price_usd > 100 then 'high stakes'
+    else 'low stakes'
+    end as listing_type,
+ count(distinct listing_id) as listings
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b
+group by all
+order by 2 desc
+	
+---------------------------------------------------------------
+--HIGH STAKES LISTING ENGAGEMENTS 
+---------------------------------------------------------------
 with views as (
 select
   _date, 
