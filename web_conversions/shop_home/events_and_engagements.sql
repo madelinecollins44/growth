@@ -200,12 +200,21 @@ left join
 	
 ----See more description link seen / See more description link clicked
 
-----Seller people link
-shop_home_seller_people_link_click
-property: ref = shop_home_header
-
-----Contact seller link
-shop_home_contact_clicked
+----Seller people link, contact seller link
+select
+   -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "shop_id") as shop_id, 
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+  date(_partitiontime) >= current_date-7
+  and (beacon.event_name in ('shop_home','shop_home_contact_clicked')
+      or beacon.event_name in ('shop_home_seller_people_link_click')
+         and (select value from unnest(beacon.properties.key_value) where key = "ref") in ('shop_home_header'))
+group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --SEARCH LISTINGS
