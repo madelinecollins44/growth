@@ -176,6 +176,7 @@ group by all
 select
   count(distinct v.shop_id) as unique_shops_visited,
   sum(views) as shop_home_pageviews,
+  sum(case when r.shop_id is null then 1 else 0 end) as shops_without_reviews,
   sum(transactions) as total_reviews,
   avg(transactions) as avg_reviews,
   avg(average_rating) as average_rating,
