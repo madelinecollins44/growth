@@ -101,14 +101,6 @@ where
   or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
   and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
 group by all
-\\-- event_name	views	visits
-\\-- favorite_shop	545831	398963
-\\-- remove_favorite_shop	78189	27421
-\\-- shop_home	124575822	50697982
-
-\\-- event_name	views	visits
-\\-- favorite_shop_added	1993813	1545537
-\\-- shop_home	124575822	50697982
 
 --this is favoriting at the shop_id level 
 with get_shop_ids as (
