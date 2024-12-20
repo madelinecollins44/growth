@@ -296,7 +296,9 @@ where
         'shop_home_reviews_section_top_seen', --Top of reviews section seen
         'shop_home_reviews_section_seen', --Middle of reviews section seen
         'shop_home_reviews_pagination', --Click on reviews pagination item
-        'sort_reviews_menu_opened') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
+        'sort_reviews_menu_opened', --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
+        'sort_reviews', --Select review sort option
+        'filter_reviews_by_keyword_shop_home') --Load reviews with keyword filter
 group by all
 
 --what page do they typically see in reviews? 
@@ -313,7 +315,7 @@ where
   and beacon.event_name in ('shop_home_reviews_pagination') --Click on reviews pagination item
 group by all
 
--- -- Review sort drop down option selected (Most recent / Suggested)
+-- Review sort drop down option selected (Most recent / Suggested)
 select 
   -- date(_partitiontime) as _date, 
   beacon.event_name, 
