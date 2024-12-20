@@ -159,21 +159,24 @@ shop_home_contact_clicked
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --SEARCH LISTINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
-----Search box clicked
-shop_home_search_input_focused
-
-----Search box typed in
-shop_home_search_input_changed
-
-----Search clicked
-shop_home_search_items
-
-----Sort drop down clicked
-shop_home_dropdown_open
-
-----Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
-shop_home_dropdown_engagement 
-property: sort_param
+select
+   -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "sort_param") as sort_param, 
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+  date(_partitiontime) >= current_date-7
+  and beacon.event_name in (
+        'shop_home', -- primary page 
+        'shop_home_search_input_focused', --Search box clicked
+        'shop_home_search_input_changed', --Search box typed in
+        'shop_home_search_items', --Search clicked
+        'shop_home_dropdown_open') --Sort drop down clicked
+      --  'shop_home_dropdown_engagement') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
+group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --BROWSE
