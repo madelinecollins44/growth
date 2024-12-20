@@ -281,16 +281,24 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --REVIEWS
 ---------------------------------------------------------------------------------------------------------------------------------------------
-----Reviews seen (property to surface how many reviews shop has)
-shop_home_reviews_section_top_seen, shop_home_reviews_section_seen (see more than 50%) 
-property: shop_review_count
-	
-----Pagination
-shop_home_reviews_pagination
-property: page
-
-----Review sort drop down option clicked
-sort_reviews_menu_opened
+----Reviews funnel
+select
+   -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+  date(_partitiontime) >= current_date-7
+  and beacon.event_name in (
+        'shop_home', -- primary page 
+        'shop_home_reviews_section_top_seen', --Top of reviews section seen
+        'shop_home_reviews_section_seen', --Middle of reviews section seen
+        'shop_home_reviews_pagination', --Click on reviews pagination item
+        'shop_home_dropdown_open', --Sort drop down clicked
+        'sort_reviews_menu_opened') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
+group by all
 
 
 --what page do they typically see in reviews? 
