@@ -281,7 +281,7 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --REVIEWS
 ---------------------------------------------------------------------------------------------------------------------------------------------
-----Reviews funnel
+-- review events
 select
    -- date(_partitiontime) as _date, 
   beacon.event_name, 
@@ -296,10 +296,8 @@ where
         'shop_home_reviews_section_top_seen', --Top of reviews section seen
         'shop_home_reviews_section_seen', --Middle of reviews section seen
         'shop_home_reviews_pagination', --Click on reviews pagination item
-        'shop_home_dropdown_open', --Sort drop down clicked
         'sort_reviews_menu_opened') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
 group by all
-
 
 --what page do they typically see in reviews? 
 select
@@ -314,8 +312,8 @@ where
   date(_partitiontime) >= current_date-7
   and beacon.event_name in ('shop_home_reviews_pagination') --Click on reviews pagination item
 group by all
-	
--- Review sort drop down option selected (Most recent / Suggested)
+
+-- -- Review sort drop down option selected (Most recent / Suggested)
 select 
   -- date(_partitiontime) as _date, 
   beacon.event_name, 
