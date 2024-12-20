@@ -201,11 +201,21 @@ left join
 	
 ----See more description link seen / See more description link clicked
 
-----Seller people link, contact seller link
-select count(visit_id) from etsy-data-warehouse-prod.weblog.events
-where event_type in ('shop_home_contact_clicked')
-and _date >= current_date-15
---Seller people link: 'shop_home_seller_people_link_click', "ref") in ('shop_home_header')
+--Seller people link, contact seller link
+select 
+  case
+    when event_type in ('view_profile') then 'seller people link'
+    when event_type in ('shop_home_contact_clicked') then 'contact seller link'
+    else 'error'
+  end as header_engagement_type,
+  count(distinct visit_id) as unique_visits,
+  count(visit_id) as pageviews,
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  (event_type in ('view_profile') and ref_tag in ('shop_home_header'))
+  or event_type in ('shop_home_contact_clicked')
+group by all
 	
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --SEARCH LISTINGS
