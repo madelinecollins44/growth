@@ -206,7 +206,7 @@ select
   case
     when event_type in ('view_profile') then 'seller people link'
     when event_type in ('shop_home_contact_clicked') then 'contact seller link'
-    else 'error'
+    else event_type
   end as header_engagement_type,
   count(distinct visit_id) as unique_visits,
   count(visit_id) as pageviews,
@@ -214,7 +214,7 @@ from
   etsy-data-warehouse-prod.weblog.events
 where 
   (event_type in ('view_profile') and ref_tag in ('shop_home_header'))
-  or event_type in ('shop_home_contact_clicked')
+  or event_type in ('shop_home_contact_clicked','shop_home')
 group by all
 	
 ---------------------------------------------------------------------------------------------------------------------------------------------
