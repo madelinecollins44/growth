@@ -178,6 +178,20 @@ where
       --  'shop_home_dropdown_engagement') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
 group by all
 
+-- search filtering 
+select 
+  -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "sort_param") as sort_param, 
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+  date(_partitiontime) >= current_date-7
+  and beacon.event_name in ('shop_home_dropdown_engagement') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
+group by all
+
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --BROWSE
 ---------------------------------------------------------------------------------------------------------------------------------------------
