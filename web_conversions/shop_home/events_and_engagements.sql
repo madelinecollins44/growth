@@ -82,6 +82,25 @@ where
 group by all
 
 --clicks 
+select 
+ event_type,
+  count(distinct visit_id) as unique_visits,
+  count(visit_id) as pageviews,
+from 
+  etsy-data-warehouse-prod.weblog.events
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date-7
+  and platform in ('mobile_web','desktop')
+  and event_type in (
+    'shop_home_nav_clicked', --Click on page navigation item
+    'shop_home_section_select', --Click on shop section item
+    'shop_home_items_pagination', --Click on listings pagination item
+    'shop_home_reviews_pagination', --Click on reviews pagination item
+    'shop_home_admirers_link_clicked', --User clicks on the "X Admirers" link
+    'shop_home_sales_click') --User clicks on the "X Sales" link
+group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --HEADER
@@ -96,6 +115,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and ((beacon.event_name in ('shop_home'))
   -- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed') --favorite_shop_removed is missing
 -- looking at favoriting on shop_home page
@@ -114,7 +134,9 @@ from
 		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 	where
 		date(_partitiontime) >= current_date-7
+	  and (beacon.event_source in ('web')
     and ((beacon.event_name in ('shop_home'))
+    and (beacon.event_source in ('web')
     -- looking at favoriting on shop_home page
 	    or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
       and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
@@ -151,6 +173,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and (beacon.event_name in ('shop_home'))
 group by all
 )
@@ -230,6 +253,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and beacon.event_name in (
         'shop_home', -- primary page 
         'shop_home_search_input_focused', --Search box clicked
@@ -250,6 +274,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and beacon.event_name in ('shop_home_dropdown_engagement') --Sort drop down option selected (Most recent / Lowest price / Highest price / Custom)
 group by all
 
@@ -283,6 +308,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and ((beacon.event_name in ('shop_home','favorite_toast_notification_shown','shop_home_listings_section_seen'))
   -- looking at favoriting on shop_home page
   or (beacon.event_name in ('neu_favorite_click')
@@ -302,6 +328,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and beacon.event_name in (
         'shop_home', -- primary page 
         'shop_home_reviews_section_top_seen', --Top of reviews section seen
@@ -323,6 +350,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+  and (beacon.event_source in ('web')
   and beacon.event_name in ('shop_home_reviews_pagination') --Click on reviews pagination item
 group by all
 
@@ -337,6 +365,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
+ and (beacon.event_source in ('web')
   and beacon.event_name in ('sort_reviews_menu_opened', -- open sorting menu
                             'sort_reviews') --Sort drop down option clicked (Most recent / Lowest price / Highest price / Custom)
 group by all
