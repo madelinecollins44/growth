@@ -213,7 +213,8 @@ select
 from 
   etsy-data-warehouse-prod.weblog.events
 where 
-  (event_type in ('view_profile') and ref_tag in ('shop_home_header'))
+  _date >= current_date-15
+  and (event_type in ('view_profile') and ref_tag in ('shop_home_header'))
   or event_type in ('shop_home_contact_clicked','shop_home')
 group by all
 	
