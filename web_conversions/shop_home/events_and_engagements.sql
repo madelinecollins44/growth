@@ -260,8 +260,11 @@ group by all
 ----Listing favorited / unfavorited
 select
   -- date(_partitiontime) as _date, 
-  beacon.event_name, 
-  (select value from unnest(beacon.properties.key_value) where key = "is_add"), -- will say adding or unadding
+  case 
+    when beacon.event_name in ('neu_favorite_click') and (select value from unnest(beacon.properties.key_value) where key = "is_add") in ('true') then 'favorited listing'
+    when beacon.event_name in ('neu_favorite_click') and (select value from unnest(beacon.properties.key_value) where key = "is_add") in ('false') then 'unfavorited listing'
+    else beacon.event_name 
+  end as event_name,
   count(visit_id) as views, 
   count(distinct visit_id) as visits
 from
