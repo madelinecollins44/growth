@@ -218,7 +218,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-7
-  and ((beacon.event_name in ('shop_home','favorite_toast_notification_shown'))
+  and ((beacon.event_name in ('shop_home','favorite_toast_notification_shown','shop_home_listings_section_seen'))
   -- looking at favoriting on shop_home page
   or (beacon.event_name in ('neu_favorite_click')
    and (select value from unnest(beacon.properties.key_value) where key = "page_type") in ('shop')))
