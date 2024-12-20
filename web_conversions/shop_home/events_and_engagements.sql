@@ -401,8 +401,15 @@ left join
     etsy-data-warehouse-prod.etsy_shard.shop_sections sections 
       on basics.shop_id=sections.shop_id
 left join 
-  (select distinct shop_id from etsy-data-warehouse-prod.etsy_shard.shop_about where story != "" and story_headline != "" and status in ('active')) abt  -- excludes inactive shops w/o text 
-    on basics.shop_id=abt.shop_id
+  (select 
+    distinct shop_id 
+  from 
+    etsy-data-warehouse-prod.etsy_shard.shop_about 
+  where 
+    status in ('active')
+    and not (coalesce(story, '') = '' and coalesce(story_headline, '') = '')
+    ) abt  -- excludes inactive shops w/o text 
+      on basics.shop_id=abt.shop_id
 left join 
   etsy-data-warehouse-prod.etsy_shard.shop_frequently_asked_questions faq
     on basics.shop_id=faq.shop_id
@@ -419,6 +426,7 @@ left join
   (select * from etsy-data-warehouse-prod.etsy_shard.seller_marketing_promoted_offer where is_active = 1) promoted_offer
     on basics.shop_id=promoted_offer.shop_id
 group by all);
+
 
 -- % of shops opted into each elements 
 select 
