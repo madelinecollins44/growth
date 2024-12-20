@@ -292,9 +292,20 @@ property: page
 ----Review sort drop down option clicked
 sort_reviews_menu_opened
 
-----Review sort drop down option selected (Most recent / Suggested)
-sort_reviews
-property: sort_selected
+-- Review sort drop down option selected (Most recent / Suggested)
+select 
+  -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "sort_selected") as sort_param, 
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+  date(_partitiontime) >= current_date-7
+  and beacon.event_name in ('sort_reviews_menu_opened', -- open sorting menu
+                            'sort_reviews') --Sort drop down option clicked (Most recent / Lowest price / Highest price / Custom)
+group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --OTHER
