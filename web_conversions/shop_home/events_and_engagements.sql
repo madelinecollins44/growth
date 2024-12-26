@@ -128,8 +128,8 @@ where
     'shop_home_items_pagination', --Click on listings pagination item
     'shop_home_reviews_pagination') --Click on reviews pagination item
   or (event_type in ('view_new_hearts_me') and ref_tag in ('shop_home')) --User clicks on the "X Admirers" link
-  or (event_type in ('shop_sold') and ref_tag in ('shop_home')) --User clicks on the "X Sales" link
-  ) --User clicks on the "X Sales" link
+  or (event_type in ('shop_sold') and ref_tag like ('%shop_home%')) --User clicks on the "X Sales" link
+  ) 
 group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
