@@ -121,13 +121,15 @@ inner join
 where 
   v._date >= current_date-14
   and platform in ('mobile_web','desktop')
-  and event_type in (
+  and (event_type in (
+    'shop_home',
     'shop_home_nav_clicked', --Click on page navigation item
     'shop_home_section_select', --Click on shop section item
     'shop_home_items_pagination', --Click on listings pagination item
-    'shop_home_reviews_pagination', --Click on reviews pagination item
-    'shop_home_admirers_link_clicked', --User clicks on the "X Admirers" link
-    'shop_home_sales_click') --User clicks on the "X Sales" link
+    'shop_home_reviews_pagination') --Click on reviews pagination item
+  or (event_type in ('view_new_hearts_me') and ref_tag in ('shop_home')) --User clicks on the "X Admirers" link
+  or (event_type in ('shop_sold') and ref_tag in ('shop_home')) --User clicks on the "X Sales" link
+  ) --User clicks on the "X Sales" link
 group by all
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
