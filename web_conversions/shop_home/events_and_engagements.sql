@@ -95,11 +95,11 @@ where
   v._date >= current_date-14
   and v.platform in ('mobile_web','desktop')
   and event_type in (
-    'shop_home'
+    'shop_home', 
     'shop_home_announcement_section_seen', -- optional, fires top of page 
     'shop_home_branding_section_seen', -- top of page
     'shop_home_listings_section_seen', -- listing section, middle of page
-    'shop_home_listing_grid_seen'-- middle
+    'shop_home_listing_grid_seen',-- middle
     'shop_home_reviews_section_top_seen', -- bottom
     'shop_home_reviews_section_seen',-- bottom
     'shop_home_about_section_seen',-- bottom
