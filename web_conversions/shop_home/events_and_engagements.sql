@@ -1,4 +1,32 @@
 ---------------------------------------------------------------------------------------------------------------------------------------------
+--PAGEVIEWS
+---------------------------------------------------------------------------------------------------------------------------------------------
+-- what % of shop home pageviews are for an active shop
+select 
+  event_type,
+  count(e.visit_id) as pageviews
+from etsy-data-warehouse-prod.weblog.events e
+inner join etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where v._date >= current_date-14
+  and platform in ('mobile_web','desktop')
+  and event_type like ('%shop_home%')
+  and page_view = 1
+group by all
+order by 2 desc
+	
+-- what % of pageviews are for an active shop home 
+select 
+  count(e.visit_id) as pageviews,
+  count(case when event_type in ('shop_home') then visit_id end) as shop_home_pageviews,
+  count(case when event_type in ('shop_home_inactive') then visit_id end) as inactive_shop_home_pageviews,
+from etsy-data-warehouse-prod.weblog.events e
+inner join etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where v._date >= current_date-14
+  and platform in ('mobile_web','desktop')
+   and page_view = 1
+group by all
+order by 2 desc
+---------------------------------------------------------------------------------------------------------------------------------------------
 --LANDINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
 -- what % of landings are shop home
