@@ -202,7 +202,7 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-14
-  and (beacon.event_source in ('web')
+  and beacon.event_source in ('web')
   and (beacon.event_name in ('shop_home'))
 group by all
 )
@@ -239,12 +239,14 @@ select
   sum(reviews_w_ratings_of_3) as reviews_w_ratings_of_3,
   sum(reviews_w_ratings_of_4) as reviews_w_ratings_of_4,
   sum(reviews_w_ratings_of_5) as reviews_w_ratings_of_5,
+  sum(reviews_w_seller_feedback) as reviews_w_seller_feedback,
   -- avg(reviews_w_ratings_of_0) as avg_reviews_w_ratings_of_0,
   avg(reviews_w_ratings_of_1) as avg_reviews_w_ratings_of_1,
   avg(reviews_w_ratings_of_2) as avg_reviews_w_ratings_of_2,
   avg(reviews_w_ratings_of_3) as avg_reviews_w_ratings_of_3,
   avg(reviews_w_ratings_of_4) as avg_reviews_w_ratings_of_4,
   avg(reviews_w_ratings_of_5) as avg_reviews_w_ratings_of_5,
+  avg(reviews_w_seller_feedback) as avg_reviews_w_seller_feedback
 from 
   visit_shop_homes v
 left join 
