@@ -280,14 +280,17 @@ group by all
 --get sitewide search rate for compare
 select
   count(distinct visit_id) as visits,
-  count(visit_id) as pageviews
+  count(visit_id) as pageviews,
+  count(distinct case when event_type in ('search') then visit_id end) as search_visits,
+  count(case when event_type in ('search') then visit_id end) as search_pageviews,
 from 
   etsy-data-warehouse-prod.weblog.visits v
 inner join 
   etsy-data-warehouse-prod.weblog.events e using (visit_id)
-where 
-  event_type in ('search')
-  and platform in ('mobile_web','desktop')
+where   
+  platform in ('mobile_web','desktop')
+  -- event_type in ('search')
+  -- and platform in ('mobile_web','desktop')
   and v._date >= current_date-14
 
 --searhc listings
