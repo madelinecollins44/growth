@@ -277,6 +277,20 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --SEARCH LISTINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
+--get sitewide search rate for compare
+select
+  count(distinct visit_id) as visits,
+  count(visit_id) as pageviews
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.weblog.events e using (visit_id)
+where 
+  event_type in ('search')
+  and platform in ('mobile_web','desktop')
+  and v._date >= current_date-14
+
+--searhc listings
 select
    -- date(_partitiontime) as _date, 
   beacon.event_name, 
