@@ -373,7 +373,9 @@ group by all
 --sitewide review seen rate 
 select
   count(distinct visit_id) as visits,
-  count(visit_id) as pageviews,
+  count(visit_id) as events,
+  count(distinct case when event_type in ('view_listing') then visit_id end) as listing_page_visits,
+  count(case when event_type in ('view_listing') then visit_id end) as listing_page_pageviews,
   count(distinct case when event_type in ('listing_page_reviews_seen') then visit_id end) as listing_page_reviews_seen_visits,
   count(case when event_type in ('listing_page_reviews_seen') then visit_id end) as listing_page_reviews_seen_pageviews,
 from 
