@@ -265,10 +265,12 @@ select
   count(visit_id) as pageviews,
 from 
   etsy-data-warehouse-prod.weblog.events
+inner join etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where 
-  _date >= current_date-15
-  and (event_type in ('view_profile') and ref_tag in ('shop_home_header'))
-  or event_type in ('shop_home_contact_clicked','shop_home')
+  v._date >= current_date-14
+  and ((event_type in ('view_profile') and ref_tag in ('shop_home_header'))
+       or event_type in ('shop_home_contact_clicked','shop_home'))
+  and platform in ('mobile_web','desktop')
 group by all
 	
 ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -322,7 +324,9 @@ from
 where 
   _date >= current_date-14
   and referring_page_event like ('%shop_home%')
+ and platform in ('mobile_web','desktop')
 group by all 
+
 
 ----Listing favorited / unfavorited
 select
