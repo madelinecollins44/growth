@@ -145,9 +145,8 @@ from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
   date(_partitiontime) >= current_date-14
-  and (beacon.event_source in ('web')
+  and beacon.event_source in ('web')
   and ((beacon.event_name in ('shop_home'))
-  -- and (beacon.event_name in ('shop_home','favorite_shop_added','favorite_shop_removed') --favorite_shop_removed is missing
 -- looking at favoriting on shop_home page
   or (beacon.event_name in ('favorite_shop', 'remove_favorite_shop')
   and (select value from unnest(beacon.properties.key_value) where key = "source") in ('shop_home_branding')))
