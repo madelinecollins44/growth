@@ -370,7 +370,23 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --REVIEWS
 ---------------------------------------------------------------------------------------------------------------------------------------------
--- review events
+--sitewide review seen rate 
+select
+  count(distinct visit_id) as visits,
+  count(visit_id) as pageviews,
+  count(distinct case when event_type in ('listing_page_reviews_seen') then visit_id end) as listing_page_reviews_seen_visits,
+  count(case when event_type in ('listing_page_reviews_seen') then visit_id end) as listing_page_reviews_seen_pageviews,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.weblog.events e using (visit_id)
+where   
+  platform in ('mobile_web','desktop')
+  -- event_type in ('search')
+  -- and platform in ('mobile_web','desktop')
+  and v._date >= current_date-14
+
+-- review events on shop home
 select
    -- date(_partitiontime) as _date, 
   beacon.event_name, 
