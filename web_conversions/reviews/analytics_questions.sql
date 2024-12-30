@@ -27,8 +27,11 @@ from
 ------- shop home event; shop_home_reviews_jump_link_click
 ------- listing page event; listing_page_reviews_pagination
 ------- shop home event; shop_home_reviews_pagination
+	
 select 
   count(distinct v.visit_id) as total_visits,
+  count(distinct case when event_type in ('view_listing') then v.visit_id end) as listing_page,
+  count(distinct case when event_type in ('shop_home') then v.visit_id end) as shop_home,
   count(distinct case when event_type in ('reviews_anchor_click') and url like ('%listing%') then v.visit_id end) as listing_page_review_jumps,
   count(distinct case when event_type in ('shop_home_reviews_jump_link_click') then v.visit_id end) as shop_home_review_jumps,
   count(distinct case when event_type in ('listing_page_reviews_pagination') then v.visit_id end) as listing_page_pagination,
