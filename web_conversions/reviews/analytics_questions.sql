@@ -22,8 +22,8 @@ from
 -- most popular word in reviews
 with word_breakout as (
 select 
-  transaction_id,
-  split(review, " ") as word
+  transaction_id,  
+  split(lower(regexp_replace(review, r'[^\w\s]', ''))," ") as word -- removes puncuation, makes it all lower case 
 from 
   etsy-data-warehouse-prod.rollups.transaction_reviews
 where 
@@ -37,6 +37,8 @@ select
 from 
   word_breakout
 group by all 
+order by 2 desc 
+limit 100  
   
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
