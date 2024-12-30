@@ -19,6 +19,25 @@ select
 from 
   word_count
 
+-- most popular word in reviews
+with word_breakout as (
+select 
+  transaction_id,
+  split(review, " ") as word
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where 
+  has_text_review = 1
+  and language in ('en')
+)
+select
+  word,
+  count(transaction_id) as uses,
+  count(distinct transaction_id) as unique_transactions
+from 
+  word_breakout
+group by all 
+  
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
 --------------------------------------------------
