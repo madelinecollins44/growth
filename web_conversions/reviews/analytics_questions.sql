@@ -1,7 +1,23 @@
 --------------------------------------------------
 -- HOW MANY WORDS IS A REVIEW ON AVERAGE
 --------------------------------------------------
---funnel / abandonment like for the 3 step review submission process 
+with word_count as (
+select 
+  transaction_id, 
+  review, 
+  ((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1) as review_length
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where 
+  has_text_review = 1 -- review must include text
+  and language in ('en') -- in english
+)
+select
+  count(distinct transaction_id) as transactions,
+  sum(review_length) as total_words_used,
+  avg(review_length) as avg_words_used
+from 
+  word_count
 
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
