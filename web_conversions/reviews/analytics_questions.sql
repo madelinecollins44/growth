@@ -27,11 +27,12 @@ select
   count(distinct transaction_id) AS unique_transactions,
 from 
     etsy-data-warehouse-prod.rollups.transaction_reviews,
-unnest
-  (split(review, ' ')) AS word
+unnest(split(regexp_replace(review, r'[^\w\s]', ''), ' ')) AS word
 group by all 
 )
-select * from word_count order by 2 desc
+select * from word_count 
+order by 2 desc 
+limit 100
   
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
