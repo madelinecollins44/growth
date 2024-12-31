@@ -33,7 +33,26 @@ group by all
 select * from word_count 
 order by 2 desc 
 limit 100
-  
+
+--------------------------------------------------
+--BREAKDOWN OF OPTIONAL FIELDS 
+--------------------------------------------------
+-- yes/ no to recommending item 
+select
+   -- date(_partitiontime) as _date, 
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "value"),
+  count(visit_id) as views, 
+  count(distinct visit_id) as visits
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+  date(_partitiontime) >= current_date-14
+  and beacon.event_source in ('web')
+  and (beacon.event_name in ('review_submission_is_recommended_submitted'))
+-- looking at favoriting on shop_home page
+group by all
+	
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
 --------------------------------------------------
