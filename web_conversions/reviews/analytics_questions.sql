@@ -153,6 +153,35 @@ where
   tr.active_listing = 1 -- only reviews of active listings 
 group by all
 
+--feedback by seller tier 
+with seller_feedback as (
+select
+  shop_id,
+  transaction_id,
+  case when seller_feedback != " " or seller_feedback is not null then 1 else 0 end as has_seller_feedback
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
+where
+  is_deleted = 0 -- only active reviews 
+), seller_tier as (
+select
+  shop_id,
+  seller_tier_new
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics
+where
+  active_seller_status= 1
+)
+select
+  seller_tier_new,
+  sum(has_seller_feedback) as has_seller_feedback as seller_feedback,
+from 
+  seller_tier 
+left join 
+  seller_feedback using (shop_id)
+group by all
+
+	
 ----------------VERSION 2: looks at review attributes across all transactions 
 -- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql) -- all languages
 -- start with all purchases since 2022
