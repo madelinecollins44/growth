@@ -96,6 +96,27 @@ where
 ---- have image
 ---- seller feedback 
 --------------------------------------------------
+-- word count, seller feedback
+select
+  count(distinct transaction_id) as transactions,
+  count(distinct shop_id) as shops,
+  count(distinct buyer_user_id) as buyers,
+  avg(rating) as average_rating,
+  count(case when rating = 0 then transaction_id end) as reviews_w_ratings_of_0,
+  count(case when rating = 1 then transaction_id end) as reviews_w_ratings_of_1,
+  count(case when rating = 2 then transaction_id end) as reviews_w_ratings_of_2,
+  count(case when rating = 3 then transaction_id end) as reviews_w_ratings_of_3,
+  count(case when rating = 4 then transaction_id end) as reviews_w_ratings_of_4,
+  count(case when rating = 5 then transaction_id end) as reviews_w_ratings_of_5,
+  count(case when seller_feedback != '' then transaction_id end) as reviews_w_seller_feedback,
+  avg(array_length(split(seller_feedback, ' '))) AS avg_words_per_seller_feedback,
+  avg(array_length(split(review, ' '))) AS avg_words_per_review
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
+where 
+  is_deleted = 0 --  only includes active reviews 
+  and language in ('en') -- only english reviews
+
 ----------------VERSION 1 
 --HOW MANY REVIEWS HAVE SELLER FEEDBACK, IMAGES, VIDEOS
 -- start with transactions w seller feedback 
@@ -133,31 +154,9 @@ where
   tr.active_listing = 1 -- only reviews of active listings 
 group by all
 
-
-
 ----------------VERSION 2 
--- word count, seller feedback
-select
-  count(distinct transaction_id) as transactions,
-  count(distinct shop_id) as shops,
-  count(distinct buyer_user_id) as buyers,
-  avg(rating) as average_rating,
-  count(case when rating = 0 then transaction_id end) as reviews_w_ratings_of_0,
-  count(case when rating = 1 then transaction_id end) as reviews_w_ratings_of_1,
-  count(case when rating = 2 then transaction_id end) as reviews_w_ratings_of_2,
-  count(case when rating = 3 then transaction_id end) as reviews_w_ratings_of_3,
-  count(case when rating = 4 then transaction_id end) as reviews_w_ratings_of_4,
-  count(case when rating = 5 then transaction_id end) as reviews_w_ratings_of_5,
-  count(case when seller_feedback != '' then transaction_id end) as reviews_w_seller_feedback,
-  avg(array_length(split(seller_feedback, ' '))) AS avg_words_per_seller_feedback,
-  avg(array_length(split(review, ' '))) AS avg_words_per_review
-from 
-  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
-where 
-  is_deleted = 0 --  only includes active reviews 
-  and language in ('en') -- only english reviews
-
 -- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql) -- all languages
+-- start with all purchases since 2022
 with trans as (
 select
 	t.transaction_id
@@ -179,53 +178,38 @@ where
 )
 , reviews as (
 select
-	t.*
-	,p.buyer_segment
-	,case when r.transaction_id is not null then 1 else 0 end as has_review
-  ,case when r.seller_feedback != " " or r.seller_feedback is not null then 1 else 0 end as has_seller_feedback
-	,case when r.review is not null or r.review != '' then 1 else 0 end as has_text_review
-	,case when i.transaction_id is not null then 1 else 0 end as has_image
-  ,case when v.transaction_id is not null then 1 else 0 end as has_video
-	,rating
-	,review
-	-- ,r.language
-	-- ,timestamp(r.create_date) review_date
-	-- ,min(timestamp(i.create_date)) first_image_date
-	-- ,max(timestamp(i.create_date)) last_image_date
+	all_trans.*
+	, reviews.has_review 
+  , reviews.has_text_review 
+  , reviews.has_image
+	, reviews.has_video
+  , case when seller_feedback.seller_feedback != " " or seller_feedback.seller_feedback is not null then 1 else 0 end as has_seller_feedback
+	, reviews.rating
+	, reviews.review
 from 
-  trans t
+  trans all_trans
 left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review r
-    on t.buyer_user_id = r.buyer_user_id
-    and t.transaction_id = r.transaction_id
-    -- and r.language in ('en')
+  etsy-data-warehouse-prod.rollups.transaction_reviews reviews 
+    on all_trans.buyer_user_id = reviews.buyer_user_id
+    and all_trans.transaction_id = reviews.transaction_id
 left join 
-  etsy-data-warehouse-prod.etsy_shard.user_appreciation_images i
-    on t.transaction_id = i.transaction_id
-    and t.buyer_user_id = i.buyer_user_id
-left join 
-  etsy-data-warehouse-prod.etsy_shard.user_appreciation_videos v
-    on t.transaction_id = v.transaction_id
-    and t.buyer_user_id = v.buyer_user_id
-left join 
-  etsy-data-warehouse-prod.user_mart.mapped_user_profile p
-    on t.buyer_user_id = p.mapped_user_id
--- where 
---   r.language in ('en')
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review seller_feedback
+    on all_trans.buyer_user_id = seller_feedback.buyer_user_id
+    and all_trans.transaction_id = seller_feedback.transaction_id
 group by all
 )
 select
-  -- top_category,
-  -- buyer_segment,
   case when item_price > 100 then 'high stakes' else 'low stakes' end as item_type,
+  count(distinct transaction_id) as total_transactions, -- since 2022
   has_review,
   has_text_review,
   has_image,
   has_video,
   has_seller_feedback,
-  count(distinct transaction_id) as transactions
-from reviews
+from 
+  reviews
 group by all
+
 
 --verison 2 testing 
 -- start with all purchases since 2022
