@@ -96,6 +96,46 @@ where
 ---- have image
 ---- seller feedback 
 --------------------------------------------------
+----------------VERSION 1 
+--HOW MANY REVIEWS HAVE SELLER FEEDBACK, IMAGES, VIDEOS
+-- start with transactions w seller feedback 
+with seller_feedback as (
+select
+  transaction_id,
+  case when seller_feedback != " " or seller_feedback is not null then 1 else 0 end as has_seller_feedback
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
+where
+  is_deleted = 0 -- only active reviews 
+)
+--get high stakes vs low stakes listings 
+, listing_attributes as (
+select
+  listing_id,
+  case when price_usd > 100 then 'high stakes' else 'low stakes' end as item_type
+from
+	etsy-data-warehouse-prod.rollups.active_listing_basics
+)
+select
+  la.item_type,
+  sum(has_review) as reviews,
+  sum(has_image) as image,
+  sum(has_video) as has_video,
+  sum(has_seller_feedback) as has_seller_feedback,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr
+left join 
+  seller_feedback sf using (transaction_id)
+left join 
+  listing_attributes la 
+    on tr.listing_id = la.listing_id
+where 
+  tr.active_listing = 1 -- only reviews of active listings 
+group by all
+
+
+
+----------------VERSION 2 
 -- word count, seller feedback
 select
   count(distinct transaction_id) as transactions,
@@ -117,7 +157,6 @@ where
   is_deleted = 0 --  only includes active reviews 
   and language in ('en') -- only english reviews
 
--- rating (yes/ no) 
 -- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql) -- all languages
 with trans as (
 select
