@@ -226,3 +226,66 @@ select
   count(distinct transaction_id) as transactions
 from reviews
 group by all
+
+--verison 2 testing 
+-- start with all purchases since 2022
+with trans as (
+select
+	t.transaction_id
+	,t.buyer_user_id
+	,t.usd_subtotal_price
+	,t.usd_price as item_price
+	,t.quantity
+	,t.listing_id
+	,c.new_category as top_category
+	,t.creation_tsz
+from 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions t
+join 
+etsy-data-warehouse-prod.transaction_mart.all_transactions_categories c
+  on t.transaction_id = c.transaction_id
+  and t.listing_id = c.listing_id
+where 
+  extract(year from date(creation_tsz))>= 2022
+)
+, reviews as (
+select
+	all_trans.*
+	, reviews.has_review 
+  , reviews.has_text_review 
+  , reviews.has_image
+	, reviews.has_video
+  , case when seller_feedback.seller_feedback != " " or seller_feedback.seller_feedback is not null then 1 else 0 end as has_seller_feedback
+	, reviews.rating
+	, reviews.review
+from 
+  trans all_trans
+left join 
+  etsy-data-warehouse-prod.rollups.transaction_reviews reviews 
+    on all_trans.buyer_user_id = reviews.buyer_user_id
+    and all_trans.transaction_id = reviews.transaction_id
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review seller_feedback
+    on all_trans.buyer_user_id = seller_feedback.buyer_user_id
+    and all_trans.transaction_id = seller_feedback.transaction_id
+group by all
+)
+-- select * from reviews where has_review = 1 and has_image = 1 limit 5 
+--trans, listing
+-- 4324092317, 1111321190
+-- 4289626124, 1774608492
+-- 4081967467, 1513560570
+-- 4414630046, 554867876
+----testing to be sure lisitngs dont look the same depending on trans 
+-- 6 trans, 1 review, 1 image, 5 rating, $6
+select
+  case when item_price > 100 then 'high stakes' else 'low stakes' end as item_type,
+  sum(has_review) as has_review,
+  sum(has_text_review) as has_text_review,
+  sum(has_image) as has_image,
+  sum(has_video) as has_video,
+  sum(has_seller_feedback) as has_seller_feedback,
+  count(distinct transaction_id) as transactions
+from reviews
+where listing_id = 1774608492
+group by all
