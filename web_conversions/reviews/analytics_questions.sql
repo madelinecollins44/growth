@@ -89,7 +89,59 @@ where
 -- LISTING COMPARISON
 ---- What % of listings and listing views have photos, videos, seller responses and is there a CR difference/impact?
 -----------------------------------------------------------------------------------------------------------------------
-
+with seller_feedback as (
+select
+  listing_id,
+  count(distinct case when seller_feedback != " " or seller_feedback is not null then transaction_id end) as has_seller_feedback
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
+where
+  is_deleted = 0 -- only active reviews 
+group by all
+)
+, review_attributes as (
+select
+  listing_id,
+  count(distinct transaction_id) as transactions,
+  sum(has_review) as has_review,
+  sum(has_image) as has_image,
+  sum(has_video) as has_video,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all
+)
+, listing_views as (
+select
+  listing_id,
+  count(sequence_number) as views,
+  sum(purchased_after_view) as purchases
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where
+  _date >= current_date-30
+group by all
+)
+select
+  case when has_seller_feedback > 0 then 1 else 0 end as has_seller_feedback,
+  case when has_review > 0 then 1 else 0 end as has_review,
+  case when has_image > 0 then 1 else 0 end as has_image,
+  case when has_video > 0 then 1 else 0 end as has_video,
+  count(distinct a.listing_id) as active_listings,
+  count(distinct v.listing_id) as viewed_listings,
+  sum(views) as listing_views,
+  sum(purchases) as purchases,
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+left join 
+  listing_views v using (listing_id)
+left join 
+  seller_feedback sf 
+    on a.listing_id = sf.listing_id 
+left join 
+  review_attributes ra
+    on a.listing_id= ra.listing_id
+group by all 
+	
 --------------------------------------------------
 --QUALITIES OF A REVIEW
 ---- words on avg
