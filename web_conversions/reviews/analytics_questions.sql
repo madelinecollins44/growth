@@ -117,8 +117,7 @@ where
   is_deleted = 0 --  only includes active reviews 
   and language in ('en') -- only english reviews
 
-----------------VERSION 1 
---HOW MANY REVIEWS HAVE SELLER FEEDBACK, IMAGES, VIDEOS
+----------------VERSION 1: looks at attributes across reviews only 
 -- start with transactions w seller feedback 
 with seller_feedback as (
 select
@@ -154,7 +153,7 @@ where
   tr.active_listing = 1 -- only reviews of active listings 
 group by all
 
-----------------VERSION 2 
+----------------VERSION 2: looks at review attributes across all transactions 
 -- have image (https://github.etsycorp.com/semanuele/projects/blob/master/Buying_Confidence/Reviews/ReviewsTopicModeling.sql) -- all languages
 -- start with all purchases since 2022
 with trans as (
