@@ -89,17 +89,7 @@ where
 -- LISTING COMPARISON
 ---- What % of listings and listing views have photos, videos, seller responses and is there a CR difference/impact?
 -----------------------------------------------------------------------------------------------------------------------
-with seller_feedback as (
-select
-  listing_id,
-  count(distinct case when seller_feedback != " " or seller_feedback is not null then transaction_id end) as has_seller_feedback
-from 
-  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
-where
-  is_deleted = 0 -- only active reviews 
-group by all
-)
-, review_attributes as (
+with review_attributes as (
 select
   listing_id,
   count(distinct transaction_id) as transactions,
@@ -122,7 +112,6 @@ where
 group by all
 )
 select
-  case when has_seller_feedback > 0 then 1 else 0 end as has_seller_feedback,
   case when has_review > 0 then 1 else 0 end as has_review,
   case when has_image > 0 then 1 else 0 end as has_image,
   case when has_video > 0 then 1 else 0 end as has_video,
@@ -134,9 +123,6 @@ from
   etsy-data-warehouse-prod.rollups.active_listing_basics a
 left join 
   listing_views v using (listing_id)
-left join 
-  seller_feedback sf 
-    on a.listing_id = sf.listing_id 
 left join 
   review_attributes ra
     on a.listing_id= ra.listing_id
@@ -170,18 +156,7 @@ where
   and language in ('en') -- only english reviews
 
 ----------------VERSION 1: looks at attributes across reviews only 
--- start with transactions w seller feedback 
-with seller_feedback as (
-select
-  transaction_id,
-  case when seller_feedback != " " or seller_feedback is not null then 1 else 0 end as has_seller_feedback
-from 
-  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
-where
-  is_deleted = 0 -- only active reviews 
-)
---get high stakes vs low stakes listings 
-, listing_attributes as (
+with listing_attributes as (
 select
   listing_id,
   case when price_usd > 100 then 'high stakes' else 'low stakes' end as item_type
@@ -193,44 +168,13 @@ select
   sum(has_review) as reviews,
   sum(has_image) as image,
   sum(has_video) as has_video,
-  sum(has_seller_feedback) as has_seller_feedback,
 from 
   etsy-data-warehouse-prod.rollups.transaction_reviews tr
-left join 
-  seller_feedback sf using (transaction_id)
 left join 
   listing_attributes la 
     on tr.listing_id = la.listing_id
 where 
   tr.active_listing = 1 -- only reviews of active listings 
-group by all
-
---feedback by seller tier 
-with seller_feedback as (
-select
-  shop_id,
-  transaction_id,
-  case when seller_feedback != " " or seller_feedback is not null then 1 else 0 end as has_seller_feedback
-from 
-  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review
-where
-  is_deleted = 0 -- only active reviews 
-), seller_tier as (
-select
-  shop_id,
-  seller_tier_new
-from 
-  etsy-data-warehouse-prod.rollups.seller_basics
-where
-  active_seller_status= 1
-)
-select
-  seller_tier_new,
-  sum(has_seller_feedback) as has_seller_feedback as seller_feedback,
-from 
-  seller_tier 
-left join 
-  seller_feedback using (shop_id)
 group by all
 
 	
@@ -263,7 +207,6 @@ select
   , reviews.has_text_review 
   , reviews.has_image
 	, reviews.has_video
-  , case when seller_feedback.seller_feedback != " " or seller_feedback.seller_feedback is not null then 1 else 0 end as has_seller_feedback
 	, reviews.rating
 	, reviews.review
 from 
@@ -285,7 +228,6 @@ select
   has_text_review,
   has_image,
   has_video,
-  has_seller_feedback,
 from 
   reviews
 group by all
