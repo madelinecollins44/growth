@@ -56,12 +56,6 @@ group by all
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
 --------------------------------------------------
--- click stars to access review component, pagination 
-------- listing page event; reviews_anchor_click, loc has 'listing'
-------- shop home event; shop_home_reviews_jump_link_click
-------- listing page event; listing_page_reviews_pagination
-------- shop home event; shop_home_reviews_pagination
-	
 select 
   count(distinct v.visit_id) as total_visits,
   count(distinct case when event_type in ('view_listing') then v.visit_id end) as listing_page,
@@ -70,6 +64,10 @@ select
   count(distinct case when event_type in ('shop_home_reviews_jump_link_click') then v.visit_id end) as shop_home_review_jumps,
   count(distinct case when event_type in ('listing_page_reviews_pagination') then v.visit_id end) as listing_page_pagination,
   count(distinct case when event_type in ('shop_home_reviews_pagination') then v.visit_id end) as shop_home_pagination,
+  count(distinct case when event_type in ('listing_page_reviews_pagination') then v.visit_id end) as listing_page_pagination,
+  count(distinct case when event_type in ('listing_page_reviews_seen') then v.visit_id end) as listing_page_reviews_seen,
+  count(distinct case when event_type in ('shop_home_reviews_section_seen') then v.visit_id end) as shop_home_reviews_seen,
+
 from 
   etsy-data-warehouse-prod.weblog.events e
 inner join 
@@ -77,13 +75,6 @@ inner join
 where 
   v._date >= current_date-14
   and platform in ('mobile_web','desktop')
-
--- pagination 
-------- listing page event; listing_page_reviews_pagination
-------- shop home event; shop_home_reviews_pagination
-
--- # of reviews, avg rating
--- review photos / videos
 
 -----------------------------------------------------------------------------------------------------------------------
 -- LISTING COMPARISON
