@@ -123,6 +123,40 @@ group by all
 ------------------------------------------------------------------------
 --TESTING WITH SECOND VERSION-- USING LEAD AND LAG VERSIONS
 ------------------------------------------------------------------------
+
+
+---testing to see if any listing_ids are not in listing mart
+with listing_events as (
+select
+	date(_partitiontime) as _date,
+	visit_id,
+  sequence_number,
+	beacon.event_name as event_name,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` 
+where
+	date(_partitiontime) >= current_date-3
+	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
+group by all 
+)
+select
+  count(distinct e.listing_id) as listings,
+  count(distinct case when a.listing_id is null then e.listing_id end) as bad_listings,
+  count(distinct case when a.listing_id is null then e.listing_id end)/count(distinct e.listing_id) as share_
+from listing_events e
+left join etsy-data-warehouse-prod.rollups.active_listing_basics a
+-- left join etsy-data-warehouse-prod.listing_mart.listings a
+  on cast(a.listing_id as string)=e.listing_id
+-------------using listing_mart.listings
+-- listings	bad_listings	share_
+-- 36383836	83230	0.0022875542864694092
+
+-------------using rollups.active_listing_basics
+-- listings	bad_listings	share_
+-- 36383836	1677615	0.046108799522952992
+--------------------THIS TELLS ME THAT THIS WAY WORKS TO PULL LISTINGS, BUT A LOT OF THEM BECAME INACTIVE SINCE 
+	
 --testing to see if lead functions work 
 --- get listing views + review seen events
 with listing_events as (
