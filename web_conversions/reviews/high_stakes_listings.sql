@@ -411,3 +411,4 @@ where rv.listing_id = 637242294
 group by all
 -- listing_type	listings_viewed	listing_views	purchases	purchases_and_saw_reviews	reviews_seen	lp_listing_reviews	lp_shop_reviews	avg_lp_listing_reviews	avg_lp_shop_reviews	transaction_reviews	avg_transaction_reviews	count_5_star	count_4_star	count_3_star	count_2_star	count_1_star	avg_rating
 -- low stakes	1	67036	2241	312	7278	688	197611	688.0	197611.0	690	690.0	647	25	12	2	4	4.8971014492753637
+
