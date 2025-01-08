@@ -100,6 +100,7 @@ from
   etsy-data-warehouse-prod.analytics.listing_views
 where
   _date >= current_date-30
+--and platform in ('mobile_web','desktop') -- when looking at web only
 group by all
 )
 select
