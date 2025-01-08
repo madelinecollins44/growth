@@ -56,3 +56,58 @@ from
   listing_views lv
 left join 
   reviews r using (listing_id)
+
+--listing views that also saw reviews
+with desktop_visits as (
+select 
+  distinct visit_id 
+from 
+  etsy-data-warehouse-prod.weblog.visits 
+where 
+  platform in ('desktop') 
+  and _date >= current_date-30
+)
+, listing_events as (
+select
+	date(_partitiontime) as _date,
+	visit_id,
+  sequence_number,
+	beacon.event_name as event_name,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+from
+  desktop_visits 
+inner join 
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` using (visit_id) -- only looking at desktop visits 
+where
+	date(_partitiontime) >= current_date-30
+	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
+group by all 
+)
+, ordered_events as (
+select
+	_date,
+	visit_id,
+	listing_id,
+  sequence_number,
+	event_name,
+	lead(event_name) over (partition by visit_id, listing_id order by sequence_number) as next_event,
+	lead(sequence_number) over (partition by visit_id, listing_id order by sequence_number) as next_sequence_number
+from 
+	listing_events
+)
+, listing_views as (
+select
+	visit_id,
+	listing_id,
+  sequence_number,
+	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
+from
+	ordered_events
+where 
+	event_name in ('view_listing')
+)
+select
+  count(visit_id) as listing_views,
+  count(case when saw_reviews > 0 then visit_id end) as saw_listing_and_reviews
+from 
+  listing_views
