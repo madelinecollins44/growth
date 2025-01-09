@@ -103,14 +103,29 @@ select
   sum(has_review) as has_review,
   sum(has_image) as has_image,
   sum(has_video) as has_video,
+  sum(has_subrating) as has_subrating,
 from 
   etsy-data-warehouse-prod.rollups.transaction_reviews
+where
+  active_listing = 1 -- only looking at active listings
+group by all
+)
+, seller_responses as (
+select 
+  b.listing_id,
+  count(distinct a.transaction_id) as has_seller_response, -- transactions are duped bc of multiple responses, so only looking to see if transaction is in this table 
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response a
+inner join 
+  etsy-data-warehouse-prod.rollups.transaction_reviews b using (transaction_id)
+where
+  a.is_deleted != 1 -- only live responses
 group by all
 )
 , listing_views as (
 select
   listing_id,
-  count(sequence_number) as views,
+  count(visit_id) as views,
   sum(purchased_after_view) as purchases
 from 
   etsy-data-warehouse-prod.analytics.listing_views
@@ -120,9 +135,11 @@ where
 group by all
 )
 select
-  case when has_review > 0 then 1 else 0 end as has_review,
-  case when has_image > 0 then 1 else 0 end as has_image,
-  case when has_video > 0 then 1 else 0 end as has_video,
+  -- case when has_review > 0 then 1 else 0 end as has_review,
+  -- case when has_image > 0 then 1 else 0 end as has_image,
+  -- case when has_video > 0 then 1 else 0 end as has_video,
+  -- case when has_subrating > 0 then 1 else 0 end as has_subrating,
+  case when has_seller_response > 0 then 1 else 0 end as has_seller_responses,
   count(distinct a.listing_id) as active_listings,
   count(distinct v.listing_id) as viewed_listings,
   sum(views) as listing_views,
@@ -131,6 +148,9 @@ from
   etsy-data-warehouse-prod.rollups.active_listing_basics a
 left join 
   listing_views v using (listing_id)
+left join 
+  seller_responses sr 
+    on a.listing_id=sr.listing_id
 left join 
   review_attributes ra
     on a.listing_id= ra.listing_id
