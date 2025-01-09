@@ -41,7 +41,7 @@ where
 select
 	lv.listing_id,
 	case
-  	when price_usd > 100 then 'high stakes'
+  	when coalesce((p.price_usd/100), a.price_usd) > 100 then 'high stakes'
   	else 'low stakes'
   end as listing_type,
 	case when a.listing_id is null then 1 else 0 end as missing_in_analytics,
@@ -56,7 +56,10 @@ left join
 	etsy-data-warehouse-prod.analytics.listing_views a
 		on lv.listing_id=cast(a.listing_id as string)
 		and lv.visit_id=a.visit_id
-		and lv.sequence_number=a.sequence_number		
+		and lv.sequence_number=a.sequence_number	
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings p 
+    on cast(p.listing_id as string)=lv.listing_id
 where a._date >=current_date-30
 group by all
 )
