@@ -52,6 +52,22 @@ where
   and (beacon.event_name in ('review_submission_is_recommended_submitted'))
 -- looking at favoriting on shop_home page
 group by all
+
+--review attributes
+select
+  count(distinct transaction_id) as transactions,
+  count(distinct case when has_review=1 then transaction_id end) as reviews,
+  count(distinct case when has_image=1 then transaction_id end) as images,
+  count(distinct case when has_video=1 then transaction_id end) as videos,
+  count(distinct case when has_subrating=1 then transaction_id end) as subratings,
+  count(case when rating = 1 then transaction_id end) as reviews_w_ratings_of_1,
+  count(case when rating = 2 then transaction_id end) as reviews_w_ratings_of_2,
+  count(case when rating = 3 then transaction_id end) as reviews_w_ratings_of_3,
+  count(case when rating = 4 then transaction_id end) as reviews_w_ratings_of_4,
+  count(case when rating = 5 then transaction_id end) as reviews_w_ratings_of_5,
+  avg(rating) as avg_rating
+from
+  etsy-data-warehouse-prod.rollups.transaction_reviews
 	
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
