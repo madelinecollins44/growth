@@ -73,6 +73,7 @@ from
 select 
   count(distinct case when has_review = 1 then a.transaction_id end) as trans_w_reviews,
   count(distinct case when is_deleted != 1 then b.transaction_id end) as reviews_w_seller_response,
+  count(distinct case when is_deleted != 1 then b.transaction_id end)/count(distinct case when has_review = 1 then a.transaction_id end) as share_w_response
 from 
   etsy-data-warehouse-prod.rollups.transaction_reviews a
 left join 
