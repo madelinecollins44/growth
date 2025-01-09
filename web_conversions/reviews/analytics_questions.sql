@@ -68,7 +68,17 @@ select
   avg(rating) as avg_rating
 from
   etsy-data-warehouse-prod.rollups.transaction_reviews
-	
+
+--% of reviews w a seller response
+select 
+  count(distinct case when has_review = 1 then a.transaction_id end) as trans_w_reviews,
+  count(distinct case when is_deleted != 1 then b.transaction_id end) as reviews_w_seller_response,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews a
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response b using (transaction_id)
+group by all
+
 --------------------------------------------------
 -- SHOP HOME VS LISTING PAGE REVIEW COMPARISON
 --------------------------------------------------
