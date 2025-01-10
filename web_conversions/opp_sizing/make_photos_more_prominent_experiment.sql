@@ -26,8 +26,7 @@ where
 --visits with lp reviews seen event + view listings that have an image in review and convert
 with desktop_visits as (
 select 
-  visit_id,
-  converted
+  visit_id
 from 
   etsy-data-warehouse-prod.weblog.visits 
 where 
@@ -38,7 +37,6 @@ where
 select
 	date(_partitiontime) as _date,
 	visit_id,
-  converted,
   sequence_number,
 	beacon.event_name as event_name,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
@@ -55,7 +53,6 @@ group by all
 select
 	_date,
 	visit_id,
-  converted,
 	listing_id,
   sequence_number,
 	event_name,
@@ -67,7 +64,6 @@ from
 , listing_views as (
 select
 	visit_id,
-  converted,
 	listing_id,
   sequence_number,
 	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
@@ -79,10 +75,8 @@ where
 , lv_converts as (
 select
   lv.	visit_id,
-  lv.converted,
 	lv.listing_id,
   lv.sequence_number,
-	lv.saw_reviews,
   c.purchased_after_view -- was that listing purchased after view
 from 
   listing_views lv
@@ -92,6 +86,7 @@ left join
     and lv.sequence_number=c.sequence_number
     and lv.listing_id=cast(c.listing_id as string)
 where c._date >= current_date-30
+and lv.saw_reviews > 0 -- only visits that have seen reviews 
 )
 , reviews as (
 select
@@ -104,10 +99,8 @@ from
 group by all
 )
 select
-  count(distinct visit_id) as visits_view_listings,
-  count(distinct case when has_image > 0 then visit_id end) as visits_view_listing_and_reviews, 
-  count(distinct case when has_image > 0 and purchased_after_view > 0 then visit_id end) as visits_view_listing_and_reviews_and_purchased,
-  count(distinct case when has_image > 0 and converted > 0 then visit_id end) as visits_view_listing_and_reviews_and_converted
+  count(distinct lv.visit_id) as visits_saw_reviews,
+  count(distinct case when purchased_after_view > 0 then visit_id end) as visits_saw_reviews_and_purchased,
 from 
   lv_converts lv
 inner join 
