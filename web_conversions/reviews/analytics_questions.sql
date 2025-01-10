@@ -1,3 +1,24 @@
+----------------------------------------------------------------------------------------------------
+-- HOW MANY SELLERS RESPONSE TO REVIEWS? 
+----Is there a difference between low stake vs high stake items, or seller type?
+----------------------------------------------------------------------------------------------------
+select
+  seller_tier_new,
+  count(distinct case when active_seller_status = 1 then shop_id end) as active_shops,
+  count(distinct r.shop_id) as shops_w_responses,
+  count(distinct case when active_seller_status = 1 then r.shop_id end) as active_shops_w_responses 
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics sb
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response r using (shop_id)
+group by all 
+
+-- select count(distinct shop_id) from etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response
+--  -- 1158469
+
+--  select count(distinct shop_id) from etsy-data-warehouse-prod.rollups.seller_basics where active_seller_status = 1
+-- -- 5668410
+	
 --------------------------------------------------
 -- HOW MANY WORDS IS A REVIEW ON AVERAGE
 --------------------------------------------------
