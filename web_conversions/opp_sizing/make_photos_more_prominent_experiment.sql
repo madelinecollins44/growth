@@ -23,27 +23,29 @@ where
   v._date >= current_date-30
   and e.event_type in ('listing_page_reviews_seen')
 
---visits with lp reviews seen event + view listings that have an image in review
+--visits with lp reviews seen event + view listings that have an image in review and convert
 with desktop_visits as (
 select 
-  distinct visit_id 
+  visit_id,
+  converted
 from 
   etsy-data-warehouse-prod.weblog.visits 
 where 
-  platform in ('mobile_web') 
+  platform in ('desktop') 
   and _date >= current_date-30
 )
 , listing_events as (
 select
 	date(_partitiontime) as _date,
 	visit_id,
+  converted,
   sequence_number,
 	beacon.event_name as event_name,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
 from
-  desktop_visits 
+  desktop_visits
 inner join 
-  `etsy-visit-pipe-prod.canonical.visit_id_beacons` using (visit_id) -- only looking at desktop visits 
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` using (visit_id)
 where
 	date(_partitiontime) >= current_date-30
 	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
@@ -53,6 +55,7 @@ group by all
 select
 	_date,
 	visit_id,
+  converted,
 	listing_id,
   sequence_number,
 	event_name,
@@ -64,6 +67,7 @@ from
 , listing_views as (
 select
 	visit_id,
+  converted,
 	listing_id,
   sequence_number,
 	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
@@ -71,6 +75,23 @@ from
 	ordered_events
 where 
 	event_name in ('view_listing')
+)
+, lv_converts as (
+select
+  lv.	visit_id,
+  lv.converted,
+	lv.listing_id,
+  lv.sequence_number,
+	lv.saw_reviews,
+  c.purchased_after_view -- was that listing purchased after view
+from 
+  listing_views lv
+left join 
+  etsy-data-warehouse-prod.analytics.listing_views c 
+    on lv.visit_id=c.visit_id
+    and lv.sequence_number=c.sequence_number
+    and lv.listing_id=cast(c.listing_id as string)
+where c._date >= current_date-30
 )
 , reviews as (
 select
@@ -84,9 +105,11 @@ group by all
 )
 select
   count(distinct visit_id) as visits_view_listings,
-  count(distinct case when saw_reviews > 0 then visit_id end) as visits_view_listing_and_reviews 
+  count(distinct case when has_image > 0 then visit_id end) as visits_view_listing_and_reviews, 
+  count(distinct case when has_image > 0 and purchased_after_view > 0 then visit_id end) as visits_view_listing_and_reviews_and_purchased,
+  count(distinct case when has_image > 0 and converted > 0 then visit_id end) as visits_view_listing_and_reviews_and_converted
 from 
-  listing_views lv
+  lv_converts lv
 inner join 
 	reviews r
 		on lv.listing_id=cast(r.listing_id as string)
