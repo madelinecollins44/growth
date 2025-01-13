@@ -18,7 +18,19 @@ group by all
 
 --  select count(distinct shop_id) from etsy-data-warehouse-prod.rollups.seller_basics where active_seller_status = 1
 -- -- 5668410
-	
+
+-----how many transactions have replies 
+
+select
+  count(distinct case when has_review=1 then tr.transaction_id end) as transactions_w_reviews,
+  count(distinct r.transaction_id) as trans_w_responses,
+  count(distinct case when r.transaction_id is null then tr.transaction_id end) as trans_wo_responses
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response r using (transaction_id)
+group by all
+
 --------------------------------------------------
 -- HOW MANY WORDS IS A REVIEW ON AVERAGE
 --------------------------------------------------
