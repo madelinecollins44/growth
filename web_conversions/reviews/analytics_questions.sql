@@ -31,6 +31,27 @@ left join
   etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response r using (transaction_id)
 group by all
 
+--high vs low stakes
+with all_trans as (
+select
+ case 
+    when item_price > 100 then 'high stakes' 
+    else 'low stakes' 
+  end as item_type,
+  transaction_id
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where has_review > 0
+group by all)
+select
+  item_type,
+  count(distinct trans.transaction_id) as trans_w_reviews,
+  count(distinct tr.transaction_id) as trans_w_response
+from 
+  all_trans trans
+left join
+  etsy-data-warehouse-prod.etsy_shard.shop_transaction_review_response tr using (transaction_id)
+group by all
 --------------------------------------------------
 -- HOW MANY WORDS IS A REVIEW ON AVERAGE
 --------------------------------------------------
