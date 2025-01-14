@@ -35,9 +35,9 @@ where
 )
 select
   count(distinct shop_id) as total_active_shops,
-  sum(features_section) as shops_w_featured_section,
-  sum(features_item) as shops_w_featured_items,
-  count(distinct case when features_section >0 and features_item >0 then shop_id end) as shops_w_both_features
+  count(distinct case when features_section > 0 and features_item=0 then shop_id end) as shops_w_only_feature_section,
+  count(distinct case when features_section=0 and features_item > 0 then shop_id end) as shops_w_only_feature_item,
+  count(distinct case when features_section > 0 and features_item > 0 then shop_id end) as shops_w_both_features
 from 
   shop_agg
 
