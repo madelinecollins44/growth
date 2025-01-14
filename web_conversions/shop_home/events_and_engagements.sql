@@ -1,6 +1,30 @@
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --PAGEVIEWS
 ---------------------------------------------------------------------------------------------------------------------------------------------
+--overall traffic + gms shares
+with shop_home_visits as (
+select distinct
+  visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events
+where 
+  event_type in ('shop_home')
+  and _date>= current_date-14
+)
+select
+  -- v._date, 
+  v.platform,
+  count(distinct v.visit_id) as total_visits, 
+  count(distinct shv.visit_id) as shop_home_visits, 
+  sum(v.total_gms) as total_gms, 
+  sum(case when shv.visit_id is not null then v.total_gms end) as shop_home_gms, 
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+left join 
+  shop_home_visits shv using (visit_id)
+where v._date >= current_date-14
+group by all 
+
 -- what % of shop home pageviews are for an active shop
 select 
   event_type,
