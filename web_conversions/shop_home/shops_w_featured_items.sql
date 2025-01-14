@@ -40,3 +40,9 @@ select
   count(distinct case when features_section >0 and features_item >0 then shop_id end) as shops_w_both_features
 from 
   shop_agg
+
+--testing
+-- shop_id	features_section	features_item
+-- 31547401	1	1
+-- 30378868	1	1
+-- 25742633	0	1
