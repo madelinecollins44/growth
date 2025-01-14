@@ -42,6 +42,35 @@ from
   shop_agg
 
 --testing
+with features_sections as (
+select
+  distinct shop_id
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections
+where 
+  featured_rank != -1 -- looks at shops with categorized featured listings
+)
+, features_item as (
+select
+  distinct shop_id 
+from etsy-data-warehouse-prod.etsy_shard.listings
+where 
+  featured_rank != - 1
+)
+  select
+  sb.shop_id, 
+  case when fs.shop_id is not null then 1 else 0 end as features_section, 
+  case when fi.shop_id is not null then 1 else 0 end as features_item, 
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics sb
+left join 
+  features_sections fs using (shop_id)
+left join 
+  features_item fi on sb.shop_id=fi.shop_id
+where
+  sb.active_seller_status = 1 -- only active sellers 
+  and sb.shop_id in (31547401,30378868,25742633)
+
 -- shop_id	features_section	features_item
 -- 31547401	1	1
 -- 30378868	1	1
