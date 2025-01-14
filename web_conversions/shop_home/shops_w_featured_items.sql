@@ -1,8 +1,8 @@
 ----------------------------------------------------------------------------------------------------------------
 --What % shops have featured items in categories, as opposed to just featured items? 
--- shop w/ categorized featured items:https://www.etsy.com/shop/MOENAStudio
--- shop w/ uncategorized featured items: https://www.etsy.com/shop/TiradiaCork
--- shops w both: https://www.etsy.com/shop/TheInclusiveGiftco
+-- shop w/ categorized featured items:https://www.etsy.com/shop/MOENAStudio, 31547401
+-- shop w/ uncategorized featured items: https://www.etsy.com/shop/TiradiaCork, 25742633
+-- shops w both: https://www.etsy.com/shop/TheInclusiveGiftco, 30378868
 ----------------------------------------------------------------------------------------------------------------
 with features_sections as (
 select
