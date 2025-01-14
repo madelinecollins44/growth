@@ -60,3 +60,14 @@ select
   count(distinct case when features_section > 0 and features_item > 0 then shop_id end) as shops_w_both_features
 from 
   shop_agg;
+
+
+
+--check to see how many shops use etsy_plus
+select 
+  count(distinct shop_id) as active_shops,
+  count(distinct case when is_etsy_plus = 1 then shop_id end) as etsy_plus_shop,
+  count(distinct case when is_etsy_plus = 1 then shop_id end)/count(distinct shop_id) as share_of_plus
+from etsy-data-warehouse-prod.rollups.seller_basics 
+where active_seller_status =1
+-- about 2%
