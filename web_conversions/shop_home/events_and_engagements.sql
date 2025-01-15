@@ -53,6 +53,20 @@ order by 2 desc
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --LANDINGS
 ---------------------------------------------------------------------------------------------------------------------------------------------
+-- bounce rate
+select
+  count(distinct visit_id) as total_visits,
+  count(distinct case when landing_event in ('shop_home') then visit_id end) as shop_home_landings,
+  count(distinct case when landing_event in ('shop_home_inactive') then visit_id end) as inactive_shop_home_landings,
+  count(distinct case when bounced > 0 then visit_id end) as bounced,
+  count(distinct case when landing_event in ('shop_home') and bounced > 0 then visit_id end) as bounced_shop_home_landings,
+  count(distinct case when landing_event in ('shop_home_inactive') and bounced > 0 then visit_id end) as bounced_shop_home_landings,
+  count(distinct visit_id) as total_visits,
+from etsy-data-warehouse-prod.weblog.visits  
+where 
+  _date >= current_date-14
+  -- and platform in ('mobile_web','desktop')
+
 -- what % of landings are shop home
 select
   count(distinct case when landing_event in ('shop_home') then visit_id end) as shop_home_landings,
