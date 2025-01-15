@@ -355,6 +355,20 @@ group by all
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --BROWSE
 ---------------------------------------------------------------------------------------------------------------------------------------------
+--listings viewed from shop home by platform
+select
+  platform,
+  count(listing_id) as total_listing_views,
+  count(case when purchased_after_view > 0 then listing_id end) as total_purchased_listings,
+  count(case when referring_page_event in ('shop_home') then visit_id end) as shop_home_lv,
+  count(case when purchased_after_view > 0 and referring_page_event in ('shop_home') then listing_id end) as shop_home_purchased_listings
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-14
+  and platform in ('mobile_web','desktop')
+group by all 
+
 ----Listing clicked
 select
   referring_page_event,
