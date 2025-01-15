@@ -320,16 +320,19 @@ where
 --searhc listings
 select
    -- date(_partitiontime) as _date, 
-  beacon.event_name, 
+  event_type, 
   count(visit_id) as views, 
   count(distinct visit_id) as visits
 from
-  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where
-  date(_partitiontime) >= current_date-14
-  and (beacon.event_source in ('web')
-  and beacon.event_name in (
+  v._date >= current_date-14
+  and platform in ('mobile_web','desktop')
+  and event_type in (
         'shop_home', -- primary page 
+        'shop_home_listing_grid_seen', --sees listing grid
         'shop_home_search_input_focused', --Search box clicked
         'shop_home_search_input_changed', --Search box typed in
         'shop_home_search_items', --Search clicked
