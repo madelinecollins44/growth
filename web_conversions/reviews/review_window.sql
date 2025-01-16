@@ -34,3 +34,9 @@ from
 where transaction_to_review > 100
 group by all 
 order by 1 asc
+
+
+--testing to make sure day calc is right
+
+select transaction_id, date(review_date), date(review_start) from  etsy-data-warehouse-prod.rollups.transaction_reviews
+where transaction_id in (1451147833,2030692255,2039775796,2078557855)
