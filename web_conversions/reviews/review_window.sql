@@ -37,6 +37,10 @@ order by 1 asc
 
 
 --testing to make sure day calc is right
-
+--100 day calc
 select transaction_id, date(review_date), date(review_start) from  etsy-data-warehouse-prod.rollups.transaction_reviews
 where transaction_id in (1451147833,2030692255,2039775796,2078557855)
+
+-- 1 day calc
+select transaction_id, date(review_date), date(review_start) from  etsy-data-warehouse-prod.rollups.transaction_reviews
+where transaction_id in (1224390424,1246873023,1251576675,1293327512)
