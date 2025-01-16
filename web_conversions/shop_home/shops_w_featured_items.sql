@@ -85,3 +85,18 @@ select
 from etsy-data-warehouse-prod.rollups.seller_basics 
 where active_seller_status =1
 -- about 2%
+
+
+-----shops w featured section by # of sections
+with features_sections as (
+select 
+    shop_id, shop_name, max(featured_rank) as max_fr
+  from 
+    etsy-data-warehouse-prod.etsy_shard.shop_sections
+left join 
+  etsy-data-warehouse-prod.rollups.seller_basics using (shop_id)
+  where 
+    featured_rank != -1 -- looks at shops with categorized featured listings
+group by all
+)
+select shop_name from features_sections where max_fr = 1
