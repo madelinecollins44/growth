@@ -53,15 +53,29 @@ left join
 where
   sb.active_seller_status = 1 -- only active sellers 
 )
+, gms_coverage_90_days as (
+select
+  shop_id,
+  sum(gms_net) as gms_net
+from etsy-data-warehouse-prod.transaction_mart.transactions_gms gms
+inner join etsy-data-warehouse-prod.rollups.seller_basics sb
+  on gms.seller_user_id=sb.user_id
+where trans_date >= current_date-90
+group by all 
+)
 select
   count(distinct shop_id) as total_active_shops,
+  sum(gms_net) as total_gms_net,
   count(distinct case when features_section > 0 and features_item=0 then shop_id end) as shops_w_only_feature_section,
   count(distinct case when features_section=0 and features_item > 0 then shop_id end) as shops_w_only_feature_item,
-  count(distinct case when features_section > 0 and features_item > 0 then shop_id end) as shops_w_both_features
+  count(distinct case when features_section > 0 and features_item > 0 then shop_id end) as shops_w_both_features,
+  sum(case when features_section > 0 and features_item=0 then gms_net end) as gms_shops_w_only_feature_section,
+  sum(case when features_section=0 and features_item > 0 then gms_net end) as gms_shops_w_only_feature_item,
+  sum(case when features_section > 0 and features_item > 0 then gms_net end) as gms_shops_w_both_feature
 from 
-  shop_agg;
-
-
+  shop_agg
+left join 
+  gms_coverage_90_days using (shop_id)
 
 --check to see how many shops use etsy_plus
 select 
