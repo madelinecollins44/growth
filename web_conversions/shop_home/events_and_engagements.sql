@@ -229,6 +229,7 @@ select
 from shop_metrics
 
 ----Review stars at top of page, what is the distro of ratings across visited shop homes 
+--query to find visited shops without reviews using gms filter 
 with visit_shop_homes as (
 select
    -- date(_partitiontime) as _date, 
@@ -264,10 +265,39 @@ where
   and language in ('en') -- only english reviews
 group by all
 )
+-- 	select
+--   shop_id,
+--   count(distinct transaction_id) as transactions,
+--   -- count(distinct buyer_user_id) as buyers,
+--   avg(rating) as average_rating,
+--   count(case when rating = 0 then transaction_id end) as reviews_w_ratings_of_0,
+--   count(case when rating = 1 then transaction_id end) as reviews_w_ratings_of_1,
+--   count(case when rating = 2 then transaction_id end) as reviews_w_ratings_of_2,
+--   count(case when rating = 3 then transaction_id end) as reviews_w_ratings_of_3,
+--   count(case when rating = 4 then transaction_id end) as reviews_w_ratings_of_4,
+--   count(case when rating = 5 then transaction_id end) as reviews_w_ratings_of_5,
+-- from 
+--   etsy-data-warehouse-prod.rollups.transaction_reviews
+-- where has_review > 0
+-- group by all
+	
+, total_gms as (
+select
+  b.shop_id, 
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms gms
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics b 
+    on gms.seller_user_id=b.user_id
+where trans_date >= current_date-365
+group by all 
+)
 select
   count(distinct v.shop_id) as unique_shops_visited,
   sum(views) as shop_home_pageviews,
   sum(case when r.shop_id is null then 1 else 0 end) as shops_without_reviews,
+  count(distinct r.shop_id) as shop_w_reviews,
   sum(transactions) as total_reviews,
   avg(transactions) as avg_reviews,
   avg(average_rating) as average_rating,
@@ -290,6 +320,12 @@ from
 left join 
   shop_reviews r 
     on v.shop_id=cast(r.shop_id as string)
+left join 
+  total_gms gms
+    on v.shop_id= cast(gms.shop_id as string)
+where gms_net > 0 and gms_net is not null
+
+
 	
 ----See more description link seen / See more description link clicked
 
