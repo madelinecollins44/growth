@@ -88,15 +88,29 @@ where active_seller_status =1
 
 
 -----shops w featured section by # of sections
-with features_sections as (
+with featured_count as (
+select
+  shop_id,
+  shop_name,
+  case 
+    when featured_products_layout = 0 then 4
+    when featured_products_layout = 1 then 5
+    else 0
+  end as featured_products_layout -- this is used to figure out how many featured items each shop has
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_data
+left join etsy-data-warehouse-prod.rollups.seller_basics using (shop_id)
+)
+, features_sections as (
 select 
-    shop_id, shop_name, max(featured_rank) as max_fr
+   shop_name, count(featured_rank) as features, max(featured_rank) as _max
   from 
     etsy-data-warehouse-prod.etsy_shard.shop_sections
-left join 
-  etsy-data-warehouse-prod.rollups.seller_basics using (shop_id)
+  left join 
+    featured_count using (shop_id)
   where 
     featured_rank != -1 -- looks at shops with categorized featured listings
+    AND featured_rank < featured_products_layout
 group by all
 )
-select shop_name from features_sections where max_fr = 1
+select * from features_sections where features = 1 limit 3
