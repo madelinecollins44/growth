@@ -66,6 +66,24 @@ from
   reviews
 group by all 
 order by 1 asc
+
+--find average windows
+ with transaction_breakout as (
+select
+  transaction_id,
+  time_until_review as time_until_review_from_table,
+  datetime_diff(date(review_date), (coalesce(date(review_start), date(shipped_date))), day) AS time_until_review_coalesce -- find date diff calcs for these situations 
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where 
+  has_review =1
+group by all 
+)
+select
+  avg(time_until_review_from_table) as avg_time_until_review_from_table,
+  avg(time_until_review_coalesce) as avg_time_until_review_coalesce
+from 
+  transaction_breakout
  
 --------------------------------------------------------
 --understanding null review start dates
