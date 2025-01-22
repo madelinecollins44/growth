@@ -46,7 +46,19 @@ where
 group by all 
 order by 1 asc
 
--- is digital
+-- is download
+ select 
+  is_download,
+  count(distinct transaction_id) 
+from  
+  etsy-data-warehouse-prod.rollups.transaction_reviews 
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings using (listing_id)
+where  
+  has_review =1
+  and review_start is null
+group by all 
+order by 1 asc
  
 --------------------------------------------------------
 -- testing by time_eligible group
