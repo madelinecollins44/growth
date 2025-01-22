@@ -1,4 +1,11 @@
+--------------------------------------------------------
+--total transactions w reviews
+--------------------------------------------------------
+select count(distinct transaction_id) from  etsy-data-warehouse-prod.rollups.transaction_reviews where  has_review =1
 
+--------------------------------------------------------
+--breaking down transactions by review windows 
+--------------------------------------------------------
 select 
  CASE 
     when time_until_review < 0 then 'Before first eligible day'
@@ -25,8 +32,40 @@ group by all
 order by 1 asc
 
 
+--------------------------------------------------------
+-- testing by time_eligible group
+--------------------------------------------------------
+-- Before first eligible day: 2532165502, 3270327411, 4261574215, 2441851082, 3191477284
+ select * from etsy-data-warehouse-prod.rollups.transaction_reviews where transaction_id in (2532165502, 3270327411, 4261574215, 2441851082, 3191477284)
 
-  
+
+-- Over 150 days: 3514811192, 3772148010, 4165919120, 4141564568, 2172709698
+ select * from etsy-data-warehouse-prod.rollups.transaction_reviews where transaction_id in (3514811192, 3772148010, 4165919120, 4141564568, 2172709698)
+--makes up 0% of all transactions, dont really need to worry here. 
+
+ 
+----------------------------------------------------------------------------------------------------------------
+-- in the before first eligible day category, how many review dates happen after the shipped dates?
+ ----these are likely due to the fact that the item was recieved before review window opened (review window is calculated)
+----------------------------------------------------------------------------------------------------------------
+select 
+  count(distinct case when date(shipped_date) <= date(review_date) then transaction_id end) as review_after_shipping, --reviews submitted before review window, but still after shipping date
+  count(distinct case when date(shipped_date) > date(review_date) then transaction_id end) as review_before_shipping, --reviews submitted before review window, and before shipping date
+  count(distinct transaction_id) as total_reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where 
+  has_review =1
+  and time_until_review < 0 -- reviews submitted before the review start date was eligible 
+group by all 
+order by 1 asc
+-- review_after_shipping	review_before_shipping	total_reviews
+-- 34063210	11936	34195213
+
+ --what does it look like in cases where the review was left before the item was shipped? 
+--------------------------------------------------------
+-- testing other errors
+--------------------------------------------------------  
   --testing to see how many transactions are missing review_start but have time_until_review
 select 
   count(distinct transaction_id) as total_reviews,
