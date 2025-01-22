@@ -27,6 +27,21 @@ group by all
 order by 1 asc
 
 
+  --testing to see how many transactions are missing review_start but have time_until_review
+select 
+  count(distinct transaction_id) as total_reviews,
+  count(distinct case when review_start is null then transaction_id end) as trans_wo_review_start,
+  count(distinct case when time_until_review is null then transaction_id end) as trans_wo_time_until_review,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where 
+  has_review =1
+--594013113 transactions
+--213200992 transactions wo review start
+--213200992 transactions wo time until review
+-- 36% of transactions with reviews dont have a review start date
+
+
 
 --testing to make sure day calc is right
 --100 day calc
