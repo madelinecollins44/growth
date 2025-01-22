@@ -31,7 +31,23 @@ where
 group by all 
 order by 1 asc
 
+--------------------------------------------------------
+--understanding null review start dates
+--------------------------------------------------------
+-- yearly breakdown 
+select 
+  extract(year from date(review_date)) as year,
+  count(distinct transaction_id) 
+from  
+  etsy-data-warehouse-prod.rollups.transaction_reviews 
+where  
+  has_review =1
+  and review_start is null
+group by all 
+order by 1 asc
 
+-- is digital
+ 
 --------------------------------------------------------
 -- testing by time_eligible group
 --------------------------------------------------------
