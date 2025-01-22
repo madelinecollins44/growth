@@ -6,6 +6,7 @@ select count(distinct transaction_id) from  etsy-data-warehouse-prod.rollups.tra
 --------------------------------------------------------
 --breaking down transactions by review windows 
 --------------------------------------------------------
+-- using time_until_review from table
 select 
  CASE 
     when time_until_review < 0 then 'Before first eligible day'
@@ -57,6 +58,35 @@ left join
 where  
   has_review =1
   and review_start is null
+group by all 
+order by 1 asc
+
+--top category
+ select 
+  top_category,
+  count(distinct transaction_id) 
+from  
+  etsy-data-warehouse-prod.rollups.transaction_reviews 
+where  
+  has_review =1
+  and review_start is null
+group by all 
+order by 1 asc
+
+--------------------------------------------------------------
+-- testing review before shipping, see if they are downloads 
+--------------------------------------------------------------
+  select 
+  is_download,
+  count(distinct transaction_id) 
+from  
+  etsy-data-warehouse-prod.rollups.transaction_reviews 
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings using (listing_id)
+where  
+  has_review =1
+  and date(shipped_date) <= date(review_date)
+  and time_until_review < 0
 group by all 
 order by 1 asc
  
