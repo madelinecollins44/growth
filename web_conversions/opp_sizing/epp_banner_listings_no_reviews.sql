@@ -37,6 +37,14 @@ where
   and e.event_type in ('listing_page_reviews_seen')
 
 --visits that saw a listing view for a listing without a review 
+with no_reviews as (
+select
+  listing_id,
+  sum(has_review) as reviews
+from   
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+)
 select
   platform,
   count(distinct visit_id) as traffic,
@@ -44,11 +52,11 @@ select
 from  
   etsy-data-warehouse-prod.analytics.listing_views
 inner join 
-  etsy-data-warehouse-prod.rollups.transaction_reviews using (listing_id)
+  no_reviews using (listing_id)
 where 
   _date >= current_date-30
+  and reviews = 0
 group by all
-having sum(has_review) = 0
   
 -- with listing_views as (
 -- select
