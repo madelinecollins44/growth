@@ -58,38 +58,6 @@ where
   and reviews = 0
 group by all
   
--- with listing_views as (
--- select
---   platform,
---   listing_id,
---   visit_id,
---   purchased_after_view
--- from  
---   etsy-data-warehouse-prod.analytics.listing_views
--- where 
---   _date >= current_date-30
---   and platform in ('mobile_web','desktop')
--- ), reviews as (
--- select
---   listing_id,
---   sum(has_review) as has_review,
---   sum(has_image) as has_image,
---   sum(has_video) as has_video,
--- from 
---   etsy-data-warehouse-prod.rollups.transaction_reviews  
--- group by all
--- )
--- select
---   platform,
---   count(distinct visit_id) as traffic,
---   count(distinct case when purchased_after_view > 0 then visit_id end) as converted
--- from 
---   reviews
--- left join 
---   listing_views using (listing_id)
--- where has_review = 0
--- group by all
-  
 --visits with lp reviews seen event + view listings that dont have a review and convert
 with desktop_visits as (
 select 
@@ -173,4 +141,4 @@ from
 inner join 
 	reviews r
 		on lv.listing_id=cast(r.listing_id as string)
-where r.has_image > 0
+where r.has_review = 0
