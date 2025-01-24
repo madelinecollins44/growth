@@ -105,6 +105,25 @@ where
 group by all 
 order by 2 desc
 
+--checking on receipt level
+ select
+  sb.delivered_date as delivery,
+  cast(review_start as date) as review_start,
+  date_diff(sb.delivered_date, cast(review_start as date), day) AS time_until_review,
+  receipt_id,
+  -- date(tr.review_start) as review_start_date,
+  -- sb.delivered_date
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr
+left join 
+  etsy-data-warehouse-prod.rollups.receipt_shipping_basics sb using (receipt_id)
+where 
+  date(transaction_date) >= current_date-365
+  -- and time_until_review = -1 -- looking at reviews that submitted before window
+group by all 
+having date_diff(sb.delivered_date, cast(review_start as date), day)  = -1
+order by 2 desc
+
 --------------------------------------------------------
 --understanding null review start dates
 --------------------------------------------------------
