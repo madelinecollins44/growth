@@ -15,11 +15,21 @@ group by all
 )
 , listing_views as (
 select
-  listing_id,
-  count(visit_id) as listing_views,
-  sum(purchased_after_view) as purchases
+  a.listing_id,
+  -- case
+  -- 	when coalesce((p.price_usd/100), a.price_usd) > 100 then 'high stakes'
+  -- 	else 'low stakes'
+  -- end as listing_type,
+  -- b.top_category,
+  count(a.visit_id) as listing_views,
+  sum(a.purchased_after_view) as purchases
 from 
-  etsy-data-warehouse-prod.analytics.listing_views
+  etsy-data-warehouse-prod.rollups.active_listing_basics b
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings p using (listing_id)
+left join  
+    etsy-data-warehouse-prod.analytics.listing_views a
+      on a.listing_id=b.listing_id
 where 
   _date >= current_date-30
 group by all 
@@ -38,6 +48,8 @@ order by 2 desc
 )
 select
   lv.listing_id,
+  -- listing_type,
+  -- top_category,
   review_count as reviews,
   sum(listing_views) as listing_views,
   sum(purchases) as purchases,
@@ -52,7 +64,7 @@ left join
 group by all
 
 --adding in top category + price 
-  with gms as (
+with gms as (
 select
   listing_id,
   sum(trans_gms_net) as gms_net
@@ -75,11 +87,12 @@ select
   count(a.visit_id) as listing_views,
   sum(a.purchased_after_view) as purchases
 from 
-  etsy-data-warehouse-prod.analytics.listing_views a
+  etsy-data-warehouse-prod.rollups.active_listing_basics b
 left join 
   etsy-data-warehouse-prod.listing_mart.listings p using (listing_id)
 left join  
-  etsy-data-warehouse-prod.rollups.active_listing_basics b on a.listing_id=b.listing_id
+    etsy-data-warehouse-prod.analytics.listing_views a
+      on a.listing_id=b.listing_id
 where 
   _date >= current_date-30
 group by all 
@@ -112,6 +125,7 @@ left join
 left join 
   gms on lv.listing_id=gms.listing_id
 group by all
+
 
 -------------------------------------------------------------------------------
 -- what does engagement + review distribution look like by top category? 
