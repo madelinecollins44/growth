@@ -6,10 +6,11 @@ select
   listing_id,
   sum(trans_gms_net) as gms_net
 from 
-  etsy-data-warehouse-prod.transaction_mart.all_transactions
+  etsy-data-warehouse-prod.transaction_mart.all_transactions a
 left join 
   etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans 
     using (transaction_id)
+where a.date >= current_date - 365
 group by all 
 )
 , listing_views as (
@@ -49,6 +50,7 @@ left join
 left join 
   gms on lv.listing_id=gms.listing_id
 group by all
+
 
 -------------------------------------------------------------------------------
 -- what does engagement + review distribution look like by top category? 
