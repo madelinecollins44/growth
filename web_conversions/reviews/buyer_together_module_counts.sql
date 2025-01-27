@@ -68,7 +68,40 @@ from
 -- testing: next event 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- free shipping:
--- discount bundle:
--- view listing:
--- null: 
+-- _date	visit_id	platform	listing_id	sequence_number	event_name	next_event	next_sequence_number
+-- 2025-01-26	-1iXIdf-5j5pGuwCiiAr45wfz09m.1737894729108.2	desktop	1178663538	20	view_listing	recommendations_module_seen	63
+-- 2025-01-26	-268ArIp0nmQSrHqct8U-2ur02G1.1737856103911.2	desktop	1784603062	0	view_listing	recommendations_module_seen	53
+-- 2025-01-25	-2foH3yBcetFNjzsgQkH7eeArLhD.1737829170870.1	desktop	1175626115	78	view_listing	recommendations_module_seen	130
+select * from etsy-data-warehouse-prod.weblog.events where _date >= current_date-4 and visit_id in ('-1iXIdf-5j5pGuwCiiAr45wfz09m.1737894729108.2') and sequence_number >= 20 order by sequence_number asc
 
+	
+-- discount bundle:
+-- _date	visit_id	platform	listing_id	sequence_number	event_name	next_event	next_sequence_number
+-- 2025-01-26	--2K0pqZ60MffTrc-ETQXAwdzX1e.1737929685390.2	desktop	1454084488	494	view_listing	mix_and_match_v2_bundle_lp_shown	504
+-- 2025-01-25	--6_htKqQZAd2O34xlR9b4r37XdQ.1737848190145.2	desktop	1261533844	0	view_listing	mix_and_match_v2_bundle_lp_shown	8
+-- 2025-01-25	--MoGjrZsIrgDGZMYEbmiErkKA4B.1737821111981.1	desktop	1772885858	19	view_listing	mix_and_match_v2_bundle_lp_shown	25
+select * from etsy-data-warehouse-prod.weblog.events where _date >= current_date-4 and visit_id in ('--2K0pqZ60MffTrc-ETQXAwdzX1e.1737929685390.2') and sequence_number >= 494 and event_type in ('view_listing','mix_and_match_v2_bundle_lp_shown') order by sequence_number asc
+
+
+-- view listing:
+-- _date	visit_id	platform	listing_id	sequence_number	event_name	next_event	next_sequence_number
+-- 2025-01-26	---aCiaj3WISnbLus7rgP_KsIHsD.1737879603072.2	mobile_web	645298964	105	view_listing	view_listing	215
+-- 2025-01-26	---aCiaj3WISnbLus7rgP_KsIHsD.1737879603072.2	mobile_web	645298964	215	view_listing	view_listing	614
+-- 2025-01-25	--6fxqTzThxIoj0RtwDy8a4ugyUu.1737844586739.1	mobile_web	1819759706	323	view_listing	view_listing	383
+
+select * from etsy-data-warehouse-prod.weblog.events where _date >= current_date-4 and visit_id in ('---aCiaj3WISnbLus7rgP_KsIHsD.1737879603072.2') and sequence_number >=  105
+and event_type in ('view_listing','mix_and_match_v2_bundle_lp_shown') 
+order by sequence_number asc
+--only view listing events 
+
+
+-- null: 
+-- _date	visit_id	platform	listing_id	sequence_number	event_name	next_event	next_sequence_number
+-- 2025-01-25	---CMyZLwv_NHoLBN1WGG4CHdwUN.1737774882789.2	mobile_web	1778816548	0	view_listing		
+-- 2025-01-26	---EkaPC7_LOFWj8Jut2S-kR5Z65.1737928761247.2	mobile_web	797243458	0	view_listing		
+-- 2025-01-26	---TGk7Lg4seatdufTPJK5fbRWn_.1737864403337.1	desktop	1786973379	572	view_listing		
+select * from etsy-data-warehouse-prod.weblog.events where _date >= current_date-4 and visit_id in ('---CMyZLwv_NHoLBN1WGG4CHdwUN.1737774882789.2') 
+and page_view = 1
+-- and sequence_number >=  105
+-- and event_type in ('view_listing','mix_and_match_v2_bundle_lp_shown') 
+order by sequence_number asc
