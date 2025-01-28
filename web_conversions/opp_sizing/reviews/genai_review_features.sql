@@ -64,6 +64,7 @@ left join
 group by all
 
 --adding in top category + price 
+create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size as (
 with gms as (
 select
   listing_id,
@@ -125,6 +126,7 @@ left join
 left join 
   gms on lv.listing_id=gms.listing_id
 group by all
+);
 
 
 -------------------------------------------------------------------------------
