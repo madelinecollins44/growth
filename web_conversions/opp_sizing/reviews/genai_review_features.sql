@@ -33,6 +33,7 @@ left join
       on a.listing_id=b.listing_id
 where 
   _date >= current_date-30
+  and a.platform in ('mobile_web','desktop') -- only web lv 
 group by all 
 )
 , reviews as (
@@ -98,6 +99,7 @@ left join
       on a.listing_id=b.listing_id
 where 
   _date >= current_date-30
+  and a.platform in ('mobile_web','desktop') -- only web lv 
 group by all 
 )
 , reviews as (
@@ -129,7 +131,6 @@ left join
   gms on lv.listing_id=gms.listing_id
 group by all
 );
-
 
 -------------------------------------------------------------------------------
 -- what does engagement + review distribution look like by top category? 
