@@ -271,3 +271,67 @@ group by all
 ------ 497001247 eligible listings have been viewed over the last 30 days, this matches count from analytics.listing_views by about 99% 
 ------ 131708147 review_seen events -- this is higher than whats in the sheet, bc we need to look at review_seen events that happen post listing view
 ------ testing to check lead functions: https://github.com/madelinecollins44/growth/blob/8db448026ef8d324381d0edfa5cd63cb95588f23/web_conversions/reviews/high_stakes_listings_lead.sql#L298
+
+-- TEST 5: what is the % of listing views that also scroll to reviews? in theory, this % should match up to the difference in review_seen event count above and the total in sheet. 
+with listing_events as (
+select
+	date(_partitiontime) as _date,
+	visit_id,
+  platform,
+  sequence_number,
+	beacon.event_name as event_name,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-30
+  and _date >= current_date-30
+	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
+  and platform in ('mobile_web','desktop')
+group by all 
+), active_english_listings as (
+select
+  listing_id,
+  top_category
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics alb
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+where 
+  active_seller_status=1 -- active sellers 
+  and primary_language in ('en-US') -- only shops with english/ us as primary language 
+  and sb.country_name in ('United States') -- only US sellers 
+), ordered_events as (
+select
+	_date,
+	visit_id,
+	a.listing_id,
+  top_category,
+  sequence_number,
+	event_name,
+	lead(event_name) over (partition by visit_id, a.listing_id order by sequence_number) as next_event,
+	lead(sequence_number) over (partition by visit_id, a.listing_id order by sequence_number) as next_sequence_number
+from 
+	listing_events a 
+inner join   
+  active_english_listings b -- only looking at eligible listings 
+    on a.listing_id=cast(b.listing_id as string)
+)
+, listing_views as (
+select
+	visit_id,
+	listing_id,
+  top_category,
+  sequence_number,
+	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
+from
+	ordered_events
+where 
+	event_name in ('view_listing')
+)
+select 
+	count(visit_id) as lv_events, 
+	count(case when saw_reviews > 0 then visit_id end) as rs_events 
+from listing_views
