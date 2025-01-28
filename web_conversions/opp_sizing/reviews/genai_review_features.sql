@@ -167,7 +167,8 @@ having sum(has_review) >= 100
 , active_listing_views as (
 select
   listing_id,
-  count(visit_id) as views
+  count(visit_id) as views,
+  sum(purchased_after_view) as purchases
 from 
   etsy-data-warehouse-prod.rollups.active_listing_basics b 
 inner join 
@@ -179,7 +180,8 @@ group by all
 )
 select
   count(distinct lv.listing_id) as total_listings,
-  sum(views) as views
+  sum(views) as views,
+  sum(purchases) as purchases
 from 
   active_listing_views lv
 inner join 
