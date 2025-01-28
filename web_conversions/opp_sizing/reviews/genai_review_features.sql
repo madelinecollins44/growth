@@ -152,6 +152,22 @@ select
 -------------------------------------------------------------------------------
 -- testing
 -------------------------------------------------------------------------------
+-- make sure total counts match up w what im seeing
+select  
+  count(visit_id) as views,
+  sum(purchased_after_view) as purchases
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b 
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views lv using (listing_id) -- only looking at viewed listings 
+where
+  lv._date >= current_date-30
+  and lv.platform in ('mobile_web','desktop')
+group by all 
+-- views	purchases
+-- 1151932286	19252286
+
+  
 --testing to make sure # of listings match with the query 
 with reviews as (
 select
