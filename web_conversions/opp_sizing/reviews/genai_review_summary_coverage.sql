@@ -335,3 +335,7 @@ select
 	count(visit_id) as lv_events, 
 	count(case when saw_reviews > 0 then visit_id end) as rs_events 
 from listing_views
+------ 497001247 lv
+------ 107561099 lv + review seen events 
+------ the % of visits with a listing view + review seen event is 21.6%, which covers the 86%ish difference between original review seen counts and what was on the sheet. 
+
