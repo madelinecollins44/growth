@@ -156,7 +156,7 @@ select
 with reviews as (
 select
  listing_id,
- sum(has_review)
+ sum(has_review) as review_count
 from 
   etsy-data-warehouse-prod.rollups.transaction_reviews
 where
@@ -164,16 +164,24 @@ where
 group by all
 having sum(has_review) >= 100
 )
-  -- looking at active listing views that have reviews within threshold
+, active_listing_views as (
 select
-  count(distinct lv.listing_id) as total_listings,
-  count(lv.visit_id) as listing_views
+  listing_id,
+  count(visit_id) as views
 from 
-  etsy-data-warehouse-prod.rollups.active_listing_basics b  -- only starting with active listings 
-left join 
-  etsy-data-warehouse-prod.analytics.listing_views lv using (listing_id) -- only looking at viewed listings 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b 
 inner join 
- reviews r on lv.listing_id=r.listing_id
+  etsy-data-warehouse-prod.analytics.listing_views lv using (listing_id) -- only looking at viewed listings 
 where
   lv._date >= current_date-30
   and lv.platform in ('mobile_web','desktop')
+group by all 
+)
+select
+  count(distinct lv.listing_id) as total_listings,
+  sum(views) as views
+from 
+  active_listing_views lv
+inner join 
+ reviews r on lv.listing_id=r.listing_id
+where r.review_count >= 100
