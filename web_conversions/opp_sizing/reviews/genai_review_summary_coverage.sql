@@ -82,8 +82,8 @@ select
 from 
 	listing_events a 
 inner join   
-  active_english_listings  -- only looking at eligible listings 
-    on cast(a.listing_id as int64)=b.listing_id
+  active_english_listings b -- only looking at eligible listings 
+    on a.listing_id=cast(b.listing_id as string)
 )
 , listing_views as (
 select
@@ -141,6 +141,7 @@ left join
 left join 
   web_gms on lv.listing_id=web_gms.listing_id
 group by all
+order by review_count desc
 );
 
 -------------------------------------------------------------------------------
