@@ -1,3 +1,6 @@
+-----------------------------------------------------------------------------------
+-- table created to collect all eligible listings 
+-----------------------------------------------------------------------------------
 create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size as (
 --these are the only listings being considered. they active listings from from english language/ united states sellers.
 with active_english_listings as (
