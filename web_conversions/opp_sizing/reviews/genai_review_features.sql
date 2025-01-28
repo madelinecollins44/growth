@@ -153,7 +153,8 @@ select
 -------------------------------------------------------------------------------
 --testing to make sure # of listings match with the query 
 select
-  count(distinct listing_id) as total_listings
+  count(distinct listing_id) as total_listings,
+  count(lv.visit_id) as listing_views
 from 
   etsy-data-warehouse-prod.analytics.listing_views lv -- only looking at viewed listings 
 inner join 
