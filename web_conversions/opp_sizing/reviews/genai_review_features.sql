@@ -158,7 +158,7 @@ select
 -------------------------------------------------------------------------------
 -- testing
 -------------------------------------------------------------------------------
--- make sure total counts match up w what im seeing
+-- TESTING make sure total counts match up w what im seeing
 select  
   count(visit_id) as views,
   sum(purchased_after_view) as purchases
@@ -172,9 +172,31 @@ where
 group by all 
 -- views	purchases
 -- 1151932286	19252286
+-- looking at all web purchases over last 365 days 
 
+with web_gms as (
+select
+  listing_id,
+  sum(trans_gms_net) as gms_net
+from
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_visits tv -- only looking for mweb, desktop visits 
+inner join
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_gms_by_trans tg using(transaction_id) -- need gms 
+inner join
+	`etsy-data-warehouse-prod`.transaction_mart.all_transactions t on tv.transaction_id = t.transaction_id -- need listing_id
+where
+	(tv.mapped_platform_type in ('desktop') or tv.mapped_platform_type like ('mweb%')) -- only gms from web transactions 
+	and t.date >= current_date - 365
+group by all 
+)
+-- only gms from listings that are still active
+select
+  sum(gms_net)
+from web_gms
+inner join etsy-data-warehouse-prod.rollups.active_listing_basics using (listing_id)
+--4537400362.9
   
---testing to make sure # of listings match with the query 
+--TESTING to make sure # of listings match with the query 
 with reviews as (
 select
  listing_id,
