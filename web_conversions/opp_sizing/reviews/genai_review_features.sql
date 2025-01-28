@@ -153,14 +153,27 @@ select
 -- testing
 -------------------------------------------------------------------------------
 --testing to make sure # of listings match with the query 
+with reviews as (
 select
-  count(distinct listing_id) as total_listings,
-  count(lv.visit_id) as listing_views
+ listing_id,
+ sum(has_review)
 from 
-  etsy-data-warehouse-prod.analytics.listing_views lv -- only looking at viewed listings 
-inner join 
-  etsy-data-warehouse-prod.rollups.transaction_reviews using (listing_id)
+  etsy-data-warehouse-prod.rollups.transaction_reviews
 where
   language in ('en')
-  and lv._date >= current_date-30
-having sum(has_review) >= 250
+group by all
+having sum(has_review) >= 100
+)
+  -- looking at active listing views that have reviews within threshold
+select
+  count(distinct lv.listing_id) as total_listings,
+  count(lv.visit_id) as listing_views
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b  -- only starting with active listings 
+left join 
+  etsy-data-warehouse-prod.analytics.listing_views lv using (listing_id) -- only looking at viewed listings 
+inner join 
+ reviews r on lv.listing_id=r.listing_id
+where
+  lv._date >= current_date-30
+  and lv.platform in ('mobile_web','desktop')
