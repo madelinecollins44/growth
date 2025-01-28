@@ -71,16 +71,19 @@ group by all
 
 --adding in top category + price 
 create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size as (
-with gms as (
+with web_gms as (
 select
   listing_id,
   sum(trans_gms_net) as gms_net
-from 
-  etsy-data-warehouse-prod.transaction_mart.all_transactions a
-left join 
-  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans 
-    using (transaction_id)
-where a.date >= current_date - 365
+from
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_visits tv -- only looking for mweb, desktop visits 
+inner join
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_gms_by_trans tg using(transaction_id) -- need gms 
+inner join
+	`etsy-data-warehouse-prod`.transaction_mart.all_transactions t on tv.transaction_id = t.transaction_id -- need listing_id
+where
+	(tv.mapped_platform_type in ('desktop') or tv.mapped_platform_type like ('mweb%')) -- only gms from web transactions 
+	and t.date >= current_date - 365
 group by all 
 )
 , listing_views as (
@@ -131,7 +134,7 @@ left join
   reviews 
     on lv.listing_id=reviews.listing_id
 left join 
-  gms on lv.listing_id=gms.listing_id
+  web_gms on lv.listing_id=web_gms.listing_id
 group by all
 );
 
