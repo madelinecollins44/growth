@@ -147,3 +147,18 @@ select
 , reviews as (
 )
 , reviews_seen 
+
+-------------------------------------------------------------------------------
+-- testing
+-------------------------------------------------------------------------------
+--testing to make sure # of listings match with the query 
+select
+  count(distinct listing_id) as total_listings
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv -- only looking at viewed listings 
+inner join 
+  etsy-data-warehouse-prod.rollups.transaction_reviews using (listing_id)
+where
+  language in ('en')
+  and lv._date >= current_date-30
+having sum(has_review) >= 250
