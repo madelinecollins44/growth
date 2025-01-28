@@ -193,6 +193,54 @@ group by all
 -------------------------------------------------------------------------------
 -- testing
 -------------------------------------------------------------------------------
+-- TESTING reviews seen event 
+with listing_events as (
+select
+	date(_partitiontime) as _date,
+	visit_id,
+  platform,
+  sequence_number,
+	beacon.event_name as event_name,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-30
+  and _date >= current_date-30
+	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+, ordered_events as (
+select
+	_date,
+	visit_id,
+	a.listing_id,
+	b.top_category,
+  sequence_number,
+	event_name,
+	lead(event_name) over (partition by visit_id, a.listing_id order by sequence_number) as next_event,
+	lead(sequence_number) over (partition by visit_id, a.listing_id order by sequence_number) as next_sequence_number
+from 
+	listing_events a 
+inner join   
+  etsy-data-warehouse-prod.rollups.active_listing_basics b  
+    on cast(a.listing_id as int64)=b.listing_id
+)
+, listing_views as (
+select
+	visit_id,
+	listing_id,
+  sequence_number,
+	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
+from
+	ordered_events
+where 
+	event_name in ('view_listing')
+)
+select listing_id, count(visit_id) from listing_views where listing_id in ('1167562350','667282692','1010384443') group by all 
 -- TESTING make sure total counts match up w what im seeing
 select  
   count(visit_id) as views,
