@@ -229,8 +229,7 @@ where
 group by all 
 ------ 175630296.94 is the total gms from these listings over the last 30 days
 
-	
--- TESTING reviews seen event 
+-- TEST 4: reviews seen event 
 with listing_events as (
 select
 	date(_partitiontime) as _date,
@@ -249,83 +248,25 @@ where
 	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
   and platform in ('mobile_web','desktop')
 group by all 
-)
-, ordered_events as (
-select
-	_date,
-	visit_id,
-	a.listing_id,
-	b.top_category,
-  sequence_number,
-	event_name,
-	lead(event_name) over (partition by visit_id, a.listing_id order by sequence_number) as next_event,
-	lead(sequence_number) over (partition by visit_id, a.listing_id order by sequence_number) as next_sequence_number
-from 
-	listing_events a 
-inner join   
-  etsy-data-warehouse-prod.rollups.active_listing_basics b  
-    on cast(a.listing_id as int64)=b.listing_id
-)
-, listing_views as (
-select
-	visit_id,
-	listing_id,
-  sequence_number,
-	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
-from
-	ordered_events
-where 
-	event_name in ('view_listing')
-)
-select listing_id, count(visit_id) from listing_views where listing_id in ('1167562350','667282692','1010384443') group by all 
--- TESTING make sure total counts match up w what im seeing
-select  
-  count(visit_id) as views,
-  sum(purchased_after_view) as purchases
-from 
-  etsy-data-warehouse-prod.rollups.active_listing_basics b 
-inner join 
-  etsy-data-warehouse-prod.analytics.listing_views lv using (listing_id) -- only looking at viewed listings 
-where
-  lv._date >= current_date-30
-  and lv.platform in ('mobile_web','desktop')
-group by all 
--- views	purchases
--- 1151932286	19252286
--- looking at all web purchases over last 365 days 
-
---TESTING to make sure # of listings match with the query 
-with reviews as (
-select
- listing_id,
- sum(has_review) as review_count
-from 
-  etsy-data-warehouse-prod.rollups.transaction_reviews
-where
-  language in ('en')
-group by all
-having sum(has_review) >= 100
-)
-, active_listing_views as (
+), active_english_listings as (
 select
   listing_id,
-  count(visit_id) as views,
-  sum(purchased_after_view) as purchases
+  top_category
 from 
-  etsy-data-warehouse-prod.rollups.active_listing_basics b 
+  etsy-data-warehouse-prod.rollups.active_listing_basics alb
 inner join 
-  etsy-data-warehouse-prod.analytics.listing_views lv using (listing_id) -- only looking at viewed listings 
-where
-  lv._date >= current_date-30
-  and lv.platform in ('mobile_web','desktop')
-group by all 
+  etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+where 
+  active_seller_status=1 -- active sellers 
+  and primary_language in ('en-US') -- only shops with english/ us as primary language 
+  and sb.country_name in ('United States') -- only US sellers 
 )
-select
-  count(distinct lv.listing_id) as total_listings,
-  sum(views) as views,
-  sum(purchases) as purchases
-from 
-  active_listing_views lv
-inner join 
- reviews r on lv.listing_id=r.listing_id
-where r.review_count >= 100
+select 
+  event_name,
+  count(visit_id) as views
+from active_english_listings ael
+inner join listing_events le
+  on cast(ael.listing_id as string)=le.listing_id
+group by all
+------ 497001247 eligible listings have been viewed over the last 30 days, this matches count from analytics.listing_views by about 99% 
+------ 131708147 review_seen events -- this is higher than whats in the sheet, bc we need to look at review_seen events that happen post listing view
