@@ -172,6 +172,8 @@ group by all
 )
 select
   lv.listing_id,
+  top_category,
+	listing_type,
   review_count as reviews,
   sum(listing_view_count) as listing_views,
   sum(purchases) as purchases,
