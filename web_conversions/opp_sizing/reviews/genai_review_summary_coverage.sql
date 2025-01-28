@@ -1,3 +1,4 @@
+create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size as (
 --these are the only listings being considered. they active listings from from english language/ united states sellers.
 with active_english_listings as (
 select
@@ -47,8 +48,9 @@ where
 	(tv.mapped_platform_type in ('desktop') or tv.mapped_platform_type like ('mweb%')) -- only gms from web transactions 
 	and t.date >= current_date - 30
 group by all 
-),
-with listing_events as (
+)
+-- now, can pull in view_listing + reviews_seen data for eligible listings on web 
+, listing_events as (
 select
 	date(_partitiontime) as _date,
 	visit_id,
@@ -64,7 +66,7 @@ where
 	date(_partitiontime) >= current_date-30
   and _date >= current_date-30
 	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
-  and platform in ('mobile_web','desktop')
+  and platform in ('mobile_web','desktop') -- only web visits 
 group by all 
 )
 , ordered_events as (
@@ -72,7 +74,7 @@ select
 	_date,
 	visit_id,
 	a.listing_id,
-	-- b.top_category,
+  top_category,
   sequence_number,
 	event_name,
 	lead(event_name) over (partition by visit_id, a.listing_id order by sequence_number) as next_event,
@@ -80,14 +82,14 @@ select
 from 
 	listing_events a 
 inner join   
-  etsy-data-warehouse-prod.rollups.active_listing_basics b  
+  active_english_listings  -- only looking at eligible listings 
     on cast(a.listing_id as int64)=b.listing_id
 )
 , listing_views as (
 select
 	visit_id,
 	listing_id,
-  -- top_category,
+  top_category,
   sequence_number,
 	case when next_event in ('listing_page_reviews_seen') then 1 else 0 end as saw_reviews
 from
@@ -98,11 +100,11 @@ where
 , listing_views_and_reviews_seen as (
 select
 	cast(lv.listing_id as int64) as listing_id,
-  -- top_category,
-	-- case
-  -- 	when coalesce((p.price_usd/100), a.price_usd) > 100 then 'high stakes'
-  -- 	else 'low stakes'
-  -- end as listing_type,
+  top_category,
+	case
+  	when coalesce((p.price_usd/100), a.price_usd) > 100 then 'high stakes'
+  	else 'low stakes'
+  end as listing_type,
 	count(lv.visit_id) as listing_view_count,	
   sum(purchased_after_view) as purchases,
 	count(case when saw_reviews = 1 then lv.visit_id end) as views_and_reviews_seen,
@@ -114,9 +116,29 @@ left join
 		on lv.listing_id=cast(a.listing_id as string)
 		and lv.visit_id=a.visit_id
 		and lv.sequence_number=a.sequence_number	
--- left join 
---   etsy-data-warehouse-prod.listing_mart.listings p 
---     on cast(p.listing_id as string)=lv.listing_id
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings p 
+    on cast(p.listing_id as string)=lv.listing_id
 where a._date >=current_date-30
 group by all
 )
+select
+  lv.listing_id,
+  top_category,
+	listing_type,
+  review_count as text_reviews,
+	avg_review_length, 
+  sum(listing_view_count) as listing_views,
+  sum(purchases) as purchases,
+  sum(views_and_reviews_seen) as views_and_reviews_seen,
+	sum(saw_reviews_and_purchased) as saw_reviews_and_purchased,
+  sum(gms_net) as gms_net,
+from 
+  listing_views_and_reviews_seen lv
+left join 
+  reviews 
+    on lv.listing_id=reviews.listing_id
+left join 
+  web_gms on lv.listing_id=web_gms.listing_id
+group by all
+);
