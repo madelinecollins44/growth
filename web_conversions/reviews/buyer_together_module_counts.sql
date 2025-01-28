@@ -78,10 +78,22 @@ where v._date >= current_date-14
 and platform in ('mobile_web','desktop')
 and event_type in ("view_listing","mix_and_match_v2_bundle_lp_shown")
 group by all
-
 -- event_type	instances
 -- mix_and_match_v2_bundle_lp_shown	18494184
 -- view_listing	535617857
+
+select
+	count(visit_id)
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-14
+  and _date >= current_date-14
+	and (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("lp_free_shipping_bundle")) -- free shipping
+  and platform in ('mobile_web','desktop')
+group by all 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- testing: next event 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
