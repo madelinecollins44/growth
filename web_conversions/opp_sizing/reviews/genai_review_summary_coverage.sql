@@ -177,7 +177,8 @@ where
   and primary_language in ('en-US') -- only shops with english/ us as primary language 
   and sb.country_name in ('United States') -- only US sellers 
 )
-select  
+select
+  count(distinct lv.listing_id) as listings_viewed,
   count(visit_id) as views,
   sum(purchased_after_view) as purchases
 from 
@@ -188,6 +189,7 @@ where
   lv._date >= current_date-30
   and lv.platform in ('mobile_web','desktop')
 group by all 
+------ 32096964 eligible listings have been viewed over the last 30 days
 ------ 496939192 listing views
 ------ 8237292 purchases  
 ------ 1.7% is current conversion rate on web
