@@ -270,3 +270,4 @@ inner join listing_events le
 group by all
 ------ 497001247 eligible listings have been viewed over the last 30 days, this matches count from analytics.listing_views by about 99% 
 ------ 131708147 review_seen events -- this is higher than whats in the sheet, bc we need to look at review_seen events that happen post listing view
+------ testing to check lead functions: https://github.com/madelinecollins44/growth/blob/8db448026ef8d324381d0edfa5cd63cb95588f23/web_conversions/reviews/high_stakes_listings_lead.sql#L298
