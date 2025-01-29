@@ -21,8 +21,8 @@ where
 select
   listing_id,
   count(transaction_id) as review_count,
-	avg(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as avg_review_length,
-  sum(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as total_word_count
+	round(avg(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)),1) as avg_review_length,
+  round(sum(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)),1) as total_word_count
 from  
   active_english_listings
 inner join 
