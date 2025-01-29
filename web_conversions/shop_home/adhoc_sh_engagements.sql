@@ -12,3 +12,18 @@ select
 	and
 		beacon.event_name in ("shop_home_nav_clicked", 'shop_home','shop_home_announcement_view')
   group by all
+
+
+--check using weblog.events
+select 
+  event_type,
+  count(e.visit_id) as clicks,
+  count(distinct e.visit_id) as visits,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.weblog.events e using (visit_id)
+where
+  v._date >= current_date-30
+  and event_type in ("shop_home_nav_clicked", 'shop_home','shop_home_announcement_view')
+group by all 
