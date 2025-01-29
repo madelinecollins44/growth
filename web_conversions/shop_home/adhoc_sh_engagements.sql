@@ -26,4 +26,5 @@ inner join
 where
   v._date >= current_date-30
   and event_type in ("shop_home_nav_clicked", 'shop_home','shop_home_announcement_view')
+  and v.platform in ('mobile_web','desktop')
 group by all 
