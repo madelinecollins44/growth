@@ -12,14 +12,18 @@ from
 inner join 
   etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
 left join 
-  etsy-data-warehouse-prod.integrations.blocklisted_listings bl
-    on alb.listing_id = bl.listing_id
+  (select 
+    distinct listing_id 
+  from 
+    etsy-data-warehouse-prod.integrations.blocklisted_listings
+  where 
+    _date >= current_date-1095) bl -- any listings that have been blocked over the last 3 years 
+      on alb.listing_id = bl.listing_id
 where 
   active_seller_status=1 -- active sellers 
   and primary_language in ('en-US') -- only shops with english/ us as primary language 
   and sb.country_name in ('United States') -- only US sellers 
   and bl.listing_id is null -- excluding blocked listings
-  and bl._date >= current_date-1095 -- any listings that have been blocked over the last 3 years 
 )
 -- text reviews that are in english
 , reviews as (
@@ -153,6 +157,7 @@ left join
 group by all
 order by review_count desc
 );
+
 -------------------------------------------------------------------------------
 -- testing
 -------------------------------------------------------------------------------
