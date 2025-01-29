@@ -372,3 +372,13 @@ where
 group by all
 order by 2 desc
 ------ averages matches with total_word_count
+
+select distinct listing_id from etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size where total_word_count = 40 limit 5
+-- listing_id
+-- 999645422
+-- 1813184097
+-- 1526833396
+-- 886323951
+-- 1755143837
+
+select * from etsy-data-warehouse-prod.rollups.transaction_reviews where listing_id = 1813184097 and has_text_review >0 and language in ('en')
