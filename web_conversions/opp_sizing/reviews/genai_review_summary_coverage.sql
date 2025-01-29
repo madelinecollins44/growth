@@ -434,3 +434,31 @@ select * from active_english_listings where listing_id in (117727208, 116315503,
 -- 78571731
 -- 82236898
 -- 82485648
+--these are the only listings being considered. they active listings from from english language/ united states sellers.these listings are not blocklisted. 
+-- with active_english_listings as (
+select
+  count(distinct alb.listing_id) as active_listings,
+  count(distinct bl.listing_id) as blocklisted_listings
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics alb
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+left join 
+  (select 
+    distinct listing_id 
+  from 
+    etsy-data-warehouse-prod.integrations.blocklisted_listings
+  where 
+    _date >= current_date-1095) bl -- any listings that have been blocked over the last 3 years 
+      on alb.listing_id = bl.listing_id
+where 
+  active_seller_status=1 -- active sellers 
+  and primary_language in ('en-US') -- only shops with english/ us as primary language 
+  and sb.country_name in ('United States') -- only US sellers 
+  -- and bl.listing_id is null -- excluding blocked listings
+-- )
+
+-- active_listings	blocklisted_listings
+-- 68008612	8820068
+-- select 8820068/68008612
+------0.12969045743794919 , about 13% of active listings viewed are blocklisted
