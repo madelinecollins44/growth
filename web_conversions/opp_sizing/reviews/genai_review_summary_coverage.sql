@@ -21,7 +21,8 @@ where
 select
   listing_id,
   count(transaction_id) as review_count,
-	avg(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as avg_review_length
+	avg(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as avg_review_length,
+  sum(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as total_word_count
 from  
   active_english_listings
 inner join 
@@ -131,6 +132,7 @@ select
 	listing_type,
   review_count as text_reviews,
 	avg_review_length, 
+  total_word_count,
   sum(listing_view_count) as listing_views,
   sum(purchases) as purchases,
   sum(views_and_reviews_seen) as views_and_reviews_seen,
@@ -339,3 +341,34 @@ from listing_views
 ------ 107561099 lv + review seen events 
 ------ the % of visits with a listing view + review seen event is 21.6%, which covers the 86%ish difference between original review seen counts and what was on the sheet. 
 
+-- TEST 6: make sure total_word_count is working correctly
+with active_english_listings as (
+select
+  listing_id,
+  top_category
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics alb
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+where 
+  active_seller_status=1 -- active sellers 
+  and primary_language in ('en-US') -- only shops with english/ us as primary language 
+  and sb.country_name in ('United States') -- only US sellers 
+)
+select
+  listing_id,
+  review,
+  count(transaction_id) as review_count,
+	avg(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as avg_review_length,
+  sum(((LENGTH(review) - LENGTH(replace(review, ' ', ''))) + 1)) as total_word_count
+from  
+  active_english_listings
+inner join 
+  etsy-data-warehouse-prod.rollups.transaction_reviews using (listing_id)
+where 
+  has_text_review > 0  
+  and language in ('en')
+  and listing_id in (881491068)
+group by all
+order by 2 desc
+------ averages matches with total_word_count
