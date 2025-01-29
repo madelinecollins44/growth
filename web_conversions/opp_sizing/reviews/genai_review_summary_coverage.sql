@@ -2,19 +2,24 @@
 -- table created to collect all eligible listings 
 -----------------------------------------------------------------------------------
 create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size as (
---these are the only listings being considered. they active listings from from english language/ united states sellers.
+--these are the only listings being considered. they active listings from from english language/ united states sellers.these listings are not blocklisted. 
 with active_english_listings as (
 select
-  listing_id,
+  alb.listing_id,
   top_category
 from 
   etsy-data-warehouse-prod.rollups.active_listing_basics alb
 inner join 
   etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+left join 
+  etsy-data-warehouse-prod.integrations.blocklisted_listings bl
+    on alb.listing_id = bl.listing_id
 where 
   active_seller_status=1 -- active sellers 
   and primary_language in ('en-US') -- only shops with english/ us as primary language 
   and sb.country_name in ('United States') -- only US sellers 
+  and bl.listing_id is null -- excluding blocked listings
+  and bl._date >= current_date-1095 -- any listings that have been blocked over the last 3 years 
 )
 -- text reviews that are in english
 , reviews as (
@@ -148,7 +153,6 @@ left join
 group by all
 order by review_count desc
 );
-
 -------------------------------------------------------------------------------
 -- testing
 -------------------------------------------------------------------------------
@@ -382,3 +386,46 @@ select distinct listing_id from etsy-data-warehouse-dev.madelinecollins.genai_ca
 -- 1755143837
 
 select * from etsy-data-warehouse-prod.rollups.transaction_reviews where listing_id = 1813184097 and has_text_review >0 and language in ('en')
+
+-- TEST 6: make sure blocklisted listings are actually excluded
+select
+  alb.listing_id,
+  top_category
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics alb
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+left join 
+  etsy-data-warehouse-prod.integrations.blocklisted_listings bl
+    on alb.listing_id = bl.listing_id
+where 
+  active_seller_status=1 -- active sellers 
+  and primary_language in ('en-US') -- only shops with english/ us as primary language 
+  and sb.country_name in ('United States') -- only US sellers 
+  and bl.listing_id is null -- excluding blocked listings
+  and bl._date >= current_date-1095
+)
+select * from active_english_listings where listing_id in (117727208, 116315503, 115496790, 116686403, 117655652, 113235360)
+
+-----grabbing listing_id for blocklisted active listings
+-- select 
+--   distinct alb.listing_id 
+-- from 
+--   etsy-data-warehouse-prod.rollups.active_listing_basics alb
+-- inner join 
+--   etsy-data-warehouse-prod.integrations.blocklisted_listings bl
+--     on alb.listing_id = bl.listing_id
+-- where bl._date >= current_date-730
+--   limit 10 
+
+--   listing_id
+-- 117727208
+-- 116315503
+-- 115496790
+-- 116686403
+-- 117655652
+-- 113235360
+-- 89946785
+-- 78571731
+-- 82236898
+-- 82485648
