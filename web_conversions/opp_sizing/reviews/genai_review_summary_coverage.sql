@@ -422,8 +422,7 @@ select * from active_english_listings where listing_id in (117727208, 116315503,
 --     on alb.listing_id = bl.listing_id
 -- where bl._date >= current_date-730
 --   limit 10 
-
---   listing_id
+----   listing_id
 -- 117727208
 -- 116315503
 -- 115496790
@@ -434,8 +433,7 @@ select * from active_english_listings where listing_id in (117727208, 116315503,
 -- 78571731
 -- 82236898
 -- 82485648
---these are the only listings being considered. they active listings from from english language/ united states sellers.these listings are not blocklisted. 
--- with active_english_listings as (
+
 select
   count(distinct alb.listing_id) as active_listings,
   count(distinct bl.listing_id) as blocklisted_listings
@@ -455,10 +453,8 @@ where
   active_seller_status=1 -- active sellers 
   and primary_language in ('en-US') -- only shops with english/ us as primary language 
   and sb.country_name in ('United States') -- only US sellers 
-  -- and bl.listing_id is null -- excluding blocked listings
--- )
 
 -- active_listings	blocklisted_listings
 -- 68008612	8820068
 -- select 8820068/68008612
-------0.12969045743794919 , about 13% of active listings viewed are blocklisted
+	------0.12969045743794919 , about 13% of active listings viewed are blocklisted
