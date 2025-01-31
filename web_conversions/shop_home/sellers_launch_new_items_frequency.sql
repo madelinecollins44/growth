@@ -12,6 +12,24 @@ where
   active_seller_status = 1 -- only active sellers
 group by all 
 )
-, visited_shops
-, listings 
-  case when create_date >= current_date-30 then 1 else 0 end as new_item, cont(listing_id) as listings
+, visited_shops as (
+select distinct
+  visit_id
+	, sequence_number
+	, (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id
+from 
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` 
+where 
+  beacon.event_name in ('shop_home')
+  and date(_partitiontime) >= current_date-30
+)
+, active_listings as (
+select
+  shop_id, 
+  count(distinct case when create_date <= current_date-30 then listing_id end) as new_item,
+  count(distinct case when create_date > current_date-30 then listing_id end) as old_item,
+  count(distinct listing_id) as total_listings
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics
+group by all 
+)
