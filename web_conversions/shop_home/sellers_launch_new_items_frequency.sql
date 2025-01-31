@@ -26,13 +26,14 @@ where
 , active_listings as (
 select
   shop_id, 
-  count(distinct case when create_date <= current_date-30 then listing_id end) as new_item,
-  count(distinct case when create_date > current_date-30 then listing_id end) as old_item,
+  count(distinct case when days_since_original_create <= 30 then listing_id end) as new_item,
+  count(distinct case when days_since_original_create > 30 then listing_id end) as old_item,
   count(distinct listing_id) as total_listings
 from 
   etsy-data-warehouse-prod.rollups.active_listing_basics
 group by all 
 )
+
 
 
 ----------------------------------------------------------------------------------------------------------------
