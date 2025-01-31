@@ -14,9 +14,9 @@ group by all
 )
 , visited_shops as (
 select distinct
-  visit_id
-	, sequence_number
-	, (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id
+	(select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  count(visit_id) as pageviews,
+  count(distinct visit_id) as visits
 from 
   `etsy-visit-pipe-prod.canonical.visit_id_beacons` 
 where 
@@ -33,8 +33,11 @@ from
   etsy-data-warehouse-prod.rollups.active_listing_basics
 group by all 
 )
-
-
+select
+from 
+  active_shops
+left join 
+  active_shops
 
 ----------------------------------------------------------------------------------------------------------------
 --TESTING
