@@ -13,8 +13,9 @@ where
 group by all 
 )
 , visited_shops as (
-select distinct
-	(select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+select 
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  -- regexp_replace((select value from unnest(beacon.properties.key_value) where key = "shop_shop_id"), r'[^a-zA-Z0-9]', '') AS shop_id,
   count(visit_id) as pageviews,
   count(distinct visit_id) as visits
 from 
@@ -39,12 +40,14 @@ select
   count(distinct a.shop_id) as active_shops,
   count(distinct v.shop_id) as visited_shops,
   count(distinct case when new_listings > 0 then a.shop_id end) as active_shops_w_new_items,
-  count(distinct case when new_listings > 0 then v.shop_id end) as visited_shops_w_new_items
+  count(distinct case when new_listings > 0 then v.shop_id end) as visited_shops_w_new_items,
+  sum(total_listings) as total_listings,
+  sum(new_listings) as new_listings
 from 
   active_shops a
 left join 
   visited_shops v   
-    on a.shop_id=cast(v.shop_id as int64)
+    on cast(a.shop_id as string)=v.shop_id
 left join 
   active_listings al  
     on a.shop_id=al.shop_id
