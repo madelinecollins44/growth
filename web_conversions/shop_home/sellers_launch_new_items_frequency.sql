@@ -22,28 +22,33 @@ from
 where 
   beacon.event_name in ('shop_home')
   and date(_partitiontime) >= current_date-30
+group by all
 )
 , active_listings as (
 select
   shop_id, 
-  count(distinct case when days_since_original_create <= 30 then listing_id end) as new_item,
-  count(distinct case when days_since_original_create > 30 then listing_id end) as old_item,
+  count(distinct case when days_since_original_create <= 30 then listing_id end) as new_listings,
+  count(distinct case when days_since_original_create > 30 then listing_id end) as old_listings,
   count(distinct listing_id) as total_listings
 from 
   etsy-data-warehouse-prod.rollups.active_listing_basics
 group by all 
 )
 select
+  seller_tier_new,
   count(distinct a.shop_id) as active_shops,
   count(distinct v.shop_id) as visited_shops,
-  count(distinct case when new_item > 0 then shop_id end) as shops_w_new_items,
+  count(distinct case when new_listings > 0 then a.shop_id end) as active_shops_w_new_items,
+  count(distinct case when new_listings > 0 then v.shop_id end) as visited_shops_w_new_items
 from 
   active_shops a
 left join 
-  visited_shops v using (shop_id)
+  visited_shops v   
+    on a.shop_id=cast(v.shop_id as int64)
 left join 
   active_listings al  
     on a.shop_id=al.shop_id
+group by all 
 
 ----------------------------------------------------------------------------------------------------------------
 --TESTING
