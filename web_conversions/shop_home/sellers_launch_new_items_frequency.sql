@@ -34,10 +34,16 @@ from
 group by all 
 )
 select
+  count(distinct a.shop_id) as active_shops,
+  count(distinct v.shop_id) as visited_shops,
+  count(distinct case when new_item > 0 then shop_id end) as shops_w_new_items,
 from 
-  active_shops
+  active_shops a
 left join 
-  active_shops
+  visited_shops v using (shop_id)
+left join 
+  active_listings al  
+    on a.shop_id=al.shop_id
 
 ----------------------------------------------------------------------------------------------------------------
 --TESTING
