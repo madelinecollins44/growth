@@ -176,20 +176,19 @@ GROUP BY ALL
 ORDER BY
   1);
 
--- -- z score calc
--- create temporary table p_values as
--- with z_values as (
---   select 
---   ,    (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num
---   , ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c))  
---       * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1 
---    , (1/browsers_c) + (1/browsers_t) as denom2
---   from base_calcs
---   )
--- select 
---   segment_value, segment_type, abs(num/(sqrt(denom1*denom2))) as z_score
---   from z_values
--- ;
+-- z score calc
+create temporary table p_values as
+with z_values as (
+  select 
+  (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
+  ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
+  (1/browsers_c) + (1/browsers_t) as denom2
+  from base_calcs
+  )
+select 
+  abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
+from z_values
+;
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB 
