@@ -311,9 +311,11 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
 );
 
 -- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
+create or replace table etsy-data-warehouse-dev.madelinecollins.total_lp_review_photos_view_all_link_mweb as (
 SELECT
   xp.variant_id,
   COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
   SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
   SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
   SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
@@ -324,7 +326,10 @@ SELECT
   SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
   SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
   SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
-  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
 FROM
   xp_units AS xp
 LEFT JOIN
@@ -332,12 +337,14 @@ LEFT JOIN
 GROUP BY
   1
 ORDER BY
-  1;
+  1);
 
 -- Key Health Metrics (Winsorized ACBV and AOV) - Only browsers who viewed a listing page with review photos
+create or replace table etsy-data-warehouse-dev.madelinecollins.filtered_lp_review_photos_view_all_link_mweb as (
 SELECT
   xp.variant_id,
   COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
   SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
   SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
   SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
@@ -348,7 +355,10 @@ SELECT
   SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
   SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
   SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
-  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
 FROM
   xp_units AS xp
 INNER JOIN
@@ -357,4 +367,27 @@ LEFT JOIN
   xp_khm_agg_events_by_unit AS e USING (bucketing_id)
 GROUP BY ALL
 ORDER BY
-  1;
+  1);
+
+-- -- z score calc
+-- with browser_count as 
+-- (select
+--   sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
+--   sum(case when variant_id = 'on' then browsers end) as browsers_t,
+--   sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
+--   sum(case when variant_id = 'off' then browsers end) as browsers_c,
+-- from 
+--   etsy-data-warehouse-dev.madelinecollins.filtered_lp_review_photos_view_all_link_mweb
+-- )
+-- , z_values as (
+--   select 
+--   (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
+--   ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
+--   (1/browsers_c) + (1/browsers_t) as denom2
+-- from 
+--   browser_count
+--   )
+-- select 
+--   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
+-- from z_values
+-- ;
