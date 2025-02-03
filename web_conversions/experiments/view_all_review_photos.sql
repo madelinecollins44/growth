@@ -1,5 +1,12 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--This experiment added a "view all" option to the images in the review section on the listing page. 
+-- This experiment was not event filtered, so we currently dont have data on how browsers that saw the change (fired a review_seen event) engaged. 
+-- desktop: https://atlas.etsycorp.com/catapult/1345084581266
+-- mobile web: https://atlas.etsycorp.com/catapult/1344991421721
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------DESKTOP
 -- Define variables
-DECLARE config_flag_param STRING DEFAULT "chops.elp_review_images_above_text.desktop";
+DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_photos_view_all_link_desktop";
 DECLARE start_date DATE;
 DECLARE end_date DATE;
 
