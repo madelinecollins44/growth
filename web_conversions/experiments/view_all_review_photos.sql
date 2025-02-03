@@ -177,8 +177,6 @@ ORDER BY
   1);
 
 -- z score calc
-begin
-create temporary table p_values as
 with browser_count as 
 (select
   case when variant_id = 'on' then converted_browsers end as cr_browsers_t,
@@ -200,7 +198,6 @@ select
   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
 from z_values
 ;
-end
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB 
