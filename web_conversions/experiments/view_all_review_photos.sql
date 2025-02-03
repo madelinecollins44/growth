@@ -177,18 +177,30 @@ ORDER BY
   1);
 
 -- z score calc
+begin
 create temporary table p_values as
-with z_values as (
+with browser_count as 
+(select
+  case when variant_id = 'on' then converted_browsers end as cr_browsers_t,
+  case when variant_id = 'on' then browsers end as browsers_t,
+  case when variant_id = 'off' then converted_browsers end as cr_browsers_c,
+  case when variant_id = 'off' then browsers end as browsers_c,
+from 
+  etsy-data-warehouse-dev.madelinecollins.filtered_lp_review_photos_view_all_link_desktop
+)
+, z_values as (
   select 
   (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
   ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
   (1/browsers_c) + (1/browsers_t) as denom2
-  from base_calcs
+from 
+  browser_count
   )
 select 
   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
 from z_values
 ;
+end
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB 
