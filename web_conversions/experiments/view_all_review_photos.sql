@@ -179,10 +179,10 @@ ORDER BY
 -- z score calc
 with browser_count as 
 (select
-  case when variant_id = 'on' then converted_browsers end as cr_browsers_t,
-  case when variant_id = 'on' then browsers end as browsers_t,
-  case when variant_id = 'off' then converted_browsers end as cr_browsers_c,
-  case when variant_id = 'off' then browsers end as browsers_c,
+  sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
+  sum(case when variant_id = 'on' then browsers end) as browsers_t,
+  sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
+  sum(case when variant_id = 'off' then browsers end) as browsers_c,
 from 
   etsy-data-warehouse-dev.madelinecollins.filtered_lp_review_photos_view_all_link_desktop
 )
