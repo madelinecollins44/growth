@@ -39,6 +39,7 @@ from
   etsy-data-warehouse-prod.analytics.listing_views a
 where 
   _date >=current_date-30
+  and platform in ('mobile_web','desktop')
 group by all
 )
 select
@@ -49,7 +50,7 @@ select
   sum(purchases) as purchases
 from 
   listing_views lv
-left join 
+inner join 
   reviews 
     on lv.listing_id=reviews.listing_id
 group by all
