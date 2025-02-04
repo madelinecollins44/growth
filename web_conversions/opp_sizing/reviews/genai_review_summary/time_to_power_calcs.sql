@@ -25,6 +25,7 @@ where
   has_text_review > 0  
   and language in ('en')
 group by all
+having count(transaction_id) >= 5 and count(transaction_id) <= 200
 order by 2 desc
 )
 , listing_views as (
@@ -52,4 +53,3 @@ left join
   reviews 
     on lv.listing_id=reviews.listing_id
 group by all
-having sum(review_count) between 5 and 200  -- change this based on threshold
