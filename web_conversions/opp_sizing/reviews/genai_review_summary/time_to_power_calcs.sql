@@ -25,7 +25,7 @@ where
   has_text_review > 0  
   and language in ('en')
 group by all
-having count(transaction_id) >= 5 and count(transaction_id) <= 200
+having count(transaction_id) >= 5 and count(transaction_id) <= 100
 order by 2 desc
 )
 , listing_views as (
