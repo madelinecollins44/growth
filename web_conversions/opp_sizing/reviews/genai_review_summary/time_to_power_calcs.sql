@@ -91,3 +91,7 @@ select * from agg where converted = 0 and visit_purchased_after_view = 1 limit 5
 -- desktop	1086521617	ccKCO4aefYlz9o34L6LWetmSgyiN.1736890788087.1	0	1	1	1
 -- desktop	1738533251	b8ZvZxiMe2RN9L0xq3OSaZJZt5--.1737996090388.4	0	1	1	1
 -- desktop	1852511435	3p9vnGnqaI3Nx-EWP4qhHAdHDSI8.1736476498030.1	0	1	1	1
+
+
+--pulling out levels to check
+select * from agg where listing_views > 1 order by converted_on_that_listing desc limit 10 
