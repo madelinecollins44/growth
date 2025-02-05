@@ -196,8 +196,8 @@ group by all
 )
 select 
   count(distinct listing_id) as total_listings,
-  count(distinct case when platform_count = 1 then listing_id end) as one_platform_listing,
-  count(distinct case when platform_count = 2 then listing_id end) as two_platform_listing
+  count(distinct case when platform_count = 1 then listing_id end) / count(distinct listing_id) as one_platform_listing_share,
+  count(distinct case when platform_count = 2 then listing_id end) / count(distinct listing_id) as two_platform_listing_share
 from agg
--- total_listings	one_platform_listing	two_platform_listing
--- 72315490	38153880	34161610
+-- total_listings	one_platform_listing_share	two_platform_listing_share
+-- 72315490	0.5276031456054574	0.4723968543945426
