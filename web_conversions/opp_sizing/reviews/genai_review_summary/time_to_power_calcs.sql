@@ -59,3 +59,29 @@ inner join
   reviews 
     on lv.listing_id=reviews.listing_id
 group by all
+
+------------------------------------------------------------------------------------
+-- TESTING
+------------------------------------------------------------------------------------
+-- make sure conversion calcs work correctly
+with agg as (
+select
+  v.platform,
+	listing_id,
+  a.visit_id,
+  case when converted > 0 then 1 else 0 end as converted,
+	count(a.visit_id) as listing_views,	
+  sum(purchased_after_view) as purchases,
+  case when purchased_after_view > 0 then 1 else 0 end as visit_purchased_after_view,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views a 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v 
+    on a.visit_id=v.visit_id
+where 
+  v._date >=current_date-30
+  and a._date >=current_date-30
+  and v.platform in ('mobile_web','desktop')
+group by all
+)
+select * from agg where converted = 0 and visit_purchased_after_view = 1 limit 5
