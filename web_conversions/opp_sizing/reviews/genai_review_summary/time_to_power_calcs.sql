@@ -136,3 +136,5 @@ select
   count(distinct case when converted_on_that_listing > 0 then visit_id end) as converted_on_that_listing,
   count(distinct visit_id),
 from agg
+-- discrepancy	converted_visit		converted_on_that_listing	unique_visits 
+-- 96			10395691	9689489					455841677
