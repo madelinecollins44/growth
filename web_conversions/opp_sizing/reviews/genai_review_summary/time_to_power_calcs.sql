@@ -1,4 +1,3 @@
---these are the only listings being considered. they active listings from from english language/ united states sellers.these listings are not blocklisted. 
 with active_english_listings as (
 select
   alb.listing_id,
@@ -30,16 +29,21 @@ order by 2 desc
 )
 , listing_views as (
 select
-  platform,
+  v.platform,
 	listing_id,
-  visit_id,
-	count(visit_id) as listing_views,	
+  a.visit_id,
+  case when converted > 0 then 1 else 0 end as converted,
+	count(a.visit_id) as listing_views,	
   sum(purchased_after_view) as purchases,
-from 
-  etsy-data-warehouse-prod.analytics.listing_views a
+from
+  etsy-data-warehouse-prod.analytics.listing_views a 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v 
+    on a.visit_id=v.visit_id
 where 
-  _date >=current_date-30
-  and platform in ('mobile_web','desktop')
+  v._date >=current_date-30
+  and a._date >=current_date-30
+  and v.platform in ('mobile_web','desktop')
 group by all
 )
 select
@@ -47,7 +51,8 @@ select
   count(distinct lv.listing_id) as unique_listings,
   sum(listing_views) as listing_views,
   count(distinct lv.visit_id) as unique_visits,
-  sum(purchases) as purchases
+  sum(purchases) as purchases,
+  count(distinct case when lv.converted > 0 then visit_id end) as converted_visits
 from 
   listing_views lv
 inner join 
