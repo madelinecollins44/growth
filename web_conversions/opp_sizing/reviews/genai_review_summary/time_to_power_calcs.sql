@@ -138,3 +138,32 @@ select
 from agg
 -- discrepancy	converted_visit		converted_on_that_listing	unique_visits 
 -- 96			10395691	9689489					455841677
+
+-------testing platform counts
+-- with both_platforms as (
+-- select
+--   listing_id,
+--   count(distinct platform) as platform_count
+-- from 
+--   etsy-data-warehouse-prod.analytics.listing_views
+-- where 
+--   platform in ('mobile_web','desktop')
+--   and _date >= current_date-30
+-- group by all 
+-- )
+-- select * from both_platforms where platform_count = 1 limit 10
+-- -- listing_id	platform_count
+-- -- 1412025910	1
+-- -- 1448983707	1
+-- -- 673802737	1
+-- -- 989350892	1
+-- -- 1741827753	1
+-- -- 1858863783	1
+-- -- 623152638	1
+-- -- 1249398379	1
+-- -- 1857973045	1
+-- -- 1800392717	1
+
+select * from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where _date >= current_date-30 and listing_id = 1412025910
