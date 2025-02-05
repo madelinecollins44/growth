@@ -140,24 +140,38 @@ from agg
 -- 96			10395691	9689489					455841677
 
 -------testing platform counts
--- with both_platforms as (
--- select
---   listing_id,
---   count(distinct platform) as platform_count
--- from 
---   etsy-data-warehouse-prod.analytics.listing_views
--- where 
---   platform in ('mobile_web','desktop')
---   and _date >= current_date-30
--- group by all 
--- )
+with both_platforms as (
+select
+  listing_id,
+  count(distinct platform) as platform_count
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+group by all 
+)
+select 
+  distinct listing_id
+from both_platforms 
+inner join etsy-data-warehouse-prod.analytics.listing_views using (listing_id)
+where _date >= current_date-30
+and platform in ('boe') 
+and platform_count = 1
+limit 5
+--listings that are only viewed on boe listing_id
+-- 1607582926
+-- 272650094
+-- 1286047855
+-- 1486235298
+-- 1575366713
+
 -- select * from both_platforms where platform_count = 1 limit 10
 -- -- listing_id	platform_count
--- -- 1412025910	1
--- -- 1448983707	1
+-- -- 1412025910	1 ONLY MWEB
+-- -- 1448983707	1 ONLY DESKTOP
 -- -- 673802737	1
 -- -- 989350892	1
--- -- 1741827753	1
+-- -- 1741827753	1 ONLY MWEB
 -- -- 1858863783	1
 -- -- 623152638	1
 -- -- 1249398379	1
@@ -166,4 +180,4 @@ from agg
 
 select * from 
   etsy-data-warehouse-prod.analytics.listing_views
-where _date >= current_date-30 and listing_id = 1412025910
+where _date >= current_date-30 and listing_id = 1575366713
