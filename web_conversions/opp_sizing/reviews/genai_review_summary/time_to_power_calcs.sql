@@ -95,3 +95,14 @@ select * from agg where converted = 0 and visit_purchased_after_view = 1 limit 5
 
 --pulling out levels to check
 select * from agg where listing_views > 1 order by converted_on_that_listing desc limit 10 
+-- platform	listing_id	visit_id	converted_visit	total_listing_views	total_purchases	converted_on_that_listing
+-- mobile_web	1582998659	DnfZ-tG4kaU7XwQru_VTKWxFCdD3.1737736368388.1	1	7	7	1
+-- desktop	1843956467	7Sa_gF4vOJ68F1Rhj2LuoCYO8G0L.1736431214143.1	1	2	2	1
+-- mobile_web	1623230017	D6OQ3yB09IDRUUMw922r9-vu3e67.1737493192911.1	1	3	3	1
+-- mobile_web	1382527575	j94UvRUkyT9PrThSH1LlvTUpKP45.1738195371000.1	1	2	2	1
+-- mobile_web	541787062	ob4uSoISMZ_IxWJyIZhhKhirETWf.1736459554529.1	1	3	3	1
+-- desktop	1815984626	rJeBoiKoSPI1BGBrgIj9i32VPACm.1738254192817.1	1	2	2	1
+-- mobile_web	1167562350	dEGp2FAs-EBfBDSG2OvTCNiOnHf3.1737839490853.1	1	3	3	1
+-- desktop	1828961165	SL5FAbCBOXMMSEBjb7aivBV_ETfn.1738137880484.1	1	2	2	1
+-- desktop	1702943333	JeDWKw0Vx-7hYSSIRUDWY0xEH0Os.1737777378350.1	1	2	2	1
+-- mobile_web	1738713028	syEHhKxz-OU6CfmZQNor-FpaXZSL.1737838729566.3	1	2	2	1
