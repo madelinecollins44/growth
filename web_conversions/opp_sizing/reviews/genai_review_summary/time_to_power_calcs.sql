@@ -85,3 +85,9 @@ where
 group by all
 )
 select * from agg where converted = 0 and visit_purchased_after_view = 1 limit 5
+----------- how is that possible?
+-- platform	listing_id	visit_id	converted	listing_views	purchases	visit_purchased_after_view
+-- desktop	1557780880	ccKCO4aefYlz9o34L6LWetmSgyiN.1736533597516.1	0	3	3	1
+-- desktop	1086521617	ccKCO4aefYlz9o34L6LWetmSgyiN.1736890788087.1	0	1	1	1
+-- desktop	1738533251	b8ZvZxiMe2RN9L0xq3OSaZJZt5--.1737996090388.4	0	1	1	1
+-- desktop	1852511435	3p9vnGnqaI3Nx-EWP4qhHAdHDSI8.1736476498030.1	0	1	1	1
