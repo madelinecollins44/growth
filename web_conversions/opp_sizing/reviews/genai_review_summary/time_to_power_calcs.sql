@@ -181,3 +181,23 @@ limit 5
 select * from 
   etsy-data-warehouse-prod.analytics.listing_views
 where _date >= current_date-30 and listing_id = 1575366713
+
+--seeing shares of platform distro
+with agg as (
+select
+  listing_id,
+  count(distinct platform) as platform_count
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+group by all
+)
+select 
+  count(distinct listing_id) as total_listings,
+  count(distinct case when platform_count = 1 then listing_id end) as one_platform_listing,
+  count(distinct case when platform_count = 2 then listing_id end) as two_platform_listing
+from agg
+-- total_listings	one_platform_listing	two_platform_listing
+-- 72315490	38153880	34161610
