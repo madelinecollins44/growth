@@ -24,7 +24,7 @@ where
   has_text_review > 0  
   and language in ('en')
 group by all
-having count(transaction_id) >= 5 and count(transaction_id) <= 100
+having count(transaction_id) >= 5 and count(transaction_id) <= 300
 order by 2 desc
 )
 , listing_views as (
@@ -32,10 +32,11 @@ select
   v.platform,
 	listing_id,
   a.visit_id,
-  case when converted > 0 then 1 else 0 end as converted,
+  case when converted > 0 then 1 else 0 end as converted_visit,
 	count(a.visit_id) as listing_views,	
-  sum(purchased_after_view) as purchases,
-from
+  sum(purchased_after_view) as total_purchases,
+  case when purchased_after_view > 0 then 1 else 0 end as converted_on_that_listing,
+from 
   etsy-data-warehouse-prod.analytics.listing_views a 
 inner join 
   etsy-data-warehouse-prod.weblog.visits v 
@@ -51,14 +52,15 @@ select
   count(distinct lv.listing_id) as unique_listings,
   sum(listing_views) as listing_views,
   count(distinct lv.visit_id) as unique_visits,
-  sum(purchases) as purchases,
-  count(distinct case when lv.converted > 0 then visit_id end) as converted_visits
+  sum(total_purchases) as total_purchases,
+  count(distinct case when lv.converted_visit > 0 then visit_id end) as visit_that_converted,
+  count(distinct case when lv.converted_on_that_listing > 0 then visit_id end) as visits_that_converted_on_that_listing,
 from 
   listing_views lv
 inner join 
-  reviews 
-    on lv.listing_id=reviews.listing_id
+  reviews r using (listing_id)
 group by all
+order by 1 asc
 
 ------------------------------------------------------------------------------------
 -- TESTING
