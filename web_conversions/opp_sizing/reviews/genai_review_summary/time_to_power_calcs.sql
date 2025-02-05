@@ -108,3 +108,31 @@ select * from agg where listing_views > 1 order by converted_on_that_listing des
 -- desktop	1828961165	SL5FAbCBOXMMSEBjb7aivBV_ETfn.1738137880484.1	1	2	2	1
 -- desktop	1702943333	JeDWKw0Vx-7hYSSIRUDWY0xEH0Os.1737777378350.1	1	2	2	1
 -- mobile_web	1738713028	syEHhKxz-OU6CfmZQNor-FpaXZSL.1737838729566.3	1	2	2	1
+
+----testing weird conversion stats
+with agg as (
+select
+  v.platform,
+	listing_id,
+  a.visit_id,
+  case when converted > 0 then 1 else 0 end as converted_visit,
+	count(a.visit_id) as listing_views,	
+  sum(purchased_after_view) as total_purchases,
+  case when purchased_after_view > 0 then 1 else 0 end as converted_on_that_listing,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views a 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v 
+    on a.visit_id=v.visit_id
+where 
+  v._date >=current_date-30
+  and a._date >=current_date-30
+  and v.platform in ('mobile_web','desktop')
+group by all
+)
+select 
+  count(distinct case when converted_visit = 0 and converted_on_that_listing > 0 then visit_id end) as discrepancy,
+  count(distinct case when converted_visit > 0 then visit_id end) as converted_visit,
+  count(distinct case when converted_on_that_listing > 0 then visit_id end) as converted_on_that_listing,
+  count(distinct visit_id),
+from agg
