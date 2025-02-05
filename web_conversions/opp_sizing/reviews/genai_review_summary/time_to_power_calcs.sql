@@ -1,3 +1,83 @@
+-----listings viewed on both platforms 
+with active_english_listings as (
+select
+  alb.listing_id,
+  top_category
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics alb
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb using (shop_id)
+where 
+  active_seller_status=1 -- active sellers 
+  and primary_language in ('en-US') -- only shops with english/ us as primary language 
+  and sb.country_name in ('United States') -- only US sellers 
+)
+-- text reviews that are in english
+, reviews as (
+select
+  listing_id,
+  count(transaction_id) as review_count,
+from  
+  active_english_listings
+inner join 
+  etsy-data-warehouse-prod.rollups.transaction_reviews using (listing_id)
+where 
+  has_text_review > 0  
+  and language in ('en')
+group by all
+having count(transaction_id) >= 5 and count(transaction_id) <= 300 -- listings w particular review threshold
+order by 2 desc
+)
+, both_platforms as (
+select
+  listing_id,
+  count(distinct platform) as platform_count
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+group by all 
+)
+, listing_views as (
+select
+  v.platform,
+	listing_id,
+  a.visit_id,
+  case when converted > 0 then 1 else 0 end as converted_visit,
+	count(a.visit_id) as listing_views,	
+  sum(purchased_after_view) as total_purchases,
+  case when purchased_after_view > 0 then 1 else 0 end as converted_on_that_listing,
+from 
+  both_platforms bp
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views a using (listing_id) 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v 
+    on a.visit_id=v.visit_id
+where 
+  v._date >=current_date-30
+  and a._date >=current_date-30
+  and v.platform in ('mobile_web','desktop')
+  and bp.platform_count = 2 -- makes sure listings were seen on both mweb + desktop 
+group by all
+)
+select
+  platform,
+  count(distinct lv.listing_id) as unique_listings,
+  sum(listing_views) as listing_views,
+  count(distinct lv.visit_id) as unique_visits,
+  sum(total_purchases) as total_purchases,
+  count(distinct case when lv.converted_visit > 0 then visit_id end) as visit_that_converted,
+  count(distinct case when lv.converted_on_that_listing > 0 then visit_id end) as visits_that_converted_on_that_listing,
+from 
+  listing_views lv
+inner join 
+  reviews r using (listing_id)
+group by all
+order by 1 asc
+	
+-----in general
 with active_english_listings as (
 select
   alb.listing_id,
