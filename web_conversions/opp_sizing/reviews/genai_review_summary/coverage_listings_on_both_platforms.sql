@@ -184,3 +184,14 @@ select
 distinct listing_id  
 from 
 etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size_both_platforms 
+-- listing_id
+-- 901840750, boe/mweb/desktop
+-- 1756629141, boe/mweb/desktop
+-- 1698643305, boe/mweb/desktop
+-- 1517986841, boe/mweb/desktop
+-- 467577241, boe/mweb/desktop
+
+select distinct platform 
+from etsy-data-warehouse-prod.analytics.listing_views
+where _date >= current_date-30
+and listing_id = 467577241
