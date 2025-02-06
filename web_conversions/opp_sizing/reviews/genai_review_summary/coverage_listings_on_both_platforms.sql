@@ -176,7 +176,9 @@ from
 etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size_both_platforms 
 where 
 listing_id in (1607582926, 272650094, 1286047855, 1486235298, 1575366713, 1412025910, 1448983707,  673802737, 989350892, 1741827753, 1858863783, 623152638, 1249398379, 1857973045, 1800392717)
+--There is no data to display.
 
+	
 -- make sure included listings were seen on both platforms
 select 
 distinct listing_id  
