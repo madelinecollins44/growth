@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------------
 -- table created to collect all eligible listings that are viewed on both platforms
 -----------------------------------------------------------------------------------
-create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size_both_platforms as (
 --these are the only listings being considered. they active listings from from english language/ united states sellers.these listings are not blocklisted. 
 with active_english_listings as (
 select
@@ -101,6 +101,18 @@ from
 where 
 	event_name in ('view_listing')
 )
+-- this is a check to make sure a listing is seen on each platform
+, both_platforms as (
+select
+  listing_id,
+  count(distinct platform) as platform_count
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+group by all 
+)
 , listing_views_and_reviews_seen as (
 select
 	cast(lv.listing_id as int64) as listing_id,
@@ -115,6 +127,9 @@ select
 	sum(case when saw_reviews = 1 then purchased_after_view end) as saw_reviews_and_purchased,
 from 
   listing_views lv 
+inner join 
+  both_platforms bp 
+    on lv.listing_id=cast(bp.listing_id as string)
 left join 
 	etsy-data-warehouse-prod.analytics.listing_views a
 		on lv.listing_id=cast(a.listing_id as string)
@@ -123,7 +138,9 @@ left join
 left join 
   etsy-data-warehouse-prod.listing_mart.listings p 
     on cast(p.listing_id as string)=lv.listing_id
-where a._date >=current_date-30
+where 
+  a._date >=current_date-30
+  and bp.platform_count = 2 -- makes sure listings were seen on both mweb + desktop 
 group by all
 )
 select
@@ -148,3 +165,8 @@ left join
 group by all
 order by review_count desc
 );
+
+-----------------------------------------------------------------------------------
+-- testing to make sure listings that were only seen on one platform are not here
+-----------------------------------------------------------------------------------
+select * from etsy-data-warehouse-dev.madelinecollins.genai_category_highstakes_listings_opp_size_both_platforms where listing_id in (
