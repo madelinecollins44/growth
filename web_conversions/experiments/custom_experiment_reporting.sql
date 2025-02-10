@@ -1,1 +1,633 @@
 --Rollup to look at RegX experiments with all metrics
+with plats as (
+-- This CTE gets the platform for each experiment (launch_id)
+select 
+  distinct launch_id
+  , update_date
+  , name as platform
+  , dense_rank() over(partition by launch_id  order by update_date desc) AS row_num
+from 
+  `etsy-data-warehouse-prod.etsy_atlas.catapult_launches_expected_platforms`
+qualify 
+  row_num = 1
+)
+, plats_agg as (
+select 
+  launch_id
+  , string_agg(platform order by platform) as platform
+from plats
+group by all
+)
+
+, exp_coverage as (
+-- This CTE gets the coverage %'s for each experiment. It should match up with what's shown in the catapult page
+select
+  launch_id
+  , coverage_name
+  , date(timestamp_seconds(boundary_start_sec)) as start_date
+  , date(timestamp_seconds(boundary_end_sec)) as end_date
+  , dense_rank() over (partition by launch_id, date(timestamp_seconds(boundary_start_sec)) order by _date desc) as date_rank
+  , cast(coverage_value/100 as float64) as coverage_value
+from `etsy-data-warehouse-prod.catapult.results_coverage_day`
+where segmentation = "any"
+  and segment = "all"
+qualify
+  date_rank=1
+)
+, exp_coverage_agg as (
+select
+  launch_id
+  , start_date
+  , end_date
+  , max(case when coverage_name = 'GMS coverage' then coverage_value else null end) as gms_coverage
+  , max(case when coverage_name = 'Traffic coverage' then coverage_value else null end) as traffic_coverage
+  , max(case when coverage_name = 'Offsite Ads coverage' then coverage_value else null end) as osa_coverage
+  , max(case when coverage_name = 'Prolist coverage' then coverage_value else null end) as prolist_coverage
+from exp_coverage
+group by  
+  all
+), exp_metrics as (
+-- This CTE gathers all the metric ids and the corresponding names included in the experiment, along with whether or not a metric is the success metric.
+select
+  cem.launch_id
+  , cem.metric_id
+  , cm.name
+  , cem.is_success_criteria
+from `etsy-data-warehouse-prod.etsy_atlas.catapult_experiment_metrics`  cem
+left join `etsy-data-warehouse-prod.etsy_atlas.catapult_metrics` cm
+  on cem.metric_id = cm.metric_id
+group by all -- has duplicate rows
+)
+, metrics_list as (
+-- This CTE grabs all of the metric values from the experiment.
+-- Since the results_metric_day table contains values for each day of the experiment (and multiple boundaries if relevant), the date_rnk is used to get the last date of the experiment.
+-- There can be multiple values for a metric on the final day (usually if there is a metric that also has a "cuped" value), the metric_rnk is used to grab the metric that has been "cuped" if there
+-- are multiple values by choosing the one with the longest metric_stat_methodology. 
+select  
+  launch_id
+  , _date
+  , boundary_start_sec as start_date
+  , boundary_end_sec as end_date
+  , metric_variant_name
+  , metric_display_name
+  , metric_id
+  , metric_value_control
+  , metric_value_treatment
+  , relative_change
+  , p_value
+  , dense_rank() over(partition by launch_id, boundary_start_sec order by metric_variant_name asc) as variant_rnk
+  , dense_rank() over(partition by launch_id, boundary_start_sec order by _date desc) as date_rnk
+  , row_number() over(partition by launch_id, metric_variant_name, boundary_start_sec,_date ,lower(metric_display_name) order by length(metric_stat_methodology) desc) as metric_rnk
+from `etsy-data-warehouse-prod.catapult.results_metric_day` 
+where 
+  1=1
+  and segmentation = "any"
+  and segment = "all"
+qualify
+  date_rnk=1 and metric_rnk=1
+)
+, metrics_agg as (
+-- This CTE aggregates all of the relevant metrics. Here is where we can add in new metrics if needed. 
+select
+  ml.launch_id
+  , ml.start_date
+  , ml.end_date
+  , max(case when ml.variant_rnk=1 then metric_variant_name else null end) as variant1_name
+  , max(case when ml.variant_rnk=2 then metric_variant_name else null end) as variant2_name
+  -- target metric
+  , max(case when em.is_success_criteria>0 and ml.variant_rnk=1 then em.name else null end) as target_metric
+  , max(case when em.is_success_criteria>0 and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_value_target_metric
+  , max(case when em.is_success_criteria>0 and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_value_target_metric
+  , max(case when em.is_success_criteria>0 and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_target_metric
+  , max(case when em.is_success_criteria>0 and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_target_metric
+  -- Conversion rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_conversion_rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_conversion_rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_conversion_rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_conversion_rate
+  -- Percent with add to cart
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_atc
+  -- Listing view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_listing_view
+  -- Shop home 
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_w_shop_home_view
+  -- Mean visit
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_mean_visits
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_mean_visits
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_mean_visits
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_mean_visits
+  -- GMS per unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_gms_per_unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_gms_per_unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_gms_per_unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_gms_per_unit
+  -- Mean engaged visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_mean_engaged_visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_mean_engaged_visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_mean_engaged_visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_mean_engaged_visit
+  -- ADs Conversion rate
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_ads_cvr
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_ads_cvr
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_ads_cvr
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_ads_cvr
+  -- ADs ACxV
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_ads_acxv
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_ads_acxv
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_ads_acxv
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_ads_acxv
+  -- Winsorized ACxV
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_winsorized_acxv
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_winsorized_acxv
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_winsorized_acxv
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_winsorized_acxv
+  -- OCB
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_ocb
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_ocb
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_ocb
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_ocb
+  -- Orders per unit
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_opu
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_opu
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_opu
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_opu
+  -- Winsorized AOV
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_aov
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_aov
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_aov
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_aov  
+  -- Prolist Spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_mean_prolist_spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_mean_prolist_spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_mean_prolist_spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_mean_prolist_spend
+  -- OSA Revenue
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_mean_osa_revenue
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_mean_osa_revenue
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_mean_osa_revenue
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_mean_osa_revenue
+  -- Variant 2 Conversion rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_conversion_rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_conversion_rate
+  , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_conversion_rate
+    -- Variant 2 Percent with add to cart
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_pct_atc
+  -- Variant 2 Listing view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_pct_listing_view
+  -- Variant 2 Shop home 
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_pct_w_shop_home_view
+  -- Variant 2 Mean visits
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_mean_visits
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_mean_visits
+  , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_mean_visits
+  -- Variant 2 GMS per unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_gms_per_unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_gms_per_unit
+  , max(case when lower(ml.metric_display_name) = 'gms per unit' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_gms_per_unit
+  -- Variant 2 Mean engaged visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_mean_engaged_visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_mean_engaged_visit
+  , max(case when lower(ml.metric_display_name) = 'mean engaged_visit' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_mean_engaged_visit
+  -- Variant 2 ADs Conversion rate
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_ads_cvr
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_ads_cvr
+  , max(case when lower(ml.metric_display_name) = 'ads conversion rate' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_ads_cvr
+  -- Variant 2 ADs ACxV
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_ads_acxv
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_ads_acxv
+  , max(case when lower(ml.metric_display_name) in ('ads winsorized ac*v ($100)','ads winsorized acvv ($100)') and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_ads_acxv
+  -- Variant 2 Winsorized ACxV
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_winsorized_acxv
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_winsorized_acxv
+  , max(case when lower(ml.metric_display_name) = 'winsorized ac*v' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_winsorized_acxv
+  -- Variant 2 OCB
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_ocb
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_ocb
+  , max(case when lower(ml.metric_display_name) = 'orders per converting browser (ocb)' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_ocb  
+  -- Variant 2 Orders per unit
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_opu
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_opu
+  , max(case when lower(ml.metric_display_name) = 'orders per unit' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_opu  
+  -- Variant 2 Winsorized AOV
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_aov
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_aov
+  , max(case when lower(ml.metric_display_name) = 'winsorized aov' and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_aov
+  -- Variant 2 Prolist Spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_mean_prolist_spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_mean_prolist_spend
+  , max(case when lower(ml.metric_display_name) in ('etsy ads click revenue','mean prolist_total_spend') and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_mean_prolist_spend
+  -- Variant 2 OSA
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=2 then ml.metric_value_treatment else null end) as variant2_mean_osa_revenue
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=2 then ml.relative_change else null end)/100 as variant2_pct_change_mean_osa_revenue
+  , max(case when lower(ml.metric_display_name) in ('offsite ads attributed revenue','mean offsite_ads_one_day_attributed_revenue') and ml.variant_rnk=2 then ml.p_value else null end) as variant2_pval_mean_osa_revenue
+from metrics_list ml 
+left join exp_metrics em
+  on em.launch_id = ml.launch_id 
+     and em.metric_id = ml.metric_id
+group by 
+  all
+)
+, metrics_agg_clean as (
+-- This purpose of this CTE is to make sure that the ramped up variant is in the variant1_.. metric format, if relevant. it is grabbing the ramped variant from the catapult_gms_report table and matching it to the metrics
+-- table's variant
+select
+  cgms.launch_id
+  , cgms.status
+  , cgms.variant
+  , ma.start_date
+  , ma.end_date
+  , ma.variant1_name
+  , ma.variant2_name
+  , ma.target_metric
+  , ma.control_value_target_metric
+  , ma.variant1_value_target_metric
+  , ma.variant1_pct_change_target_metric
+  , ma.variant1_pval_target_metric
+  -- conversion rate
+  , ma.control_conversion_rate
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_conversion_rate
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_conversion_rate
+      else ma.variant1_conversion_rate
+      end as variant1_conversion_rate
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_conversion_rate
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_conversion_rate
+      else ma.variant1_pct_change_conversion_rate
+      end as variant1_pct_change_conversion_rate 
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_conversion_rate
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_conversion_rate
+      else ma.variant1_pval_conversion_rate
+      end as variant1_pval_conversion_rate
+  -- mean visits
+  , ma.control_mean_visits
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_mean_visits
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_mean_visits
+      else ma.variant1_mean_visits
+      end as variant1_mean_visits    
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_mean_visits
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_mean_visits
+      else ma.variant1_pct_change_mean_visits
+      end as variant1_pct_change_mean_visits
+  ,case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_mean_visits
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_mean_visits
+      else ma.variant1_pval_mean_visits
+      end as variant1_pval_mean_visits
+  -- gms per unit
+  , ma.control_gms_per_unit
+  ,case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_gms_per_unit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_gms_per_unit
+      else ma.variant1_gms_per_unit
+      end as variant1_gms_per_unit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_gms_per_unit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_gms_per_unit
+      else ma.variant1_pct_change_gms_per_unit
+      end as variant1_pct_change_gms_per_unit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_gms_per_unit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_gms_per_unit
+      else ma.variant1_pval_gms_per_unit
+      end as variant1_pval_gms_per_unit
+  -- mean engaged visit
+  , ma.control_mean_engaged_visit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_mean_engaged_visit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_mean_engaged_visit
+      else ma.variant1_mean_engaged_visit
+      end as variant1_mean_engaged_visit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_mean_engaged_visit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_mean_engaged_visit
+      else ma.variant1_pct_change_mean_engaged_visit
+      end as variant1_pct_change_mean_engaged_visit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_mean_engaged_visit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_mean_engaged_visit
+      else ma.variant1_pval_mean_engaged_visit
+      end as variant1_pval_mean_engaged_visit
+  -- ads conversion rate
+  , ma.control_ads_cvr
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_ads_cvr
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_ads_cvr
+      else ma.variant1_ads_cvr
+      end as variant1_ads_cvr
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_ads_cvr
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_ads_cvr
+      else ma.variant1_pct_change_ads_cvr
+      end as variant1_pct_change_ads_cvr
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_ads_cvr
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_ads_cvr
+      else ma.variant1_pval_ads_cvr
+      end as variant1_pval_ads_cvr
+  -- ads acxv
+  , ma.control_ads_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_ads_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_ads_acxv
+      else ma.variant1_ads_acxv
+      end as variant1_ads_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_ads_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_ads_acxv
+      else ma.variant1_pct_change_ads_acxv
+      end as variant1_pct_change_ads_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_ads_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_ads_acxv
+      else ma.variant1_pval_ads_acxv
+      end as variant1_pval_ads_acxv
+  -- winsorized acxv
+  , ma.control_winsorized_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_winsorized_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_winsorized_acxv
+      else ma.variant1_winsorized_acxv
+      end as variant1_winsorized_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_winsorized_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_winsorized_acxv
+      else ma.variant1_pct_change_winsorized_acxv
+      end as variant1_pct_change_winsorized_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_winsorized_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_winsorized_acxv
+      else ma.variant1_pval_winsorized_acxv
+      end as variant1_pval_winsorized_acxv
+  -- orders per unit
+  , ma.control_opu
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_opu
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_opu
+      else ma.variant1_opu
+      end as variant1_opu
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_opu
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_opu
+      else ma.variant1_pct_change_opu
+      end as variant1_pct_change_opu
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_opu
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_opu
+      else ma.variant1_pval_opu
+      end as variant1_pval_opu
+  -- aov
+  , ma.control_aov
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_aov
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_aov
+      else ma.variant1_aov
+      end as variant1_aov
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_aov
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_aov
+      else ma.variant1_pct_change_aov
+      end as variant1_pct_change_aov
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_aov  
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_aov  
+      else ma.variant1_pval_aov  
+      end as variant1_pval_aov  
+  -- mean prolist spend
+  , ma.control_mean_prolist_spend
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_mean_prolist_spend
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_mean_prolist_spend
+      else ma.variant1_mean_prolist_spend
+      end as variant1_mean_prolist_spend
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_mean_prolist_spend
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_mean_prolist_spend
+      else ma.variant1_pct_change_mean_prolist_spend
+      end as variant1_pct_change_mean_prolist_spend
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_mean_prolist_spend
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_mean_prolist_spend
+      else ma.variant1_pval_mean_prolist_spend
+      end as variant1_pval_mean_prolist_spend
+  -- osa revenue
+  , ma.control_mean_osa_revenue
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_mean_osa_revenue
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_mean_osa_revenue
+      else ma.variant1_mean_osa_revenue
+      end as variant1_mean_osa_revenue
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_mean_osa_revenue
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_mean_osa_revenue
+      else ma.variant1_pct_change_mean_osa_revenue
+      end as variant1_pct_change_mean_osa_revenue
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_mean_osa_revenue
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_mean_osa_revenue
+      else ma.variant1_pval_mean_osa_revenue
+      end as variant1_pval_mean_osa_revenue
+  -- variant 2 conversion rate
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_conversion_rate
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_conversion_rate
+      else ma.variant2_conversion_rate
+      end as variant2_conversion_rate
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_conversion_rate
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_conversion_rate
+      else ma.variant2_pct_change_conversion_rate
+      end as variant2_pct_change_conversion_rate
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_conversion_rate
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_conversion_rate
+      else ma.variant2_pval_conversion_rate
+      end as variant2_pval_conversion_rate
+  -- variant 2 mean visits
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_mean_visits
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_mean_visits
+      else ma.variant2_mean_visits
+      end as variant2_mean_visits
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_mean_visits
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_mean_visits
+      else ma.variant2_pct_change_mean_visits
+      end as variant2_pct_change_mean_visits
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_mean_visits
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_mean_visits
+      else ma.variant2_pval_mean_visits
+      end as variant2_pval_mean_visits
+  -- variant 2 gms per unit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_gms_per_unit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_gms_per_unit
+      else ma.variant2_gms_per_unit
+      end as variant2_gms_per_unit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_gms_per_unit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_gms_per_unit
+      else ma.variant2_pct_change_gms_per_unit
+      end as variant2_pct_change_gms_per_unit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_gms_per_unit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_gms_per_unit
+      else ma.variant2_pval_gms_per_unit
+      end as variant2_pval_gms_per_unit
+  -- variant 2 mean engaged visit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_mean_engaged_visit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_mean_engaged_visit
+      else ma.variant2_mean_engaged_visit
+      end as variant2_mean_engaged_visit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_mean_engaged_visit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_mean_engaged_visit
+      else ma.variant2_pct_change_mean_engaged_visit
+      end as variant2_pct_change_mean_engaged_visit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_mean_engaged_visit
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_mean_engaged_visit
+      else ma.variant2_pval_mean_engaged_visit
+      end as variant2_pval_mean_engaged_visit
+  -- variant 2 ads cvr
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_ads_cvr
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_ads_cvr
+      else ma.variant2_ads_cvr
+      end as variant2_ads_cvr
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_ads_cvr
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_ads_cvr
+      else ma.variant2_pct_change_ads_cvr
+      end as variant2_pct_change_ads_cvr
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_ads_cvr
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_ads_cvr
+      else ma.variant2_pval_ads_cvr
+      end as variant2_pval_ads_cvr
+  -- variant 2 ads acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_ads_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_ads_acxv
+      else ma.variant2_ads_acxv
+      end as variant2_ads_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_ads_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_ads_acxv
+      else ma.variant2_pct_change_ads_acxv
+      end as variant2_pct_change_ads_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_ads_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_ads_acxv
+      else ma.variant2_pval_ads_acxv
+      end as variant2_pval_ads_acxv
+  -- variant 2 winsorized acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_winsorized_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_winsorized_acxv
+      else ma.variant2_winsorized_acxv
+      end as variant2_winsorized_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_winsorized_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_winsorized_acxv
+      else ma.variant2_pct_change_winsorized_acxv
+      end as variant2_pct_change_winsorized_acxv
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_winsorized_acxv
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_winsorized_acxv
+      else ma.variant2_pval_winsorized_acxv
+      end as variant2_pval_winsorized_acxv
+  -- variant 2 orders per unit
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_opu
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_opu
+      else ma.variant2_opu
+      end as variant2_opu
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_opu
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_opu
+      else ma.variant2_pct_change_opu
+      end as variant2_pct_change_opu
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_opu  
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_opu  
+      else ma.variant2_pval_opu  
+      end as variant2_pval_opu  
+  --variant 2 aov
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_aov
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_aov
+      else ma.variant2_aov
+      end as variant2_aov
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_aov
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_aov
+      else ma.variant2_pct_change_aov
+      end as variant2_pct_change_aov
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_aov
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_aov
+      else ma.variant2_pval_aov
+      end as variant2_pval_aov
+  -- variant 2 mean prolist spend
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_mean_prolist_spend
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_mean_prolist_spend
+      else ma.variant2_mean_prolist_spend
+      end as variant2_mean_prolist_spend
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_mean_prolist_spend
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_mean_prolist_spend
+      else ma.variant2_pct_change_mean_prolist_spend
+      end as variant2_pct_change_mean_prolist_spend
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_mean_prolist_spend
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_mean_prolist_spend
+      else ma.variant2_pval_mean_prolist_spend
+      end as variant2_pval_mean_prolist_spend
+  -- variant 2 mean osa revenue
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_mean_osa_revenue
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_mean_osa_revenue
+      else ma.variant2_mean_osa_revenue
+      end as variant2_mean_osa_revenue
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pct_change_mean_osa_revenue
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pct_change_mean_osa_revenue
+      else ma.variant2_pct_change_mean_osa_revenue
+      end as variant2_pct_change_mean_osa_revenue
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant2_pval_mean_osa_revenue
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant1_pval_mean_osa_revenue
+      else ma.variant2_pval_mean_osa_revenue
+      end as variant2_pval_mean_osa_revenue
+from `etsy-data-warehouse-prod.etsy_atlas.catapult_gms_reports` cgms
+left join metrics_agg ma
+  on cgms.launch_id = ma.launch_id
+  and cgms.start_date = date(timestamp_seconds(ma.start_date))
+  and cgms.end_date = date(timestamp_seconds(ma.end_date))
+where
+  extract(year from cgms.end_date)>=2024
+  and cgms.launch_id is not null
+  and cgms.reviewed=1
+)
