@@ -682,3 +682,252 @@ where
   and cgms.launch_id is not null
   and cgms.reviewed=1
 )
+-- this is the final aggregated product experiments table. In the metrics section it is overwriting the metric values if a KHM is entered in the KR metric 1/2 metric dropdowns
+-- One thing to note is that there is not option to enter the metric value on the catapult report page, so we can not get the actual values for overwritten metrics     
+select
+  cgms.launch_id
+  , concat("https://atlas.etsycorp.com/catapult/", CAST(cgms.launch_id AS STRING)) AS catapult_link
+  , cgms.gms_report_id
+  , cl.config_flag
+  , cgms.noncatapult
+  , cgms.is_long_term_holdout
+  , cgms.experiment_name
+  , cl.hypothesis
+  , cgms.start_date
+  , cgms.end_date
+  , cgms.learnings
+  , coalesce(cgms.initiative, cl.initiative) as initiative
+  , cgms.subteam 
+  , cgms.product_lead
+  , cgms.analyst_lead
+  , cgms.status
+  , case 
+      when (cgms.status = "Ramped Up")
+            and (
+                (ma.variant1_pval_conversion_rate<.05 and ma.variant1_pct_change_conversion_rate>0)
+                or (ma.variant1_pval_opu<.05 and ma.variant1_pct_change_opu>0)
+                or (ma.variant1_pval_mean_visits<.05 and ma.variant1_pct_change_mean_visits>0)
+                or (ma.variant1_pval_winsorized_acxv<.05 and ma.variant1_pct_change_winsorized_acxv>0)
+                or (ma.variant1_pval_gms_per_unit<.05 and ma.variant1_pct_change_gms_per_unit>0)  
+                )
+        then "Ramped Up KPI Win"
+      when (cgms.status = "Ramped Up")
+        then "Ramped Up Neutral"
+      else "Ramped Down"
+    end as ramp_decision
+  , cgms.variant as ramped_variant
+  , t.tag
+  , t.group_tag
+  , coalesce(p.platform,cgms.platform) as platform
+  , coalesce(cgms.audience,cl.audience) AS audience
+  , coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1) AS traffic_percentage
+  , eca.gms_coverage
+  , eca.traffic_coverage
+  , eca.osa_coverage
+  , eca.prolist_coverage
+  , cgms.kpi_initiative_name
+  , cgms.kpi_initiative_value
+  , cgms.kpi_initiative_coverage
+  , cgms.kr_metric_name
+  , cgms.kr_metric_value
+  , cgms.kr_metric_coverage
+  , cgms.kr_metric_name_2 as kr2_metric_name
+  , cgms.kr_metric_value_2 as kr2_metric_value
+  , cgms.kr_metric_coverage_2 as kr2_metric_coverage
+  -- Target metric 
+  , ma.target_metric
+  , ma.control_value_target_metric
+  , ma.variant1_value_target_metric
+  , ma.variant1_pct_change_target_metric
+  , ma.variant1_pval_target_metric
+  -- Conversion rate
+  , ma.control_conversion_rate
+  , ma.variant1_conversion_rate
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_conversion_rate
+      end as variant1_pct_change_conversion_rate
+  , case 
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and ma.variant1_pval_conversion_rate<.05 then ma.variant1_pct_change_conversion_rate * eca.gms_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      else null
+      end as global_conversion_rate
+  , ma.variant1_pval_conversion_rate
+  -- Mean visits
+  , ma.control_mean_visits
+  , ma.variant1_mean_visits
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'mean visits' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'mean visits' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_mean_visits
+      end as variant1_pct_change_mean_visits
+  , ma.variant1_pval_mean_visits
+  -- GMS per units
+  , ma.control_gms_per_unit
+  , ma.variant1_gms_per_unit
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'gms per unit' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'gms per unit' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_gms_per_unit
+      end as variant1_pct_change_gms_per_unit
+  , case 
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'gms per unit' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'gms per unit' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and ma.variant1_pval_gms_per_unit<.05 then ma.variant1_pct_change_gms_per_unit * eca.gms_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      else null
+      end as global_gms_per_unit
+  , ma.variant1_pval_gms_per_unit
+  -- Mean engaged visits
+  , ma.control_mean_engaged_visit
+  , ma.variant1_mean_engaged_visit
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'mean engaged_visit' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'mean engaged_visit' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_mean_engaged_visit
+      end as variant1_pct_change_mean_engaged_visit
+  , ma.variant1_pval_mean_engaged_visit
+  -- Winsorized ACxV
+  , ma.control_winsorized_acxv
+  , ma.variant1_winsorized_acxv
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'winsorized ac*v' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'winsorized ac*v' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_winsorized_acxv
+      end as variant1_pct_change_winsorized_acxv
+  , ma.variant1_pval_winsorized_acxv
+  -- Orders per unit
+  , ma.control_opu
+  , ma.variant1_opu
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'orders per unit' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'orders per unit' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_opu
+      end as variant1_pct_change_opu
+  , ma.variant1_pval_opu
+  -- Winsorized AOV
+  , ma.control_aov
+  , ma.variant1_aov
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'winsorized aov' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'winsorized aov' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_aov
+      end as variant1_pct_change_aov
+  , case 
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'winsorized aov' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'winsorized aov' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and ma.variant1_pval_aov<.05 then ma.variant1_pct_change_aov * eca.gms_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      else null
+      end as global_mean_aov
+  , ma.variant1_pval_aov
+  -- ADs Conversion rate
+  , ma.control_ads_cvr
+  , ma.variant1_ads_cvr
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'ads conversion rate' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'ads conversion rate' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_ads_cvr
+      end as variant1_pct_change_ads_cvr
+  , ma.variant1_pval_ads_cvr
+  -- ADs ACxV
+  , ma.control_ads_acxv
+  , ma.variant1_ads_acxv
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'ads winsorized ac*v ($100)' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'ads winsorized ac*v ($100)' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_ads_acxv
+      end as variant1_pct_change_ads_acxv
+  , ma.variant1_pval_ads_acxv
+  -- Mean prolist spend
+  , ma.control_mean_prolist_spend
+  , ma.variant1_mean_prolist_spend
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'etsy ads click revenue' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'etsy ads click revenue' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_mean_prolist_spend
+      end as variant1_pct_change_mean_prolist_spend
+  , ma.variant1_pval_mean_prolist_spend
+  -- Mean osa revenue
+  , ma.control_mean_osa_revenue
+  , ma.variant1_mean_osa_revenue
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'offsite ads attributed revenue' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'offsite ads attributed revenue' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_mean_osa_revenue
+      end as variant1_pct_change_mean_osa_revenue
+  , case 
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'offsite ads attributed revenue' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'offsite ads attributed revenue' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      when cgms.status = 'Ramped Up' and ma.variant1_pval_mean_osa_revenue<.05 then ma.variant1_pct_change_mean_osa_revenue * eca.osa_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
+      else null
+      end as global_osa_revenue
+  , ma.variant1_pval_mean_osa_revenue
+  -- Variant 2 Conversion rate
+  , ma.variant2_conversion_rate
+  , ma.variant2_pct_change_conversion_rate
+  , ma.variant2_pval_conversion_rate
+  -- Variant 2 Mean visits
+  , ma.variant2_mean_visits
+  , ma.variant2_pct_change_mean_visits
+  , ma.variant2_pval_mean_visits
+  -- Variant 2 GMS per unit
+  , ma.variant2_gms_per_unit
+  , ma.variant2_pct_change_gms_per_unit
+  , ma.variant2_pval_gms_per_unit
+  -- Variant Mean engaged visit
+  , ma.variant2_mean_engaged_visit
+  , ma.variant2_pct_change_mean_engaged_visit
+  , ma.variant2_pval_mean_engaged_visit
+  -- Variant 2 Winsorized ACxV
+  , ma.variant2_winsorized_acxv
+  , ma.variant2_pct_change_winsorized_acxv
+  , ma.variant2_pval_winsorized_acxv
+  -- Variant 2 Orders per unit
+  , ma.variant2_opu
+  , ma.variant2_pct_change_opu
+  , ma.variant2_pval_opu  
+  -- Variant 2 AOV
+  , ma.variant2_aov
+  , ma.variant2_pct_change_aov
+  , ma.variant2_pval_aov
+  -- Variant 2 ADs ACxV
+  , ma.variant2_ads_acxv
+  , ma.variant2_pct_change_ads_acxv
+  , ma.variant2_pval_ads_acxv
+  -- Variant 2 ADs Conversion rate
+  , ma.variant2_ads_cvr
+  , ma.variant2_pct_change_ads_cvr
+  , ma.variant2_pval_ads_cvr
+  -- Variant 2 Mean prolist spend
+  , ma.variant2_mean_prolist_spend
+  , ma.variant2_pct_change_mean_prolist_spend
+  , ma.variant2_pval_mean_prolist_spend
+  -- Variant 2 Mean OSA revenue
+  , ma.variant2_mean_osa_revenue
+  , ma.variant2_pct_change_mean_osa_revenue
+  , ma.variant2_pval_mean_osa_revenue
+  -- discounted metric fields
+  , cgms.conv_pct_change as reported_gms_change_perc
+  , cgms.gms_coverage as reported_gms_coverage
+from `etsy-data-warehouse-prod.etsy_atlas.catapult_gms_reports`  cgms
+left join `etsy-data-warehouse-prod.etsy_atlas.catapult_launches` cl
+  on cgms.launch_id = cl.launch_id
+left join `etsy-data-warehouse-prod.rollups.experiment_tags` t
+  on TRIM(REGEXP_EXTRACT(LOWER(cgms.learnings), 'experiment-tags:([^\n\\.]+)')) = TRIM(LOWER(t.tag))  
+left join plats_agg p 
+  on cgms.launch_id = p.launch_id
+left join exp_coverage_agg eca
+  on cgms.launch_id = eca.launch_id
+  and cgms.start_date = eca.start_date
+  and cgms.end_date = eca.end_date
+left join metrics_agg_clean ma 
+  on cgms.launch_id = ma.launch_id
+  and cgms.start_date = date(timestamp_seconds(ma.start_date))
+  and cgms.end_date = date(timestamp_seconds(ma.end_date))
+where
+  extract(year from cgms.end_date)>=2024
+  and cgms.reviewed=1
+  and cgms.start_date<current_date-1 -- there's an experiment with a strange date
+  and coalesce(cgms.initiative, cl.initiative) in ('Drive Conversion')
+  and cgms.subteam in ('RegX','Registry Experience')
