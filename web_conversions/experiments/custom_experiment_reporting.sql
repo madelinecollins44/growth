@@ -749,13 +749,34 @@ select
       when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
       else ma.variant1_pct_change_conversion_rate
       end as variant1_pct_change_conversion_rate
-  , case 
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and ma.variant1_pval_conversion_rate<.05 then ma.variant1_pct_change_conversion_rate * eca.gms_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      else null
-      end as global_conversion_rate
   , ma.variant1_pval_conversion_rate
+  --Percent with add to cart
+  , ma.control_pct_atc
+  , ma.variant1_pct_atc
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_pct_atc
+      end as variant1_pct_change_pct_atc
+  , ma.variant1_pval_pct_atc
+  -- Listing view
+  , ma.control_pct_listing_view
+  , ma.variant1_pct_listing_view
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_pct_listing_view
+      end as variant1_pct_change_pct_listing_view
+  , ma.variant1_pval_pct_listing_view
+ --Shop home 
+  , ma.control_pct_w_shop_home_view
+  , ma.variant1_pct_w_shop_home_view
+  , case 
+      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
+      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
+      else ma.variant1_pct_change_pct_w_shop_home_view
+      end as variant1_pct_change_pct_w_shop_home_view
+  , ma.variant1_pval_pct_w_shop_home_view
   -- Mean visits
   , ma.control_mean_visits
   , ma.variant1_mean_visits
@@ -773,12 +794,6 @@ select
       when LOWER(cgms.kr_metric_name_2) = 'gms per unit' then cgms.kr_metric_value_2
       else ma.variant1_pct_change_gms_per_unit
       end as variant1_pct_change_gms_per_unit
-  , case 
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'gms per unit' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'gms per unit' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and ma.variant1_pval_gms_per_unit<.05 then ma.variant1_pct_change_gms_per_unit * eca.gms_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      else null
-      end as global_gms_per_unit
   , ma.variant1_pval_gms_per_unit
   -- Mean engaged visits
   , ma.control_mean_engaged_visit
@@ -815,12 +830,6 @@ select
       when LOWER(cgms.kr_metric_name_2) = 'winsorized aov' then cgms.kr_metric_value_2
       else ma.variant1_pct_change_aov
       end as variant1_pct_change_aov
-  , case 
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'winsorized aov' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'winsorized aov' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and ma.variant1_pval_aov<.05 then ma.variant1_pct_change_aov * eca.gms_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      else null
-      end as global_mean_aov
   , ma.variant1_pval_aov
   -- ADs Conversion rate
   , ma.control_ads_cvr
@@ -857,12 +866,6 @@ select
       when LOWER(cgms.kr_metric_name_2) = 'offsite ads attributed revenue' then cgms.kr_metric_value_2
       else ma.variant1_pct_change_mean_osa_revenue
       end as variant1_pct_change_mean_osa_revenue
-  , case 
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name) = 'offsite ads attributed revenue' then cgms.kr_metric_value * cgms.kr_metric_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and LOWER(cgms.kr_metric_name_2) = 'offsite ads attributed revenue' then cgms.kr_metric_value_2 * cgms.kr_metric_coverage_2 * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      when cgms.status = 'Ramped Up' and ma.variant1_pval_mean_osa_revenue<.05 then ma.variant1_pct_change_mean_osa_revenue * eca.osa_coverage * (1/coalesce(cast(cgms.traffic_percent as FLOAT64),cast((cl.layer_end - cl.layer_start)/100 as FLOAT64),1))
-      else null
-      end as global_osa_revenue
   , ma.variant1_pval_mean_osa_revenue
   -- Variant 2 Conversion rate
   , ma.variant2_conversion_rate
