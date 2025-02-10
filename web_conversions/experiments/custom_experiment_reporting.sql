@@ -275,6 +275,57 @@ select
       when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_conversion_rate
       else ma.variant1_pval_conversion_rate
       end as variant1_pval_conversion_rate
+  -- Percent with add to cart
+  , ma.control_pct_atc
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_atc
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_atc
+      else ma.variant1_pct_atc
+      end as variant1_pct_atc
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_pct_atc
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_pct_atc
+      else ma.variant1_pct_change_pct_atc
+      end as variant1_pct_change_pct_atc 
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_pct_atc
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_pct_atc
+      else ma.variant1_pval_pct_atc
+      end as variant1_pval_pct_atc
+  -- Listing view
+  , ma.control_pct_listing_view
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_listing_view
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_listing_view
+      else ma.variant1_pct_listing_view
+      end as variant1_pct_listing_view
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_pct_listing_view
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_pct_listing_view
+      else ma.variant1_pct_change_pct_listing_view
+      end as variant1_pct_change_pct_listing_view 
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_pct_listing_view
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_pct_listing_view
+      else ma.variant1_pval_pct_listing_view
+      end as variant1_pval_pct_listing_view
+  -- Shop home 
+  , ma.control_pct_w_shop_home_view
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_w_shop_home_view
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_w_shop_home_view
+      else ma.variant1_pct_w_shop_home_view
+      end as variant1_pct_w_shop_home_view
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pct_change_pct_w_shop_home_view
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pct_change_pct_w_shop_home_view
+      else ma.variant1_pct_change_pct_w_shop_home_view
+      end as variant1_pct_change_pct_w_shop_home_view 
+  , case 
+      when cgms.status = "Ramped Up" and variant = variant1_name then ma.variant1_pval_pct_w_shop_home_view
+      when cgms.status = "Ramped Up" and variant = variant2_name then ma.variant2_pval_pct_w_shop_home_view
+      else ma.variant1_pval_pct_w_shop_home_view
+      end as variant1_pval_pct_w_shop_home_view
   -- mean visits
   , ma.control_mean_visits
   , case 
