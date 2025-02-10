@@ -107,20 +107,20 @@ select
   , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_conversion_rate
   , max(case when lower(ml.metric_display_name) = 'conversion rate' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_conversion_rate
   -- Percent with add to cart
-  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_atc
-  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_atc
-  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_atc
-  , max(case when lower(ml.metric_display_name) = 'Percent with add to cart' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'percent with add to cart' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'percent with add to cart' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'percent with add to cart' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_atc
+  , max(case when lower(ml.metric_display_name) = 'percent with add to cart' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_atc
   -- Listing view
-  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_listing_view
-  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_listing_view
-  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_listing_view
-  , max(case when lower(ml.metric_display_name) = 'Percent with listing view' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'percent with listing view' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'percent with listing view' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'percent with listing view' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_listing_view
+  , max(case when lower(ml.metric_display_name) = 'percent with listing view' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_listing_view
   -- Shop home 
-  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_w_shop_home_view
-  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_w_shop_home_view
-  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_w_shop_home_view
-  , max(case when lower(ml.metric_display_name) = 'Percent with shop home view' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'percent with shop home view' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'percent with shop home view' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'percent with shop home view' and ml.variant_rnk=1 then ml.relative_change else null end)/100 as variant1_pct_change_pct_w_shop_home_view
+  , max(case when lower(ml.metric_display_name) = 'percent with shop home view' and ml.variant_rnk=1 then ml.p_value else null end) as variant1_pval_pct_w_shop_home_view
   -- Mean visit
   , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=1 then ml.metric_value_control else null end) as control_mean_visits
   , max(case when lower(ml.metric_display_name) = 'mean visits' and ml.variant_rnk=1 then ml.metric_value_treatment else null end) as variant1_mean_visits
