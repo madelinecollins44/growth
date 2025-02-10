@@ -1,4 +1,5 @@
 --Rollup to look at RegX experiments with all metrics
+create or replace table etsy-data-warehouse-dev.rollups.custom_drive_conversion_regx_experiment_reporting as (
 with plats as (
 -- This CTE gets the platform for each experiment (launch_id)
 select 
@@ -931,3 +932,4 @@ where
   and cgms.start_date<current_date-1 -- there's an experiment with a strange date
   and coalesce(cgms.initiative, cl.initiative) in ('Drive Conversion')
   and cgms.subteam in ('RegX','Registry Experience')
+);
