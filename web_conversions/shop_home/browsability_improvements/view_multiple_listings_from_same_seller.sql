@@ -58,7 +58,6 @@ group by all
 ------------------------------------
 -- OVERALL METRICS TO COMPARE
 ------------------------------------  
- 
 with non_seller_visits as ( -- only look at visits from non- sellers
 select
   v.platform,
@@ -96,3 +95,111 @@ left join
   (select * from etsy-data-warehouse-prod.analytics.listing_views where _date = current_date-30) lv
     using (visit_id)
 group by all 
+
+------------------------------------
+-- TESTING
+------------------------------------  
+-- TEST 1: make sure # of views for each seller makes sense
+ 
+with non_seller_visits as ( -- only look at visits from non- sellers
+select
+  v.platform,
+  v.visit_id,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile mu
+    using (user_id)
+where
+  mu.is_seller = 0 
+  and _date >= current_date-30
+)
+, shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page
+select
+  nsv.platform,
+  nsv.visit_id,
+  seller_user_id, -- used to distinguish between each seller's shop home
+  count(distinct listing_id) as unique_listings_viewed,
+  count(visit_id) as listing_views,
+  sum(added_to_cart) as added_to_cart,
+  sum(favorited) as favorited,
+  sum(purchased_after_view) as purchased_after_view,
+from 
+  non_seller_visits nsv
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+    using (visit_id)
+where 
+  _date = current_date-30
+  and lv.platform in ('desktop','mobile_web','boe')
+  and referring_page_event in ('shop_home') -- only looking at active shop home pages 
+group by all 
+)
+select
+  visit_id,
+  seller_user_id,
+  listing_views,
+from shop_home_listing_views
+group by all 
+order by 3 desc
+limit 5
+
+
+-- TEST 2: see how many listing views have a null seller_user_id
+ 
+with non_seller_visits as ( -- only look at visits from non- sellers
+select
+  v.platform,
+  v.visit_id,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile mu
+    using (user_id)
+where
+  mu.is_seller = 0 
+  and _date >= current_date-30
+)
+, shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page
+select
+  nsv.platform,
+  nsv.visit_id,
+  seller_user_id, -- used to distinguish between each seller's shop home
+  count(distinct listing_id) as unique_listings_viewed,
+  count(visit_id) as listing_views,
+  sum(added_to_cart) as added_to_cart,
+  sum(favorited) as favorited,
+  sum(purchased_after_view) as purchased_after_view,
+from 
+  non_seller_visits nsv
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+    using (visit_id)
+where 
+  _date = current_date-30
+  and lv.platform in ('desktop','mobile_web','boe')
+  and referring_page_event in ('shop_home') -- only looking at active shop home pages 
+group by all 
+)
+select 
+  sum(case when seller_user_id is null then listing_views end) as null_seller_lv,
+  sum(case when seller_user_id is not null then listing_views end) as not_null_seller_lv,
+  sum(listing_views) as total_lv,
+  sum(case when seller_user_id is null then listing_views end) / sum(listing_views) as share_wo_seller_id,
+  sum(case when seller_user_id is not null then listing_views end) / sum(listing_views) as share_w_seller_id
+from shop_home_listing_views
+group by all 
+-- null_seller_lv	not_null_seller_lv	total_lv	share_wo_seller_id	share_w_seller_id
+-- 3080295	1399345	4479640	0.68762110348152972	0.31237889651847023
+
+-- what % of active listings are missing shop_ids? need to use active_listings to get shop_id, not analytics.listing_views
+select 
+  count(distinct case when shop_id is null then listing_id end) as null_seller_lv,
+  count(distinct case when shop_id is not null then listing_id end) as not_null_seller_lv,
+  count(distinct listing_id) as total_lv,
+  count(distinct case when shop_id is null then listing_id end) / count(distinct listing_id) as share_wo_seller_id,
+  count(distinct case when shop_id is not null then listing_id end) / count(distinct listing_id) as share_w_seller_id
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics
+-- null_seller_lv	not_null_seller_lv	total_lv	share_wo_seller_id	share_w_seller_id
+-- 0	127414390	127414390	0.0	1.0
