@@ -6,10 +6,9 @@
 -- QUESTION 1: What % of users on web view multiple listings from the same shop from Shop home? 
 ---- Use case - As a buyer viewing multiple listings from the same shop, I am able to easily access my most recently viewed listings from that shop. 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- 
 with non_seller_visits as ( -- only look at visits from non- sellers
 select
-  platform,
+  v.platform,
   v.visit_id,
 from 
   etsy-data-warehouse-prod.weblog.visits v
@@ -22,8 +21,8 @@ where
 )
 , shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page
 select
-  platform,
-  visit_id,
+  nsv.platform,
+  nsv.visit_id,
   seller_user_id, -- used to distinguish between each seller's shop home
   count(distinct listing_id) as unique_listings_viewed,
   count(visit_id) as listing_views,
@@ -37,7 +36,7 @@ inner join
     using (visit_id)
 where 
   _date = current_date-30
-  and platform in ('desktop','mobile_web','boe')
+  and lv.platform in ('desktop','mobile_web','boe')
   and referring_page_event in ('shop_home') -- only looking at active shop home pages 
 group by all 
 )
@@ -52,6 +51,7 @@ select
 from 
   shop_home_listing_views
 group by all 
+
 
 
 
