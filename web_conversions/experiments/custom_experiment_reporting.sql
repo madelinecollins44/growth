@@ -740,7 +740,7 @@ select
   , ma.variant1_value_target_metric
   , ma.variant1_pct_change_target_metric
   , ma.variant1_pval_target_metric
-  , case when ma.variant1_pval_target_metric < 0.1 then 'stat sig' else 'not stat sig' end as target_metric_significance
+  , case when ma.variant1_pval_target_metric < 0.1 then 1 else 0 end as target_metric_is_significant
   -- Conversion rate
   , ma.control_conversion_rate
   , ma.variant1_conversion_rate
@@ -750,7 +750,7 @@ select
       else ma.variant1_pct_change_conversion_rate
       end as variant1_pct_change_conversion_rate
   , ma.variant1_pval_conversion_rate
-  , case when ma.variant1_pval_conversion_rate < 0.1 then 'stat sig' else 'not stat sig' end as cr_significance
+  , case when ma.variant1_pval_conversion_rate < 0.1 then 1 else 0 end as cr_is_significant
   --Percent with add to cart
   , ma.control_pct_atc
   , ma.variant1_pct_atc
@@ -760,7 +760,7 @@ select
       else ma.variant1_pct_change_pct_atc
       end as variant1_pct_change_pct_atc
   , ma.variant1_pval_pct_atc
-  , case when ma.variant1_pval_pct_atc < 0.1 then 'stat sig' else 'not stat sig' end as atc_significance
+  , case when ma.variant1_pval_pct_atc < 0.1 then 1 else 0 end as atc_is_significant
   -- Listing view
   , ma.control_pct_listing_view
   , ma.variant1_pct_listing_view
@@ -770,7 +770,7 @@ select
       else ma.variant1_pct_change_pct_listing_view
       end as variant1_pct_change_pct_listing_view
   , ma.variant1_pval_pct_listing_view
-  , case when ma.variant1_pval_pct_listing_view < 0.1 then 'stat sig' else 'not stat sig' end as listing_view_significance
+  , case when ma.variant1_pval_pct_listing_view < 0.1 then 1 else 0 end as listing_view_is_significant
  --Shop home 
   , ma.control_pct_w_shop_home_view
   , ma.variant1_pct_w_shop_home_view
@@ -780,7 +780,7 @@ select
       else ma.variant1_pct_change_pct_w_shop_home_view
       end as variant1_pct_change_pct_w_shop_home_view
   , ma.variant1_pval_pct_w_shop_home_view
-  , case when ma.variant1_pval_pct_w_shop_home_view < 0.1 then 'stat sig' else 'not stat sig' end as shop_home_significance
+  , case when ma.variant1_pval_pct_w_shop_home_view < 0.1 then 1 else 0 end as shop_home_is_significant
   -- Mean visits
   , ma.control_mean_visits
   , ma.variant1_mean_visits
@@ -790,7 +790,7 @@ select
       else ma.variant1_pct_change_mean_visits
       end as variant1_pct_change_mean_visits
   , ma.variant1_pval_mean_visits
-  , case when ma.variant1_pval_mean_visits < 0.1 then 'stat sig' else 'not stat sig' end as visits_significance
+  , case when ma.variant1_pval_mean_visits < 0.1 then 1 else 0 end as visits_is_significant
   -- GMS per units
   , ma.control_gms_per_unit
   , ma.variant1_gms_per_unit
@@ -800,7 +800,7 @@ select
       else ma.variant1_pct_change_gms_per_unit
       end as variant1_pct_change_gms_per_unit
   , ma.variant1_pval_gms_per_unit
-  , case when ma.variant1_pval_gms_per_unit < 0.1 then 'stat sig' else 'not stat sig' end as gms_per_unit_significance
+  , case when ma.variant1_pval_gms_per_unit < 0.1 then 1 else 0 end as gms_per_unit_is_significant
   -- Mean engaged visits
   , ma.control_mean_engaged_visit
   , ma.variant1_mean_engaged_visit
@@ -810,7 +810,7 @@ select
       else ma.variant1_pct_change_mean_engaged_visit
       end as variant1_pct_change_mean_engaged_visit
   , ma.variant1_pval_mean_engaged_visit
-  , case when ma.variant1_pval_mean_engaged_visit < 0.1 then 'stat sig' else 'not stat sig' end as engaged_visits_significance
+  , case when ma.variant1_pval_mean_engaged_visit < 0.1 then 1 else 0 end as engaged_visits_is_significant
   -- Winsorized ACxV
   , ma.control_winsorized_acxv
   , ma.variant1_winsorized_acxv
@@ -820,7 +820,7 @@ select
       else ma.variant1_pct_change_winsorized_acxv
       end as variant1_pct_change_winsorized_acxv
   , ma.variant1_pval_winsorized_acxv
-  , case when ma.variant1_pval_winsorized_acxv < 0.1 then 'stat sig' else 'not stat sig' end as acxv_significance
+  , case when ma.variant1_pval_winsorized_acxv < 0.1 then 1 else 0 end as acxv_is_significant
   -- Orders per unit
   , ma.control_opu
   , ma.variant1_opu
@@ -830,7 +830,7 @@ select
       else ma.variant1_pct_change_opu
       end as variant1_pct_change_opu
   , ma.variant1_pval_opu
-  , case when ma.variant1_pval_opu < 0.1 then 'stat sig' else 'not stat sig' end as opu_significance
+  , case when ma.variant1_pval_opu < 0.1 then 1 else 0 end as opu_is_significant
   -- Winsorized AOV
   , ma.control_aov
   , ma.variant1_aov
@@ -840,7 +840,7 @@ select
       else ma.variant1_pct_change_aov
       end as variant1_pct_change_aov
   , ma.variant1_pval_aov
-  , case when ma.variant1_pval_aov < 0.1 then 'stat sig' else 'not stat sig' end as aov_significance
+  , case when ma.variant1_pval_aov < 0.1 then 1 else 0 end as aov_is_significant
   -- ADs Conversion rate
   , ma.control_ads_cvr
   , ma.variant1_ads_cvr
@@ -850,7 +850,7 @@ select
       else ma.variant1_pct_change_ads_cvr
       end as variant1_pct_change_ads_cvr
   , ma.variant1_pval_ads_cvr
-  , case when ma.variant1_pval_ads_cvr < 0.1 then 'stat sig' else 'not stat sig' end as ads_cvr_significance
+  , case when ma.variant1_pval_ads_cvr < 0.1 then 1 else 0 end as ads_cvr_is_significant
   -- ADs ACxV
   , ma.control_ads_acxv
   , ma.variant1_ads_acxv
@@ -860,7 +860,7 @@ select
       else ma.variant1_pct_change_ads_acxv
       end as variant1_pct_change_ads_acxv
   , ma.variant1_pval_ads_acxv
-  , case when ma.variant1_pval_ads_acxv < 0.1 then 'stat sig' else 'not stat sig' end as ads_acxv_significance
+  , case when ma.variant1_pval_ads_acxv < 0.1 then 1 else 0 end as ads_acxv_is_significant
   -- Mean prolist spend
   , ma.control_mean_prolist_spend
   , ma.variant1_mean_prolist_spend
@@ -870,7 +870,7 @@ select
       else ma.variant1_pct_change_mean_prolist_spend
       end as variant1_pct_change_mean_prolist_spend
   , ma.variant1_pval_mean_prolist_spend
-  , case when ma.variant1_pval_mean_prolist_spend < 0.1 then 'stat sig' else 'not stat sig' end as prolist_spend_significance
+  , case when ma.variant1_pval_mean_prolist_spend < 0.1 then 1 else 0 end as prolist_spend_is_significant
   -- Mean osa revenue
   , ma.control_mean_osa_revenue
   , ma.variant1_mean_osa_revenue
@@ -880,7 +880,7 @@ select
       else ma.variant1_pct_change_mean_osa_revenue
       end as variant1_pct_change_mean_osa_revenue
   , ma.variant1_pval_mean_osa_revenue
-  , case when ma.variant1_pval_mean_osa_revenue < 0.1 then 'stat sig' else 'not stat sig' end as osa_significance
+  , case when ma.variant1_pval_mean_osa_revenue < 0.1 then 1 else 0 end as osa_is_significant
   -- Variant 2 Conversion rate
   , ma.variant2_conversion_rate
   , ma.variant2_pct_change_conversion_rate
