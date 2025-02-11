@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TASK: 
+------ We are running research on two shop home concepts week of 2/10, and we will be using insights from those sessions, engineering effort estimation and data to help us prioritize. 
+------ During our sessions we've been taking notes on what data we need, and have summarized them (https://docs.google.com/document/d/1nzjrsqTEU-u5xMvyM-9r88V_fDenc7Kx7S30A3xnRUw/edit?tab=t.0#heading=h.cf3el1ml4gfd) 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
