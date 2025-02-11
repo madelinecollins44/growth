@@ -5,6 +5,7 @@
 ----------------------------------------------------------
 -- SHOP HOME SPECIFIC LISTING VIEWS BY SELLER_USER_ID
 ----------------------------------------------------------
+ 
 with non_seller_visits as ( -- only look at visits from non- sellers
 select
   v.platform,
@@ -45,8 +46,10 @@ select
   sum(listing_views) as shop_home_listing_views,
   count(distinct case when unique_listings_viewed = 1 then visit_id end) as visits_view_1_listing,
   sum(case when unique_listings_viewed = 1 then listing_views end) as sh_listing_views_from_1_listing_per_seller,
+  sum(case when unique_listings_viewed = 1 then purchased_after_view end) as sh_purchases_from_1_listing_per_seller,
   count(distinct case when unique_listings_viewed > 1 then visit_id end) as visits_view_1_plus_listings,
   sum(case when unique_listings_viewed > 1  then listing_views end) as sh_listing_views_from_1_plus_listing_per_seller,
+  sum(case when unique_listings_viewed > 1 then purchased_after_view end) as sh_purchases_from_1_plus_listing_per_seller,
 from 
   shop_home_listing_views
 group by all 
