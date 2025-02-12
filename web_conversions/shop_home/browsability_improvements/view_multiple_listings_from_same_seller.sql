@@ -3,7 +3,30 @@
 ---- Use case - As a buyer viewing multiple listings from the same shop, I am able to easily access my most recently viewed listings from that shop. 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------
--- SHOP HOME SPECIFIC LISTING VIEWS BY SELLER_USER_ID
+-- OVERALL SHOP HOME TRAFFIC
+----------------------------------------------------------
+with non_seller_visits as ( -- only look at visits from non- sellers
+select
+  v.platform,
+  v.visit_id,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile mu
+    using (user_id)
+where
+  mu.is_seller = 0 
+  and platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+)
+select
+  count(distinct e.visit_id) as total_visits,
+  count(distinct case when event_type in ('shop_home') then e.visit_id end) as shop_home_visits
+from etsy-data-warehouse-prod.weblog.events e
+inner join non_seller_visits nsv using (visit_id)
+
+----------------------------------------------------------
+-- SHOP HOME SPECIFIC LISTING VIEWS BY SHOP_ID
 ----------------------------------------------------------
 with non_seller_visits as ( -- only look at visits from non- sellers
 select
