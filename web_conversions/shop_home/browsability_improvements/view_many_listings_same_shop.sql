@@ -45,7 +45,30 @@ where
   and v._date >= current_date-30
   and event_type in ('shop_home')
 group by all
-  
+
+-- listing views from shop home referrer on web over last 30 days (users)
+with mapped_users as (
+select
+  visit_id,
+  mapped_user_id
+from 
+  etsy-data-warehouse-prod.weblog.visits
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
+where 
+  platform in ('mobile_web','desktop','boe')
+  and _date >= current_date-30
+)
+select 
+  count(distinct mapped_user_id) as total_users, 
+  count(distinct visit_id) as total_visits,
+  count(distinct case when mapped_user_id is not null then visit_id end) as signed_in_visits,
+from etsy-data-warehouse-prod.analytics.listing_views 
+inner join mapped_users using (visit_id)
+where 
+  _date >= current_date-30 
+  and referring_page_event in ('shop_home')
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- all visits to view multiple listings from the same shop
 ---- does not exclude sellers or self-visits
