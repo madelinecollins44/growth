@@ -2,6 +2,23 @@
 //-- Use case - As a buyer viewing multiple listings from the same shop, I am able to easily access my most recently viewed listings from that shop."
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- overall page traffic over last 30 days by platform
+---------------------------------------------------------------------------------------------------------------------------------------
+select 
+  platform,
+  count(distinct visit_id)
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date-30 
+  and v.platform in ('mobile_web','desktop','boe')
+  and e.event_type in ('shop_home')
+group by all
+order by 1 asc
+
+---------------------------------------------------------------------------------------------------------------------------------------
 -- all visits to view multiple listings from the same shop
 ---- does not exclude sellers or self-visits
 ---------------------------------------------------------------------------------------------------------------------------------------
