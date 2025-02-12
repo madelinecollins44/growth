@@ -35,15 +35,17 @@ select
 from 
   etsy-data-warehouse-prod.weblog.visits v
 inner join 
-  etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
-inner join 
   etsy-data-warehouse-prod.weblog.events e
     on v.visit_id=e.visit_id
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile p
+    on v.user_id = p.user_id
 where 
   platform in ('mobile_web','desktop','boe')
   and v._date >= current_date-30
   and event_type in ('shop_home')
 group by all
+  
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- all visits to view multiple listings from the same shop
 ---- does not exclude sellers or self-visits
