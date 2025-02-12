@@ -53,3 +53,52 @@ group by 1,2
   from `etsy-data-warehouse-dev.csamuelson.shop_repurchases` 
   where 1=1
   and purchase_days > 1 
+
+    
+------------------------
+-- TESTING
+------------------------
+select shop_id, purchase_days from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`  where mapped_user_id = 154488413 
+-----------most purchase days 
+-- mapped_user_id	shop_id	purchase_days	transactions	receipts
+-- 120098149	34938599	362	378	378
+-- 244545737	41885050	358	682	682
+-- 60259574	38800378	346	1635	1479
+
+-----------3 purchase days 
+-- mapped_user_id	shop_id	purchase_days	transactions	receipts
+-- 154488413	5051189	3	3	3
+-- 49353	5155588	3	3	3
+
+select purchase_days, count(shop_id) from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`  where mapped_user_id = 154488413 group by all 
+--single mapped user id (only looked at instances where purchased more than once)
+--   shop_id	purchase_days
+-- 5272828	4
+-- 5051189	3
+-- 8262460	3
+-- 5671961	3
+-- 5479952	3
+-- 7032763	3
+-- 36519263	2
+-- 12311340	2
+-- 6458109	2
+-- 5202751	2
+-- 23135976	1
+---------purchase days by @# of shops
+-- purchase_days	f0_
+-- 1	28
+-- 2	4
+-- 3	5
+-- 4	1
+  select  
+    count(distinct mapped_user_id) as users,
+    count(distinct case when purchase_days = 1 then mapped_user_id end) as one_time,
+    count(distinct case when purchase_days > 1 then mapped_user_id end) as more_than_one_time,
+    count(distinct case when purchase_days >= 2 then mapped_user_id end) as at_least_two_times,
+    count(distinct case when purchase_days >= 3 then mapped_user_id end) as at_least_three_times,
+    count(distinct case when purchase_days >= 4 then mapped_user_id end) as at_least_four_times,
+    count(distinct case when purchase_days >= 5 then mapped_user_id end) as at_least_five_times,
+    count(distinct case when purchase_days >= 10 then mapped_user_id end) as at_least_ten_times,
+  from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`
+  where mapped_user_id = 154488413
+  group by all
