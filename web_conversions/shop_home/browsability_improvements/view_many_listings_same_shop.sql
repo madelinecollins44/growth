@@ -32,6 +32,7 @@ select
   platform,
   count(distinct mapped_user_id) as users,
   count(distinct v.visit_id) as visits,
+  count(distinct case when v.user_id is not null then v.visit_id end) as signed_in_visits,
 from 
   etsy-data-warehouse-prod.weblog.visits v
 inner join 
