@@ -3,7 +3,26 @@
 ---- Use case - As a buyer viewing multiple listings from the same shop, I am able to easily access my most recently viewed listings from that shop. 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------
--- OVERALL SHOP HOME TRAFFIC
+-- OVERALL NON-SELLER TRAFFIC
+----------------------------------------------------------
+select
+  v.platform,
+  count(distinct v.visit_id) as visits_from_non_sellers,
+  count(distinct case when converted >0 then v.visit_id end) as visit_conversions,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile mu
+    using (user_id)
+where
+  mu.is_seller = 0 
+  and _date >= current_date-30
+  and v.platform in ('desktop','mobile_web','boe')
+group by all
+order by 1 asc
+
+----------------------------------------------------------
+-- OVERALL SHOP HOME TRAFFIC FROM NON-SELLERS
 ----------------------------------------------------------
 with non_seller_visits as ( -- only look at visits from non- sellers
 select
