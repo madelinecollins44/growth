@@ -38,21 +38,20 @@ from etsy-data-warehouse-prod.rollups.active_listing_basics
 )
 , shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page. this is all at the shop_id level. 
 select
-  lv.platform,
-  lv.visit_id,
-  al.shop_id,
-  count(distinct lv.listing_id) as unique_listings_viewed,
-  count(lv.visit_id) as listing_views,
-  sum(lv.purchased_after_view) as purchased_after_view,
+  -- lv.platform,
+  visit_id,
+  shop_id,
+  count(distinct listing_id) as unique_listings_viewed,
+  count(visit_id) as listing_views,
+  sum(purchased_after_view) as purchased_after_view,
 from 
-  etsy-data-warehouse-prod.analytics.listing_views lv
-inner join 
-  active_listings al
-    on lv.listing_id=al.listing_id
+  etsy-data-warehouse-prod.analytics.listing_views
+inner join  
+  active_listings using (listing_id)
 where 
-  _date = current_date-30
-  and lv.platform in ('desktop','mobile_web') --,'boe')
-  and referring_page_event in ('shop_home') -- only looking at active shop home pages 
+  _date >= current_date-30 
+  and platform in ('mobile_web','desktop') 
+  and referring_page_event in ('shop_home')
 group by all 
 )
 select  
