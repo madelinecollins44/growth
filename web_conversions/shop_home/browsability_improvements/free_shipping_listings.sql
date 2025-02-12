@@ -15,7 +15,7 @@ group by all
 , shop_gms as ( -- gms for sellers over last 
 select
   seller_user_id,
-  sum(gms_net)
+  sum(gms_net) as total_gms
 from 
   etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
 where 
@@ -45,3 +45,16 @@ from `etsy-data-warehouse-prod.weblog.visits`
 where _date >= current_date-30
 and platform in ('desktop', 'mobile_web')
 )
+select
+  case when sections > 0 then 1 else 0 end as has_sections,
+  count(distinct v.seller_user_id) as visited_shops,
+  sum(g.total_gms) as shop_gms
+from 
+  shop_visits v
+left join 
+  shop_gms g 
+    on v.seller_user_id=cast(g.seller_user_id as string)
+left join 
+  shop_sections s
+    on v.seller_user_id=cast(s.seller_user_id as string)
+group by all
