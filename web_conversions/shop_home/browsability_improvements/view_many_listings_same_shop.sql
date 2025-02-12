@@ -4,7 +4,7 @@
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- overall page traffic over last 30 days by platform
 ---------------------------------------------------------------------------------------------------------------------------------------
--- overall page traffic over last 30 days 
+-- overall page traffic over last 30 days (visits)
 select 
   platform,
   count(distinct visit_id)
@@ -19,7 +19,7 @@ where
 group by all
 order by 1 asc
 
--- listing views from shop home referrer on web over last 30 days
+-- listing views from shop home referrer on web over last 30 days (visits)
 select 
   count(distinct visit_id) 
 from etsy-data-warehouse-prod.analytics.listing_views 
@@ -27,6 +27,23 @@ where _date >= current_date-30
     and platform in ('mobile_web','desktop') 
     and referring_page_event in ('shop_home')
 
+-- overall page traffic over last 30 days (users)
+select
+  platform,
+  count(distinct mapped_user_id) as users,
+  count(distinct v.visit_id) as visits,
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
+inner join 
+  etsy-data-warehouse-prod.weblog.events e
+    on v.visit_id=e.visit_id
+where 
+  platform in ('mobile_web','desktop','boe')
+  and v._date >= current_date-30
+  and event_type in ('shop_home')
+group by all
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- all visits to view multiple listings from the same shop
 ---- does not exclude sellers or self-visits
