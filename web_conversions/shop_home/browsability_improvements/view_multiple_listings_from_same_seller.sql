@@ -203,3 +203,5 @@ from
   etsy-data-warehouse-prod.rollups.active_listing_basics
 -- null_seller_lv	not_null_seller_lv	total_lv	share_wo_seller_id	share_w_seller_id
 -- 0	127414390	127414390	0.0	1.0
+
+-- TEST 3: confirm shop_id from shop_home page matches shop_id from the next view listing 
