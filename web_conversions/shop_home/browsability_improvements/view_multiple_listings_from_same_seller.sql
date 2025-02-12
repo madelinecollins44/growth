@@ -18,21 +18,28 @@ where
   mu.is_seller = 0 
   and _date >= current_date-30
 )
-, shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page
+, active_listings as ( -- need this to pull in shop_id
+select
+  listing_id,
+  shop_id
+from etsy-data-warehouse-prod.rollups.active_listing_basics
+)
+, shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page. this is all at the shop_id level. 
 select
   nsv.platform,
   nsv.visit_id,
-  seller_user_id, -- used to distinguish between each seller's shop home
-  count(distinct listing_id) as unique_listings_viewed,
-  count(visit_id) as listing_views,
-  sum(added_to_cart) as added_to_cart,
-  sum(favorited) as favorited,
-  sum(purchased_after_view) as purchased_after_view,
+  al.shop_id,
+  count(distinct lv.listing_id) as unique_listings_viewed,
+  count(lv.visit_id) as listing_views,
+  sum(lv.purchased_after_view) as purchased_after_view,
 from 
   non_seller_visits nsv
 inner join 
   etsy-data-warehouse-prod.analytics.listing_views lv
     using (visit_id)
+inner join 
+  active_listings al
+    on lv.listing_id=al.listing_id
 where 
   _date = current_date-30
   and lv.platform in ('desktop','mobile_web','boe')
@@ -43,9 +50,11 @@ select
   platform,
   count(distinct visit_id) as visits_view_listings_from_shop_home,
   sum(listing_views) as shop_home_listing_views,
+-- only 1 listing per seller viewed
   count(distinct case when unique_listings_viewed = 1 then visit_id end) as visits_view_1_listing,
   sum(case when unique_listings_viewed = 1 then listing_views end) as sh_listing_views_from_1_listing_per_seller,
   sum(case when unique_listings_viewed = 1 then purchased_after_view end) as sh_purchases_from_1_listing_per_seller,
+-- 1+ listing per seller viewed
   count(distinct case when unique_listings_viewed > 1 then visit_id end) as visits_view_1_plus_listings,
   sum(case when unique_listings_viewed > 1  then listing_views end) as sh_listing_views_from_1_plus_listing_per_seller,
   sum(case when unique_listings_viewed > 1 then purchased_after_view end) as sh_purchases_from_1_plus_listing_per_seller,
