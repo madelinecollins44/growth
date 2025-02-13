@@ -27,6 +27,27 @@ left join etsy-data-warehouse-prod.weblog.events e using (visit_id)
 where v._date >= current_date-30
 
 ----------------------------------------------------------------------
+-- OF SHOPS W SECTIONS, HOW MANY DO THEY HAVE
+----------------------------------------------------------------------
+  with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  b.shop_id,
+  count(distinct case when active_listing_count > 0 then s.name end) as sections
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1
+group by all
+)
+select
+  sections,
+  count(distinct shop_id) as shops
+from shop_sections
+group by all 
+  
+----------------------------------------------------------------------
 -- VISIT, GMS, CONVERSION COVERAGE OF VISITS THAT VIEWED SHOP HOME
 ----------------------------------------------------------------------
 ---- What do CR & GMS coverage & visits look like for shops with sections vs shops without? 
