@@ -54,6 +54,18 @@ group by 1,2
   where 1=1
   and purchase_days > 1 
 
+-- users + # of days purchasing from vairous shops
+select  
+    count(distinct mapped_user_id) as users,
+    count(distinct case when purchase_days = 1 then mapped_user_id end) as one_time,
+    count(distinct case when purchase_days > 1 then mapped_user_id end) as more_than_one_time,
+    count(distinct case when purchase_days >= 2 then mapped_user_id end) as at_least_two_times,
+    count(distinct case when purchase_days >= 3 then mapped_user_id end) as at_least_three_times,
+    count(distinct case when purchase_days >= 4 then mapped_user_id end) as at_least_four_times,
+    count(distinct case when purchase_days >= 5 then mapped_user_id end) as at_least_five_times,
+    count(distinct case when purchase_days >= 10 then mapped_user_id end) as at_least_ten_times,
+  from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`
+  group by all
     
 ------------------------
 -- TESTING
