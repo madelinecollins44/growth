@@ -39,7 +39,8 @@ select
   , count(distinct transaction_id) as transactions  
   , count(distinct receipt_id) as receipts  
     --, sum(visit_gms) as total_gms
-from  `etsy-data-warehouse-madelinecollins.last_year_purchase_data`
+from `etsy-data-warehouse-dev.madelinecollins.last_year_purchase_data` 
+where purchased_platform in ('desktop','mobile_web')
 group by 1,2 
 ;
 
@@ -66,6 +67,50 @@ select
     count(distinct case when purchase_days >= 10 then mapped_user_id end) as at_least_ten_times,
   from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`
   group by all
+
+-- gms coverage
+with purchase_days as (
+select
+  mapped_user_id,
+  seller_user_id,
+  purchase_days
+from
+  `etsy-data-warehouse-dev.madelinecollins.shop_repurchases`
+)
+, gms as (
+select
+  mapped_user_id,
+  seller_user_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+where 
+  date >= current_date-365
+group by all 
+)
+, agg as (
+select
+  mapped_user_id,
+  seller_user_id,
+  gms_net,
+  purchase_days
+from purchase_days
+left join gms using (mapped_user_id, seller_user_id)
+)
+select
+  case 
+    when purchase_days = 1 then 'one_time'
+    when purchase_days > 1 then 'more_than_one_time'
+    when  purchase_days >= 2 then 'at_least_two_times'
+    when purchase_days >= 3 then 'at_least_three_times'
+    when purchase_days >= 4 then 'at_least_four_times'
+    when purchase_days >= 5 then 'at_least_five_times'
+    when purchase_days >= 10 then 'at_least_ten_times'
+  end as purchase_days,
+  count(distinct mapped_user_id) as users,
+  sum(gms_net) as gms_net
+from agg
+group by all
     
 ------------------------
 -- TESTING
