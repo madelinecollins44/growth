@@ -149,7 +149,6 @@ left join
 group by all
 
 --active sellers w sections
--- what % of visited shops have sections?
 with shop_sections as (
 select 
   shop_id,
