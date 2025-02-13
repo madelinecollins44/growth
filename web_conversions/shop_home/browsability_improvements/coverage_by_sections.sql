@@ -175,6 +175,46 @@ and visit_id in ('1jFttPKXT0fRycXZM4FWopJ-bBsz.1739258732525.14','1jFttPKXT0fRyc
 group by all
 
 -- TEST 2: how many visits went to a shop with a section, shop without a section, or both?
+  
+-- what % of visited shops have sections?
+with shop_sections as (
+select 
+  shop_id,
+  user_id as seller_user_id, 
+  count(distinct name) as sections
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics using (shop_id)
+where
+  active_listing_count > 0 
+  and active_seller_status = 1
+group by all
+)
+, visit_status as (
+select
+  v.visit_id,
+  coalesce(max(case when s.shop_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS has_section,
+  coalesce(max(case when s.shop_id IS NULL THEN 1 ELSE 0 END), 0) AS no_section
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+left join 
+  shop_sections s 
+    on v.seller_user_id = cast(s.seller_user_id as string)
+  group by all )
+-- order by has_section, no_section desc limit 5
+SELECT 
+    CASE 
+        WHEN has_section = 1 AND no_section = 0 THEN 'Only Shops with Sections'
+        WHEN has_section = 0 AND no_section = 1 THEN 'Only Shops without Sections'
+        WHEN has_section = 1 AND no_section = 1 THEN 'Both Types of Shops'
+    END AS visit_category,
+    COUNT(DISTINCT visit_id) AS visit_count
+FROM visit_status
+GROUP BY all;
+
+
+
 
 -- what % of visited shops have sections?
 with shop_sections as (
