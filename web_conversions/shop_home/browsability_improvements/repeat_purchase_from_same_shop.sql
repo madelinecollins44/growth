@@ -1,3 +1,6 @@
+------------------------------------------------------------------------------------------------------------------------
+-- CREATE TABLES AND USE THOSE TABLES TO GET GMS + USER COUNTS
+------------------------------------------------------------------------------------------------------------------------
 create or replace table `etsy-data-warehouse-dev.madelinecollins.last_year_purchase_data` as 
 select
   a.date 
@@ -111,6 +114,44 @@ select
   sum(gms_net) as gms_net
 from agg
 group by all
+
+-- get all counts to confirm totals
+    with days_purchased as (
+select
+  mapped_user_id,
+  seller_user_id,
+  purchase_days
+from
+  `etsy-data-warehouse-dev.madelinecollins.shop_repurchases`
+)
+, gms as (
+select
+  mapped_user_id,
+  seller_user_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+where 
+  date >= current_date-365
+group by all 
+)
+, agg as (
+select
+  mapped_user_id,
+  seller_user_id,
+  gms_net,
+  purchase_days
+from days_purchased
+left join gms using (mapped_user_id, seller_user_id)
+)
+select
+  purchase_days,
+  count(distinct mapped_user_id) as users,
+  sum(gms_net) as gms_net,
+from agg
+group by all
+
+
     
 ------------------------
 -- TESTING
