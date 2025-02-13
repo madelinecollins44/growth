@@ -159,3 +159,13 @@ select purchase_days, count(shop_id) from `etsy-data-warehouse-dev.madelinecolli
   from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`
   where mapped_user_id = 154488413
   group by all
+
+--ALL GMS FROM LAST 365 DAYS
+select
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+where 
+  date >= current_date-365
+group by all 
+--10781194552.3956664
