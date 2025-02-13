@@ -69,7 +69,7 @@ select
   group by all
 
 -- gms coverage
-with purchase_days as (
+with days_purchased as (
 select
   mapped_user_id,
   seller_user_id,
@@ -94,14 +94,14 @@ select
   seller_user_id,
   gms_net,
   purchase_days
-from purchase_days
+from days_purchased
 left join gms using (mapped_user_id, seller_user_id)
 )
 select
   case 
     when purchase_days = 1 then 'one_time'
     when purchase_days > 1 then 'more_than_one_time'
-    when  purchase_days >= 2 then 'at_least_two_times'
+    when purchase_days >= 2 then 'at_least_two_times'
     when purchase_days >= 3 then 'at_least_three_times'
     when purchase_days >= 4 then 'at_least_four_times'
     when purchase_days >= 5 then 'at_least_five_times'
