@@ -94,3 +94,32 @@ group by all
 ----------------------------------------------------------------------
 -- GMS FROM SHOP (including from traffic that did not see shop home) 
 ----------------------------------------------------------------------
+
+----------------------------------------------------------------------
+-- SECTION DISTRO ACROSS SHOPS 
+----------------------------------------------------------------------
+-- what % of visited shops have sections?
+with shop_sections as (
+select 
+  shop_id,
+  user_id as seller_user_id, 
+  count(distinct name) as sections
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics using (shop_id)
+where
+  active_listing_count > 0 
+  and active_seller_status = 1
+group by all
+)
+select
+  case when s.seller_user_id is not null then 1 else 0 end as has_section,
+  count(distinct v.seller_user_id) as visited_shops,
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+left join 
+  shop_sections s 
+    on v.seller_user_id = cast(s.seller_user_id as string)
+group by all
+
