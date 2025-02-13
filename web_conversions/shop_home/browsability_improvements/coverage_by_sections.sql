@@ -1,15 +1,31 @@
 ----------------------------------------------------------------------
 -- OVERALL COUNTS TO CONFIRM
 ----------------------------------------------------------------------
---overall gms from last 30 days (all platforms)
+--overall gms from last 30 days (all platforms, just web)
 select
   sum(gms_net) as gms_from_visit
 from 
   etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+-- inner join 
+--   etsy-data-warehouse-prod.transaction_mart.transactions_visits using (transaction_id)
 where 
   g.date >= current_date-30 
+  -- and platform_app in ('mobile_web','desktop')
 group by all 
 
+
+--overall visits / conversion 
+  select
+  count(distinct v.visit_id) as total_traffic,
+  count(distinct case when platform in ('mobile_web','desktop') then visit_id end) as web_traffic,
+  count(distinct case when platform in ('mobile_web','desktop') and event_type in ('shop_home') then visit_id end) as sh_web_traffic,
+  count(distinct case when event_type in ('shop_home') then visit_id end) as sh_traffic,
+  count(distinct case when converted > 0 then visit_id end) as converted_traffic,
+  count(distinct case when converted > 0 and platform in ('mobile_web','desktop') then visit_id end) as web_converted_traffic,
+  count(distinct case when platform in ('mobile_web','desktop') and converted > 0 and event_type in ('shop_home')then visit_id end) as sh_converted_web_traffic
+from etsy-data-warehouse-prod.weblog.visits v
+left join etsy-data-warehouse-prod.weblog.events e using (visit_id)
+where v._date >= current_date-30
 ----------------------------------------------------------------------
 -- VISIT, GMS, CONVERSION COVERAGE OF VISITS THAT VIEWED SHOP HOME
 ----------------------------------------------------------------------
