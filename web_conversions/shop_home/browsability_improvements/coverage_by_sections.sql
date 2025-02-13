@@ -1,4 +1,16 @@
 ----------------------------------------------------------------------
+-- OVERALL COUNTS TO CONFIRM
+----------------------------------------------------------------------
+--overall gms from last 30 days (all platforms)
+select
+  sum(gms_net) as gms_from_visit
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+where 
+  g.date >= current_date-30 
+group by all 
+
+----------------------------------------------------------------------
 -- VISIT, GMS, CONVERSION COVERAGE OF VISITS THAT VIEWED SHOP HOME
 ----------------------------------------------------------------------
 -- criteria: visits must have been the shop home page for their conversion and gms to contribute to that shop
