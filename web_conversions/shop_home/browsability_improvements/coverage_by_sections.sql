@@ -155,3 +155,21 @@ left join
 where active_seller_status= 1
 group by all
 
+-------------------------------------------------------
+-- TESTING
+-------------------------------------------------------
+
+  -- TEST 1: see how accurate beacons count are vs events
+select visit_id, count(visit_id) from etsy-data-warehouse-dev.madelinecollins.web_shop_visits
+group by all order by 2 desc limit 5
+-- -- visit_id	f0_
+-- 1jFttPKXT0fRycXZM4FWopJ-bBsz.1739258732525.14	888
+-- 1jFttPKXT0fRycXZM4FWopJ-bBsz.1739255034370.12	856
+-- HAZGJf8xWWeiEUqd_JXqx9fpDHGI.1739188263736.11	850
+-- Cq3mhqPxGRxIT2fsjw9Ny_P-spBa.1738907747378.10	846
+-- xezpADXyll34GnosPXfga5xHrWlK.1739356236566.14	845
+select visit_id, count(sequence_number)
+from etsy-data-warehouse-prod.weblog.events
+where event_type in ('shop_home')
+and visit_id in ('1jFttPKXT0fRycXZM4FWopJ-bBsz.1739258732525.14','1jFttPKXT0fRycXZM4FWopJ-bBsz.1739255034370.12','HAZGJf8xWWeiEUqd_JXqx9fpDHGI.1739188263736.11','Cq3mhqPxGRxIT2fsjw9Ny_P-spBa.1738907747378.10')
+group by all
