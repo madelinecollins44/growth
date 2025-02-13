@@ -162,10 +162,15 @@ select purchase_days, count(shop_id) from `etsy-data-warehouse-dev.madelinecolli
 
 --ALL GMS FROM LAST 365 DAYS
 select
-  sum(gms_net) as gms_net
-from 
-  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+  sum(gms_net) as gms_net,
+  sum(case when platform_app in ('desktop','mobile_web') then gms_net end) as web_gms
+from
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v 
+inner join
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+    on g.transaction_id=v.transaction_id 
 where 
-  date >= current_date-365
+  v.date >= current_date-365
 group by all 
---10781194552.3956664
+-- gms_net	web_gms
+-- 10781194552.3956664	6076948025.65545256
