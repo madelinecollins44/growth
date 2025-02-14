@@ -12,11 +12,15 @@
 -- this is where i look at shop_home views, proceeded by listing views. i grab the listing_id and see if that listing is in a section in that shop. 
 with section_info as ( -- gets whether or not a listing is in a section
 select
-  listing_id,
-  shop_id,
+  l.listing_id,
+  l.shop_id,
   section_id
-from etsy-data-warehouse-prod.etsy_shard.listings
-where section_id > 0 -- if section_id is 0, it does not have a section_id
+from 
+  etsy-data-warehouse-prod.etsy_shard.listings l
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b using (listing_id) -- only looking at active listings
+where 
+  section_id > 0 -- if section_id is 0, it is not in a section
 )
 , events as (
 select
@@ -63,7 +67,6 @@ select
 from 
   sh_from_lp 
 group by all 
-
 
 ------------------------------
 -- TESTING
