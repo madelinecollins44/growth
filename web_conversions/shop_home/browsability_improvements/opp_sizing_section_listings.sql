@@ -10,7 +10,15 @@
 -- QUERY TO PULL IN LISTING_ID
 ------------------------------
 -- this is where i look at shop_home views, proceeded by listing views. i grab the listing_id and see if that listing is in a section in that shop. 
-with events as (
+with section_info as ( -- gets whether or not a listing is in a section
+select
+  listing_id,
+  shop_id,
+  section_id
+from etsy-data-warehouse-prod.etsy_shard.listings
+where section_id > 0 -- if section_id is 0, it does not have a section_id
+)
+, events as (
 select
   platform,
   visit_id,
@@ -32,49 +40,29 @@ group by all
 , sh_from_lp as ( -- how many times did a listing bring a visit to the shop home page? 
 select
   platform,
-  listing_id,
-  count(visit_id) as views,
-  count(distinct visit_id) as visits,
+  e.listing_id,
+  case when s.listing_id is not null then 1 else 0 end as in_section,
+  visit_id,
+  count(sequence_number) as views
 from 
-  events
+  events e
+left join 
+  section_info s 
+    on cast(s.listing_id as string)=e.listing_id
 where
   event_type in ('view_listing')
   and next_page in ('shop_home')
 group by all 
 )
-, section_info as (
-select
-  listing_id,
-  shop_id,
-  section_id
-from etsy-data-warehouse-prod.etsy_shard.listings
-)
 select
   platform,
-  case when si.listing_id is not null then 1 else 0 end as in_section,
-  views,
-  visits
-from sh_from_lp shlp
-left join section_info si 
-  on shlp.listing_id=cast(si.listing_id as string)
-
--- grab total traffic for these pages so can see what % of traffic we could get
-select
-  platform,
-  count(case when event_type in ('shop_home') then visit_id end) as shop_home_views,
-  count(distinct case when event_type in ('shop_home') then visit_id end) as shop_home_visits,
-  count(case when event_type in ('view_listing') then visit_id end) as view_listing_views,
-  count(distinct case when event_type in ('view_listing') then visit_id end) as view_listing_visits,
+  in_section,
+  count(distinct listing_id) as listings,
+  count(visit_id) as views,
+  count(distinct visit_id) as visits
 from 
-  etsy-data-warehouse-prod.weblog.events e
-inner join 
-  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
-where 
-  v._date >= current_date- 30  
-  and v.platform in ('boe','mobile_web','desktop')
-group by all
-
-
+  sh_from_lp 
+group by all 
 
 
 ------------------------------
