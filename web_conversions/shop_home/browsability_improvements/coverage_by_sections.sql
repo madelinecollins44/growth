@@ -131,11 +131,12 @@ select
   sum(converts) as converts,
   sum(gms_net) as gms_net
 from 
-  shop_level l
+  shop_sections s -- starting here to get all active shops, and then looking at whether or not those were visited. some shops that were visited are not active.
 left join 
-  shop_sections s 
+  shop_level l
     on l.seller_user_id= cast(s.seller_user_id as string)
 group by all 
+
 
 ----------------------------------------------------------------------
 -- GMS FROM SHOP (including from traffic that did not see shop home) 
