@@ -9,6 +9,7 @@
 ------------------------------
 -- QUERY TO PULL IN LISTING_ID
 ------------------------------
+-- this is where i look at shop_home views, proceeded by listing views. i grab the listing_id and see if that listing is in a section in that shop. 
 with events as (
 select
   platform,
@@ -57,9 +58,22 @@ from sh_from_lp shlp
 left join section_info si 
   on shlp.listing_id=cast(si.listing_id as string)
 
--- REGEXP_EXTRACT(url, r'listing_id=(\d+)') AS listing_id
+-- grab total traffic for these pages so can see what % of traffic we could get
+select
+  platform,
+  count(case when event_type in ('shop_home') then visit_id end) as shop_home_views,
+  count(distinct case when event_type in ('shop_home') then visit_id end) as shop_home_visits,
+  count(case when event_type in ('view_listing') then visit_id end) as view_listing_views,
+  count(distinct case when event_type in ('view_listing') then visit_id end) as view_listing_visits,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date- 30  
+  and v.platform in ('boe','mobile_web','desktop')
+group by all
 
-  
 
 
 
@@ -70,7 +84,7 @@ left join section_info si
 ----UPDATE: it does not work, as only 15% of shop home views have from_page=listing in url, 
   -----but 35% of shop home events have a view_listing event before the shop_home event.
 
-  --find share of url
+  --find share of url: REGEXP_EXTRACT(url, r'listing_id=(\d+)') AS listing_id
 select 
   count(sequence_number) as events,
   count(case when url like ('%from_page=listing%') then sequence_number end) as lp_referrers,
