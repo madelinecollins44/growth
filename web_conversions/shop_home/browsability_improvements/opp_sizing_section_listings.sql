@@ -203,3 +203,31 @@ order by 2 desc limit 5
 -- ieu_VBIKNYC7Y82RgmGy1B-MM9oM.1739298322408.4	30
 -- 0NXDaSOi74uda9BuBelcKl2HV3Dy.1739380838696.1	30
 -- ZyYMFwGfTiq4L64WWRmjlQ.1739467389580.3	30
+
+--check visit 
+select
+  platform,
+  listing_id,
+  in_section,
+  count(distinct listing_id) as listings,
+  count(visit_id) as views,
+  count(distinct visit_id) as visits
+from 
+  sh_from_lp 
+where visit_id in ('IMdK8hMNrmiQQzi8EzIuh2g36oAZ.1739265527830.1')
+group by all 
+-- platform	listing_id	in_section	listings	views	visits
+-- desktop	1701858566	1	1	1	1
+-- desktop	1664956998	1	1	1	1
+-- desktop	1834257731	1	1	1	1
+-- desktop	1339716204	1	1	1	1
+-- desktop	1298294529	0	1	1	1
+-- desktop	1812222000	1	1	1	1
+-- desktop	1463566268	1	1	1	1
+-- desktop	1837665446	0	1	1	1
+-- desktop	1808937916	1	1	1	1
+-- desktop	1668370163	1	1	1	1
+-- desktop	1781403946	1	1	1	1
+-- desktop	1867715547	0	1	1	1
+-- desktop	1850587718	1	1	1	1
+-- desktop	1779403169	1	1	1	1
