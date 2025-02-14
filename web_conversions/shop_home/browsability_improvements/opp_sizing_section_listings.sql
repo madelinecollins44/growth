@@ -116,10 +116,8 @@ group by all
 -- TESTING
 ------------------------------
 -- TEST 1: make sure '%from_page=listing%' is an okay to pull listing_id from pages.
-----UPDATE: it does not work, as only 15% of shop home views have from_page=listing in url, 
-  -----but 35% of shop home events have a view_listing event before the shop_home event.
-
-  --find share of url: REGEXP_EXTRACT(url, r'listing_id=(\d+)') AS listing_id
+----UPDATE: it does not work, as only 15% of shop home views have from_page=listing in url, but 35% of shop home events have a view_listing event before the shop_home event.
+--find share of url: REGEXP_EXTRACT(url, r'listing_id=(\d+)') AS listing_id
 select 
   count(sequence_number) as events,
   count(case when url like ('%from_page=listing%') then sequence_number end) as lp_referrers,
@@ -148,7 +146,7 @@ select
 from events
 
 
---looking at listings without a section, making sure they are still acive on site
+--TEST 2: looking at listings without a section, making sure they are still acive on site
 select
   l.listing_id,
   shop_name,
@@ -171,3 +169,37 @@ limit 10
 -- 1863884747	ASuperStore	"Funny Sloth Mug, Still Trying to Decide Mug, Sarcastic Gift, Cute Animal Design Mug, Humorous Coffee Cup, Hilarious Morning Mug"	37386550	0
 -- 1864859869	ASuperStore	"Inspirational Quote Coffee Mug, Dream It Do It Mug, Motivational Mug for Office, Gift for Coworker, Positive Vibes Ceramic Mug, Encouraging"	37386550	0
 -- 281284308	JWalkerDesigns2013	Beautiful ladies occasion straw hat decorated with a handmade pale pink ribbon rose.	8080285	0
+
+--TEST 3: checking across visit_id level
+with events as (
+select
+  platform,
+  visit_id,
+  listing_id,
+  event_type,
+  sequence_number,
+  lead(event_type) over (partition by visit_id order by sequence_number) as next_page,
+  lead(sequence_number) over (partition by visit_id order by sequence_number) as next_sequence_number,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date- 3  
+  and page_view =1 -- only primary pages 
+  and v.platform in ('boe','mobile_web','desktop')
+group by all
+)
+select visit_id, count(*) 
+from events 
+where event_type in ('view_listing')
+and next_page in ('shop_home')
+group by all 
+having count(*) = 30
+order by 2 desc limit 5
+-- visit_id	f0_
+-- djXYD-bcTk2sNENO4lVzkg.1739297436668.1	30
+-- YO4-lXGLXRXQjK7LJfEh_B13bBuW.1739356360234.1	30
+-- ieu_VBIKNYC7Y82RgmGy1B-MM9oM.1739298322408.4	30
+-- 0NXDaSOi74uda9BuBelcKl2HV3Dy.1739380838696.1	30
+-- ZyYMFwGfTiq4L64WWRmjlQ.1739467389580.3	30
