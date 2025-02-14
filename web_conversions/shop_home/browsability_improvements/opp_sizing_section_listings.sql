@@ -1,0 +1,3 @@
+--shop_home_section_select: section_id, num_sections
+--neu_favorite_click: click listings
+--favorite_toast_notification_shown: see favorite confirmation
