@@ -6,3 +6,11 @@
 --shop_home_section_select: section_id, num_sections
 --neu_favorite_click: click listings
 --favorite_toast_notification_shown: see favorite confirmation
+
+
+with section_info as (
+select
+  listing_id,
+  shop_id,
+  section_id
+from etsy-data-warehouse-prod.etsy_shard.listings
