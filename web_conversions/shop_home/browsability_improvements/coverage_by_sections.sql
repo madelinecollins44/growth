@@ -213,7 +213,7 @@ group by all
 )
 select
   case when s.seller_user_id is not null then 1 else 0 end as has_section,
-  count(distinct v.user_id) as visited_shops,
+  count(distinct v.user_id) as active_shops,
 from 
   etsy-data-warehouse-prod.rollups.seller_basics v
 left join 
