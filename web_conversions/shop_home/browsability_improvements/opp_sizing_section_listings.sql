@@ -68,6 +68,22 @@ from
   sh_from_lp 
 group by all 
 
+--overall counts to compare
+select
+  platform,
+  count(case when event_type in ('shop_home') then visit_id end) as shop_home_views,
+  count(distinct case when event_type in ('shop_home') then visit_id end) as shop_home_visits,
+  count(case when event_type in ('view_listing') then visit_id end) as view_listing_views,
+  count(distinct case when event_type in ('view_listing') then visit_id end) as view_listing_visits,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date- 30  
+  and v.platform in ('boe','mobile_web','desktop')
+group by all
+
 ------------------------------
 -- TESTING
 ------------------------------
