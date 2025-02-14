@@ -145,7 +145,32 @@ group by all
 ----------------------------------------------------------------------
 -- SECTION DISTRO ACROSS SHOPS 
 ----------------------------------------------------------------------
--- what % of visited shops have sections?
+-- visited shops by section
+  with shop_sections as (
+select 
+  shop_id,
+  user_id as seller_user_id, 
+  count(distinct name) as sections
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics 
+left join
+  (select * from etsy-data-warehouse-prod.etsy_shard.shop_sections where active_listing_count > 0 ) using (shop_id)
+where
+ active_seller_status = 1
+group by all
+)
+select
+  sections,
+  count(distinct v.seller_user_id) as visited_shops,
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+left join 
+  shop_sections s 
+    on v.seller_user_id = cast(s.seller_user_id as string)
+where platform in ('mobile_web','desktop')
+group by all
+  
+  -- what % of visited shops have sections?
 with shop_sections as (
 select 
   shop_id,
