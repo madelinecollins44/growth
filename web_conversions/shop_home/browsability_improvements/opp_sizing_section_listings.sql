@@ -99,3 +99,28 @@ select
   count(case when event_type in ('shop_home') then sequence_number end) as sh,
   count(case when event_type in ('listing_view') and next_page in ('shop_home') then sequence_number end) /  count(case when event_type in ('shop_home') then sequence_number end) as share
 from events
+
+
+--looking at listings without a section, making sure they are still acive on site
+select
+  l.listing_id,
+  shop_name,
+  l.title,
+  l.shop_id,
+  section_id
+from etsy-data-warehouse-prod.etsy_shard.listings l
+inner join etsy-data-warehouse-prod.rollups.active_listing_basics b using (listing_id) -- only looking at active listings
+inner join etsy-data-warehouse-prod.rollups.seller_basics sb on l.shop_id=sb.shop_id
+where section_id = 0 -- if section_id is 0, it does not have a section_id
+limit 10
+-- listing_id	shop_name	title	shop_id	section_id
+-- 1837978463	GlenbrookeTreasures	Anita Goodesign Embroidery Designs CD My True Love Gave to Me NEW	7589081	0
+-- 910467236	EssenceOfMotherEarth	"Whipped organic body butter with rose, frankincense  & bergamot essential oil in glass jar"	25707734	0
+-- 1745035303	JmaccessoriesByQ	Green Rose and heart keychain/ purse charm	50506279	0
+-- 1377685590	SweetPickinsSTL	"Repurposed Decorated Bottlebrush Tree, vintage Mercury Glass beads, Valentine&#39;s day, pink"	23203336	0
+-- 1865767569	ArtiqueAve	"Graphic Deer Hoodie, Woodland Animal Sweatshirt, Nature Lover Gift, Deer Lover Apparel, Outdoor Enthusiast Clothing, Wildlife Graphic Jumper"	48079604	0
+-- 1309370497	DOnlyBeads	"hand made glass beaded necklace set, quality made costume jewelry, mom or grandmother present,friend or co-worker gift, appreciation token"	30392375	0
+-- 1863045427	ASuperStore	Personalized Made in Brazil Mug Customizable Coffee Cup Gift for Brazilian Pride Souvenir Custom Text Mug 11oz 15oz	37386550	0
+-- 1863884747	ASuperStore	"Funny Sloth Mug, Still Trying to Decide Mug, Sarcastic Gift, Cute Animal Design Mug, Humorous Coffee Cup, Hilarious Morning Mug"	37386550	0
+-- 1864859869	ASuperStore	"Inspirational Quote Coffee Mug, Dream It Do It Mug, Motivational Mug for Office, Gift for Coworker, Positive Vibes Ceramic Mug, Encouraging"	37386550	0
+-- 281284308	JWalkerDesigns2013	Beautiful ladies occasion straw hat decorated with a handmade pale pink ribbon rose.	8080285	0
