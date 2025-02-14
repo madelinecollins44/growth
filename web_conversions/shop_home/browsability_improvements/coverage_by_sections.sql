@@ -168,6 +168,7 @@ from
 left join 
   shop_sections s 
     on v.seller_user_id = cast(s.seller_user_id as string)
+where platform in ('mobile_web','desktop')
 group by all
 
 --active sellers w sections
