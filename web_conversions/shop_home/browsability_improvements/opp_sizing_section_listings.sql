@@ -84,6 +84,34 @@ where
   and v.platform in ('boe','mobile_web','desktop')
 group by all
 
+
+-- traffic to shop home from listing page by platform 
+  with events as (
+select
+  platform,
+  visit_id,
+  event_type,
+  sequence_number,
+  lead(event_type) over (partition by visit_id order by sequence_number) as next_page,
+  lead(sequence_number) over (partition by visit_id order by sequence_number) as next_sequence_number,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date- 30  
+  and page_view =1 -- only primary pages 
+  and v.platform in ('boe','mobile_web','desktop')
+group by all
+)
+select
+  platform,
+  count(case when event_type in ('view_listing') and next_page in ('shop_home') then sequence_number end) as lp_to_sh_events,
+  count(case when event_type in ('shop_home') then sequence_number end) as sh,
+  count(case when event_type in ('view_listing') and next_page in ('shop_home') then sequence_number end) /  count(case when event_type in ('shop_home') then sequence_number end) as share
+from events
+group by all 
+  
 ------------------------------
 -- TESTING
 ------------------------------
