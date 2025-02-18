@@ -407,3 +407,69 @@ group by all
 
 
 -- TEST 3: look at specific visit that viewed many different shops 
+
+select
+  platform,
+  visit_id,
+  shop_id,
+    -- count(distinct shop_id) as shops,
+  count(distinct listing_id) as unique_listings,
+  count(visit_id) as listing_views,
+  sum(purchased_after_view) as purchased_after_view,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+inner join  
+  active_listings using (listing_id)
+where 
+  _date >= current_date-30 
+  and platform in ('mobile_web','desktop') 
+  and referring_page_event in ('shop_home')
+group by all 
+order by 4, 6 desc
+limit 5
+-- platform	visit_id	shop_id	unique_listings	listing_views	purchased_after_view
+-- desktop	yibFU0VsACwU7_xDklpmPnAgtWDB.1737497444301.2	12955584	1	55	55
+-- desktop	NuF3AG-shvsVUgSoNnThXdVjDjKx.1738464333742.2	16922066	1	44	44
+-- desktop	a7Ymw6Tv--QIBbV-7vElJxnShZs2.1739278104660.1	7948934	46	47	47
+-- desktop	1SbOt4yYrTqWgz0SMpxKEfbzm_wO.1739178181600.2	22363515	38	39	39
+-- desktop	N3ovfNfbxs7YvMJAUF7C_5ZFdvAT.1738338071784.1	10834560	36	38	38
+-- desktop	r9vJqrLLDPUvRmk3X5JLWHslA7DB.1739448938182.5	16186538	36	36	36
+-- desktop	nrm9LjD_FqDVgLMR-nDaA9urHtPK.1739472515372.4	13622716	34	36	36
+
+-- TEST 3: look at specific visit that viewed many different shops, VISIT SPECIFIC 
+-- visit_id	shops_viewed	listings_viewed	listing_views	purchased_after_view
+-- xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	75	79	79	0
+---------not in gms table bc did not buy anything
+select
+  -- lv.platform,
+  visit_id,
+  count(distinct shop_id) as shops_viewed,
+  count(distinct listing_id) as listings_viewed,
+  count(visit_id) as listing_views,
+  sum(purchased_after_view) as purchased_after_view,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+inner join  
+  active_listings using (listing_id)
+where 
+  _date >= current_date-30 
+  and platform in ('mobile_web','desktop') 
+  and referring_page_event in ('shop_home')
+  and visit_id in ('xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63') 
+group by all 
+-- visit_id	shops_viewed	listings_viewed	listing_views	purchased_after_view
+-- xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	75	79	79	0
+
+----- agg at shop_id level (limit bc all others are just 1 listing per shop)
+-- visit_id	shop_id	listings_viewed	listing_views	purchased_after_view
+-- xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	12676643	3	3	0
+-- xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	8852820	2	2	0
+-- xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	41819812	2	2	0
+-- xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	6169843	1	1	0
+
+
+----CEHCKING FULL CODE AT THIS LEVLE
+visit_id	unique_listings_viewed	visits_view_listings_from_shop_home	shop_home_listing_views	gms_net
+xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	1	1	72	
+xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	3	1	3	
+xeY8fX3lgSFL0HGcDCucJu0HDveT.1737590512959.63	2	1	4	
