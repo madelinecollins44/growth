@@ -1,3 +1,6 @@
+------------------------------------------------------------------------------------------
+-- what % of visits view a shop home page of a listing they have favorited
+------------------------------------------------------------------------------------------
 with favorited_listings as (
 select 
   mapped_user_id,
