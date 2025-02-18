@@ -348,3 +348,62 @@ where
 group by all 
 -- 59359600 w sellers, exclude boe 34885893
 -- 59359600, exclude boe 34885893
+
+
+
+-- TEST 2: make sure math is working our on visit level
+with active_listings as ( -- need this to pull in shop_id
+select
+  listing_id,
+  shop_id
+from etsy-data-warehouse-prod.rollups.active_listing_basics
+)
+select
+  -- lv.platform,
+  visit_id,
+  shop_id,
+  listing_id,
+  count(visit_id) as listing_views,
+  sum(purchased_after_view) as purchased_after_view,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+inner join  
+  active_listings using (listing_id)
+where 
+  _date >= current_date-30 
+  and platform in ('mobile_web','desktop') 
+  and referring_page_event in ('shop_home')
+group by all 
+order by 4, 5 desc 
+limit 5
+-- visit_id	shop_id	listing_id	listing_views	purchased_after_view
+-- 5beb5iltGYQost8UXfvaA2VaVT6U.1738546277696.1	57364273	1865406667	286	0
+-- GwHHEB-WUvssuiIv3vp97lw1bmBS.1738633016379.1	57364273	1865988199	278	0
+-- h1Nqd842i5ZQvo9LIi6T1SzGpE9-.1739347262802.1	57137102	1872200581	201	0
+-- crx4-uaQNBlQo5lEkS40YQ-pQowe.1739348146625.1	57137102	1856709750	173	0
+-- ASCk0mcfOqGiHOSs9-SRhQcpKRoY.1739348484280.1	57137102	1867434087	173	0
+-- 7Yh8Tb2-uM-TZN-33rVD4zNP_QeT.1738538970257.1	15351076	824484505	1	1
+-- elJYNzJ4TSdI2VhaQPUag8OG6Vbh.1738849753765.1	11751361	802391400	1	1
+-- 3bD0kNYOp0LNopZ_SrPGFQ5FV-GS.1738672227608.1	5842826	1778410788	1	1
+-- cyBpb8dLqZzIBaDRc-rk8Q4qpKC7.1738501230855.1	31500747	1302027560	1	1
+-- MLn8L8Y4oKrKd9FvGNJ-San99t0V.1738946293237.1	54022536	1803628337	1	1
+
+select
+  a.listing_id, 
+  v.visit_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions a
+inner join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v using (transaction_id)
+left join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g 
+    on a.transaction_id=g.transaction_id
+where visit_id in ('5beb5iltGYQost8UXfvaA2VaVT6U.1738546277696.1')
+and listing_id = 1865406667
+group by all 
+-- listing_id	visit_id	gms_net
+-- 1803628337	MLn8L8Y4oKrKd9FvGNJ-San99t0V.1738946293237.1	19.90773077
+
+
+-- TEST 3: look at specific visit that viewed many different shops 
