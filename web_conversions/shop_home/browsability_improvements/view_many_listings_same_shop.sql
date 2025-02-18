@@ -99,12 +99,12 @@ select
   shop_id
 from etsy-data-warehouse-prod.rollups.active_listing_basics
 )
-, shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page. this is all at the shop_id level. 
+, shop_home_listing_views as ( -- start with pulling all data on listing views from shop_home page. 
 select
   -- lv.platform,
   visit_id,
   shop_id,
-  count(distinct listing_id) as unique_listings_viewed,
+  listing_id,
   count(visit_id) as listing_views,
   sum(purchased_after_view) as purchased_after_view,
 from 
@@ -115,6 +115,34 @@ where
   _date >= current_date-30 
   and platform in ('mobile_web','desktop') 
   and referring_page_event in ('shop_home')
+group by all 
+)
+, gms as (-- then pull all the gms for visits/ listings
+select
+  a.listing_id, 
+  v.visit_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions a
+inner join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v using (transaction_id)
+left join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g 
+    on a.transaction_id=g.transaction_id
+group by all 
+)
+, views_and_gms as (
+select 
+  lv.visit_id,
+  lv.shop_id,
+  count(distinct lv.listing_id) as unique_listings_viewed,
+  count(lv.visit_id) as listing_views,
+  sum(lv.purchased_after_view) as purchased_after_view,
+  sum(gms_net) as gms_net
+from 
+  shop_home_listing_views lv 
+left join 
+  gms using (visit_id, listing_id)
 group by all 
 )
 select  
@@ -134,10 +162,12 @@ select
   end as unique_listings_viewed,
   count(distinct visit_id) as visits_view_listings_from_shop_home,
   sum(listing_views) as shop_home_listing_views,
+  sum(gms_net) as gms_net,
 from 
-  shop_home_listing_views
+  views_and_gms
 group by all 
 order by 1 asc
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- all visits to view multiple listings from the same shop EXCLUDING sellers
