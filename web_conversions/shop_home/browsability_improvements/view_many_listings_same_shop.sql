@@ -4,18 +4,37 @@
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- overall page traffic over last 30 days by platform
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- overall traffic over last 30 days (visits)
+select
+  platform,  
+  count(distinct visit_id) as traffic,
+  sum(total_gms) as total_gms
+from 
+  etsy-data-warehouse-prod.weblog.visits
+where 
+  _date >= current_date-30 
+  and platform in ('boe','desktop','mobile_web')
+group by all 
+  
 -- overall page traffic over last 30 days (visits)
-select 
-  platform,
-  count(distinct visit_id)
+with shop_home_visits as (
+select distinct 
+  visit_id
 from 
   etsy-data-warehouse-prod.weblog.events e
+where 
+  _date >= current_date-30 
+  and e.event_type in ('shop_home')
+)
+select
+  platform,
+  count(distinct visit_id) as traffic,
+  sum(total_gms) as total_gms
+from 
+  shop_home_visits shv
 inner join 
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
-where 
-  v._date >= current_date-30 
-  and v.platform in ('mobile_web','desktop','boe')
-  and e.event_type in ('shop_home')
+where v._date >= current_date-30
 group by all
 order by 1 asc
 
