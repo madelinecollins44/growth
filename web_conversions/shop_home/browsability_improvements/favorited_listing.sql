@@ -20,6 +20,7 @@ order by 4 desc
 , visited_shop_id as (
 select
   beacon.event_name,
+  user_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
   visit_id, 
   date(b._partitiontime) as visit_id,
@@ -31,7 +32,7 @@ inner join
 	where
 		date(b._partitiontime) >= current_date-30
     and v._date >= current_date-30
-	  and beacon.event_source in ('web')
+	  and platform in ('mobile_web','desktop')
     and (beacon.event_name in ('shop_home'))
 group by all
 )
