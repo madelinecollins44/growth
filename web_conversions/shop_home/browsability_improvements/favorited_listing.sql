@@ -1,9 +1,11 @@
-
 with favorited_listings as (
 select 
   mapped_user_id,
   listing_id,
-  max(update_date) as update_date
+  shop_id,
+  count(distinct create_date),
+  -- max(create_date) as create_date
+  -- max(update_date) as update_date
 from 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile
 inner join 
@@ -12,3 +14,4 @@ where
   is_displayable = 1
 group by all
 )
+select *, count(*) from favorited_listings group by all order by 2 desc 
