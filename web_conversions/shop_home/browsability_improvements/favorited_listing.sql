@@ -6,7 +6,7 @@ select
   mapped_user_id,
   shop_id,
   shop_user_id as seller_user_id,
-  date(timestamp_seconds(create_date)) as favoriting_date,
+  min(date(timestamp_seconds(create_date))) as favoriting_date, -- oldest date that user favorited something from this shop
   count(distinct listing_id) as listings
 from 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile
@@ -50,7 +50,7 @@ from
 left join 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
 )
-, favorites_with_flag AS ( -- at the time of the visit, did the user have a listing favorited from the shop? 
+, favorites_with_flag as ( -- at the time of the visit, did the user have a listing favorited from the shop? 
 select
   f.mapped_user_id,
   f.shop_id,
@@ -82,6 +82,7 @@ left join
     and cast(fwf.shop_id as string)= v.shop_id
     and v.visit_date = fwf.visit_date
 group by all
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --TESTING
