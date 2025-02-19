@@ -81,3 +81,50 @@ left join
     and cast(f.shop_id as string)=v.shop_id
     and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
 group by all
+
+-- find visits to shop home by date
+	with visited_shop_id as ( -- get visit info for each user to shop home page 
+select
+  -- beacon.event_name,
+  user_id,
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id,
+  count(distinct visit_id) as visits, 
+  date(b._partitiontime) as visit_date,
+  count(visit_id) as pageviews
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons` b
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where
+	date(b._partitiontime) >= current_date-5
+  and v._date >= current_date-5
+	and platform in ('mobile_web','desktop')
+  and (beacon.event_name in ('shop_home'))
+  and user_id is not null -- only looking at signed in visits
+group by all
+)
+select
+  mapped_user_id,
+  shop_id,
+  seller_user_id,
+  visits, 
+  visit_date,
+  pageviews
+from 
+  visited_shop_id
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
+order by 4 desc 
+limit 10
+-- mapped_user_id	shop_id	seller_user_id	visits	visit_date	pageviews
+-- 378480957	25375380	365062654	59	2025-02-17	141
+-- 114890745	16955501	114890745	44	2025-02-15	197
+-- 694514105	8919300	41671387	39	2025-02-18	167
+-- 114890745	16955501	114890745	38	2025-02-16	138
+-- 114890745	16955501	114890745	36	2025-02-14	189
+-- 378480957	25375380	365062654	35	2025-02-14	106
+-- 1025373426	27604842	437378096	35	2025-02-17	4042
+-- 114890745	16955501	114890745	34	2025-02-17	128
+-- 378480957	25375380	365062654	33	2025-02-18	95
+-- 89250615	22481767	89250615	32	2025-02-17	287
