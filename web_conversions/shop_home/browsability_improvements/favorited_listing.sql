@@ -61,3 +61,23 @@ left join
     and cast(f.shop_id as string)=v.shop_id
     and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
 group by all
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+--TESTING
+---------------------------------------------------------------------------------------------------------------------------------------------
+-- TEST 1: look at mapped_user_id + date level
+select
+  v.mapped_user_id,
+  visit_date,
+  case when f.mapped_user_id is not null and f.shop_id is not null then 1 else 0 end as had_listing_favorited,
+  sum(visits) as total_visits,
+  sum(pageviews) as total_pageviews
+from 
+  mapped_user_visits v
+left join 
+  favorited_listings f
+    on v.mapped_user_id=f.mapped_user_id
+    and cast(f.shop_id as string)=v.shop_id
+    and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
+group by all
