@@ -30,8 +30,8 @@ from
 inner join 
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 	where
-		date(b._partitiontime) >= current_date-30
-    and v._date >= current_date-30
+		date(b._partitiontime) >= current_date-5
+    and v._date >= current_date-5
 	  and platform in ('mobile_web','desktop')
     and (beacon.event_name in ('shop_home'))
 group by all
@@ -41,9 +41,9 @@ select
   mapped_user_id,
   shop_id,
   seller_user_id,
-  visit_id, 
+  visits, 
   visit_date,
-  views
+  pageviews
 from 
   visited_shop_id
 left join 
@@ -51,10 +51,13 @@ left join
 )
 select
   case when f.mapped_user_id is not null and f.shop_id is not null then 1 else 0 end as had_listing_favorited,
+  sum(visits) as total_visits,
+  sum(pageviews) as total_pageviews
 from 
   mapped_user_visits v
 left join 
   favorited_listings f
     on v.mapped_user_id=f.mapped_user_id
-    and v.shop_id=f.shop_id
+    and cast(f.shop_id as string)=v.shop_id
     and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
+group by all
