@@ -42,7 +42,7 @@ select
   shop_id,
   seller_user_id,
   visit_id, 
-  _date,
+  visit_date,
   views
 from 
   visited_shop_id
@@ -50,11 +50,11 @@ left join
   etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
 )
 select
-  case when 
+  case when f.mapped_user_id is not null and f.shop_id is not null then 1 else 0 end as had_listing_favorited,
 from 
   mapped_user_visits v
 left join 
   favorited_listings f
     on v.mapped_user_id=f.mapped_user_id
-    and v.shop-id=f.shop_id
+    and v.shop_id=f.shop_id
     and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
