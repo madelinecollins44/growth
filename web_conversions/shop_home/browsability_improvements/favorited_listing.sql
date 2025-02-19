@@ -49,20 +49,37 @@ from
 left join 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
 )
+, favorites_with_flag AS ( -- at the time of the visit, did the user have a listing favorited from the shop? 
 select
-  case when f.mapped_user_id is not null and f.shop_id is not null then 1 else 0 end as had_listing_favorited,
-  sum(visits) as total_visits,
-  sum(pageviews) as total_pageviews
+  f.mapped_user_id,
+  f.shop_id,
+  v.visit_date,
+  count(f.shop_id) AS total_favorites,
+  case
+    when count(f.shop_id) > 0 then 1
+    else 0
+  end as had_favorite_at_visit
+from favorited_listings f
+join mapped_user_visits v
+  on f.mapped_user_id = v.mapped_user_id
+  and cast(f.shop_id as string)= v.shop_id
+  and f.favoriting_date <= v.visit_date
+group by all
+)
+select
+  coalesce(fwf.had_favorite_at_visit, 0) AS had_favorite_at_visit,
+  count(v.visits) as visits,
+  sum(v.visits) as visits_sum,
+  sum(v.pageviews) as pageviews,
 from 
   mapped_user_visits v
 left join 
-  favorited_listings f
-    on v.mapped_user_id=f.mapped_user_id
-    and cast(f.shop_id as string)=v.shop_id
-    and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
+  favorites_with_flag fwf
+    on v.mapped_user_id = fwf.mapped_user_id
+    and cast(fwf.shop_id as string)= v.shop_id
+    and v.visit_date = fwf.visit_date
 group by all
-
-
+	
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --TESTING
 ---------------------------------------------------------------------------------------------------------------------------------------------
