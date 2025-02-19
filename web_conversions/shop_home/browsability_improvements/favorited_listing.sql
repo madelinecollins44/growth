@@ -14,6 +14,7 @@ inner join
   etsy-data-warehouse-prod.etsy_shard.users_favoritelistings using (user_id)
 where 
   is_displayable = 1
+  and shop_id > 0 
 group by all
 )
 , visited_shop_id as ( -- get visit info for each user to shop home page 
@@ -55,23 +56,21 @@ select
   f.mapped_user_id,
   f.shop_id,
   v.visit_date,
-  count(f.shop_id) AS total_favorites,
+  f.favoriting_date,
   case
-    when count(f.shop_id) > 0 then 1
+    when f.favoriting_date < v.visit_date then 1
     else 0
   end as had_favorite_at_visit
-from favorited_listings f
-join mapped_user_visits v
-  on f.mapped_user_id = v.mapped_user_id
-  and cast(f.shop_id as string)= v.shop_id
-  and f.favoriting_date <= v.visit_date -- the first favoriting date of that shop happens before the visit 
+from 
+  favorited_listings f
+join 
+  mapped_user_visits v
+    on f.mapped_user_id = v.mapped_user_id
+    and cast(f.shop_id as string)= v.shop_id
 group by all
 )
 select
-  -- v.mapped_user_id,
-  -- v.shop_id,
   coalesce(fwf.had_favorite_at_visit, 0) AS had_favorite_at_visit,
-  count(v.visits) as visits,
   sum(v.visits) as visits_sum,
   sum(v.pageviews) as pageviews,
 from 
@@ -82,7 +81,6 @@ left join
     and cast(fwf.shop_id as string)= v.shop_id
     and v.visit_date = fwf.visit_date
 group by all
-
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --TESTING
