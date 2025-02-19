@@ -6,7 +6,7 @@ select
   mapped_user_id,
   shop_id,
   shop_user_id as seller_user_id,
-  date(timestamp_seconds(create_date)) as create_date,
+  date(timestamp_seconds(create_date)) as favoriting_date,
   count(distinct listing_id) as listings
 from 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile
@@ -22,9 +22,9 @@ select
   user_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id,
-  visit_id, 
-  date(b._partitiontime) as _date,
-  count(visit_id) as views
+  count(distinct visit_id) as visits, 
+  date(b._partitiontime) as visit_date,
+  count(visit_id) as pageviews
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` b
 inner join 
@@ -50,4 +50,11 @@ left join
   etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
 )
 select
-  
+  case when 
+from 
+  mapped_user_visits v
+left join 
+  favorited_listings f
+    on v.mapped_user_id=f.mapped_user_id
+    and v.shop-id=f.shop_id
+    and v.visit_date >= f.favoriting_date -- visit has to be before the user favorited a listing from that shop 
