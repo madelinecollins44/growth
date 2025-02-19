@@ -19,21 +19,22 @@ group by all
 , visited_shop_id as ( -- get visit info for each user to shop home page 
 select
   beacon.event_name,
+  date(b._partitiontime) as visit_date,
   user_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id,
   count(distinct visit_id) as visits, 
-  date(b._partitiontime) as visit_date,
   count(visit_id) as pageviews
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` b
 inner join 
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 	where
-		date(b._partitiontime) >= current_date-5
-    and v._date >= current_date-5
+		date(b._partitiontime) >= current_date-30
+    and v._date >= current_date-30
 	  and platform in ('mobile_web','desktop')
     and (beacon.event_name in ('shop_home'))
+    and user_id is not null 
 group by all
 )
 , mapped_user_visits as ( -- add in mapped user id here so can join to favorites table 
@@ -63,10 +64,12 @@ from favorited_listings f
 join mapped_user_visits v
   on f.mapped_user_id = v.mapped_user_id
   and cast(f.shop_id as string)= v.shop_id
-  and f.favoriting_date <= v.visit_date
+  and f.favoriting_date <= v.visit_date -- the first favoriting date of that shop happens before the visit 
 group by all
 )
 select
+  -- v.mapped_user_id,
+  -- v.shop_id,
   coalesce(fwf.had_favorite_at_visit, 0) AS had_favorite_at_visit,
   count(v.visits) as visits,
   sum(v.visits) as visits_sum,
@@ -79,7 +82,7 @@ left join
     and cast(fwf.shop_id as string)= v.shop_id
     and v.visit_date = fwf.visit_date
 group by all
-	
+
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --TESTING
 ---------------------------------------------------------------------------------------------------------------------------------------------
