@@ -1,13 +1,13 @@
 ------------------------------------------------------------------------------------------
 -- what % of visits view a shop home page of a listing they have favorited
 ------------------------------------------------------------------------------------------
-with favorited_listings as (
+with favorited_listings as ( -- listings each user had favorited at specific time 
 select 
   mapped_user_id,
-  listing_id,
   shop_id,
+  shop_user_id as seller_user_id,
   date(timestamp_seconds(create_date)) as create_date,
-  -- max(date(timestamp_seconds(update_date))) as most_recent_update,
+  count(distinct listing_id) as listings
 from 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile
 inner join 
@@ -15,15 +15,15 @@ inner join
 where 
   is_displayable = 1
 group by all
-order by 4 desc
 )
-, visited_shop_id as (
+, visited_shop_id as ( -- get visit info for each user to shop home page 
 select
   beacon.event_name,
   user_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id,
   visit_id, 
-  date(b._partitiontime) as visit_id,
+  date(b._partitiontime) as _date,
   count(visit_id) as views
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` b
@@ -36,3 +36,18 @@ inner join
     and (beacon.event_name in ('shop_home'))
 group by all
 )
+, mapped_user_visits as ( -- add in mapped user id here so can join to favorites table 
+select
+  mapped_user_id,
+  shop_id,
+  seller_user_id,
+  visit_id, 
+  _date,
+  views
+from 
+  visited_shop_id
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
+)
+select
+  
