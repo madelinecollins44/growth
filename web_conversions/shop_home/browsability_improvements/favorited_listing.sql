@@ -24,7 +24,7 @@ select
   user_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id,
-  count(distinct visit_id) as visits, 
+  visit_id, 
   count(visit_id) as pageviews
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` b
@@ -43,13 +43,14 @@ select
   mapped_user_id,
   shop_id,
   seller_user_id,
-  visits, 
+  visit_id, 
   visit_date,
   pageviews
 from 
   visited_shop_id
 left join 
   etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
+group by all 
 )
 , favorites_with_flag as ( -- at the time of the visit, did the user have a listing favorited from the shop? 
 select
@@ -60,7 +61,8 @@ select
   case
     when f.favoriting_date < v.visit_date then 1
     else 0
-  end as had_favorite_at_visit
+  end as had_favorite_at_visit,
+  count(distinct visit_id) as visits, 
 from 
   favorited_listings f
 join 
@@ -71,7 +73,7 @@ group by all
 )
 select
   coalesce(fwf.had_favorite_at_visit, 0) AS had_favorite_at_visit,
-  sum(v.visits) as visits_sum,
+  count(distinct v.visit_id) as visits,
   sum(v.pageviews) as pageviews,
 from 
   mapped_user_visits v
@@ -81,6 +83,7 @@ left join
     and cast(fwf.shop_id as string)= v.shop_id
     and v.visit_date = fwf.visit_date
 group by all
+
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
 --TESTING
