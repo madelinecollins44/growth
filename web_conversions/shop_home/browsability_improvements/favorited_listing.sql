@@ -1,4 +1,83 @@
 ------------------------------------------------------------------------------------------
+-- of visits that come to shop home with favorites from that shop, how many favorites do they have? 
+------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+with favorited_listings as ( -- listings each user had favorited at specific time 
+select 
+  mapped_user_id,
+  shop_id,
+  shop_user_id as seller_user_id,
+  date(timestamp_seconds(create_date)) as favoriting_date,
+  listing_id
+from 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile
+inner join 
+  etsy-data-warehouse-prod.etsy_shard.users_favoritelistings using (user_id)
+where 
+  is_displayable = 1
+  and shop_id > 0 
+group by all
+)
+, visited_shop_id as ( -- get visit info for each user to shop home page 
+select
+  beacon.event_name,
+  date(b._partitiontime) as visit_date,
+  user_id,
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id,
+  visit_id, 
+  count(visit_id) as pageviews
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons` b
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+	where
+		date(b._partitiontime) >= current_date-30
+    and v._date >= current_date-30
+	  and platform in ('mobile_web','desktop')
+    and (beacon.event_name in ('shop_home'))
+    and user_id is not null 
+group by all
+)
+, mapped_user_visits as ( -- add in mapped user id here so can join to favorites table 
+select
+  mapped_user_id,
+  shop_id,
+  seller_user_id,
+  visit_id, 
+  visit_date,
+  pageviews
+from 
+  visited_shop_id
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile using (user_id)
+group by all 
+)
+, favorited_counts as (
+  select
+  v.mapped_user_id,
+  v.shop_id,
+  v.visit_date,
+  v.visit_id,
+  count(distinct f.listing_id) AS num_favorited_listings -- how many listings were liked before time of visit
+from 
+  mapped_user_visits v
+left join 
+  favorited_listings f
+  on v.mapped_user_id = f.mapped_user_id
+  and cast(f.shop_id as string) = v.shop_id
+  and f.favoriting_date < v.visit_date -- favorite was before the visit
+group by all
+)
+select
+  num_favorited_listings,
+  count(distinct visit_id) as visits 
+from 
+  favorited_counts
+group by all
+
+	
+------------------------------------------------------------------------------------------
 -- what % of visits view a shop home page of a listing they have favorited
 ------------------------------------------------------------------------------------------
 with favorited_listings as ( -- listings each user had favorited at specific time 
