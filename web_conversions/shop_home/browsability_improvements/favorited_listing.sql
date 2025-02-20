@@ -247,3 +247,29 @@ from agg
 group by all 
 order by 2 desc 
 limit 10
+
+--, agg as (
+select
+  num_favorited_listings,
+  visit_id,
+  shop_id,
+  count(distinct visit_id) as visits 
+from 
+  favorited_counts
+group by all
+)
+, AGG_2 as (
+select
+  visit_id,
+  count(distinct num_favorited_listings) as num_favorited_listings
+from agg
+group by all 
+order by 2 desc 
+)
+select 
+  count(distinct case when num_favorited_listings = 0 then visit_id end) as visits_no_likes,
+  count(distinct case when num_favorited_listings = 1 then visit_id end) as visits_1_likes,
+  count(distinct case when num_favorited_listings > 1 then visit_id end) as visits_more_1_likes,
+  count(distinct visit_id) as total_visits
+from agg_2
+
