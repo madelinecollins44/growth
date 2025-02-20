@@ -1,7 +1,6 @@
 ------------------------------------------------------------------------------------------
 -- of visits that come to shop home with favorites from that shop, how many favorites do they have? 
 ------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------
 with favorited_listings as ( -- listings each user had favorited at specific time 
 select 
   mapped_user_id,
@@ -229,3 +228,22 @@ limit 10
 -- 114890745	16955501	114890745	34	2025-02-17	128
 -- 378480957	25375380	365062654	33	2025-02-18	95
 -- 89250615	22481767	89250615	32	2025-02-17	287
+
+-- TEST 2:  understand why visits are getting double counted 
+, agg as (
+select
+  num_favorited_listings,
+  visit_id,
+  shop_id,
+  count(distinct visit_id) as visits 
+from 
+  favorited_counts
+group by all
+)
+select
+  visit_id,
+  count(distinct num_favorited_listings)
+from agg
+group by all 
+order by 2 desc 
+limit 10
