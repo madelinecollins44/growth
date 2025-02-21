@@ -14,7 +14,6 @@ select
   platform,
   visit_id,
   event_type,
-  listing_id,
   sequence_number,
   lead(event_type) over (partition by visit_id order by sequence_number) as next_page,
   lead(sequence_number) over (partition by visit_id order by sequence_number) as next_sequence_number,
@@ -34,11 +33,12 @@ select
   count(case when event_type in ('view_listing') then visit_id end) as listing_views,
   count(distinct case when event_type in ('shop_home') then visit_id end) as visits_w_shop_home,
   count(case when event_type in ('shop_home') then visit_id end) as shop_home_views,
-  count(distinct case when event_type in ('shop_home') and next_page in ('shop_home') then visit_id end) as visits_lp_to_sh,
-  count(case when event_type in ('shop_home') and next_page in ('shop_home') then visit_id end) as views_lp_to_sh,
+  count(distinct case when event_type in ('view_listing') and next_page in ('shop_home') then visit_id end) as visits_lp_to_sh,
+  count(case when event_type in ('view_listing') and next_page in ('shop_home') then visit_id end) as views_lp_to_sh,
 from 
   events e
 group by all 
+
 
 ------------------------------
 -- QUERY TO PULL IN LISTING_ID
