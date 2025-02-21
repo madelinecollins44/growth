@@ -6,6 +6,54 @@
 --neu_favorite_click: click listings
 --favorite_toast_notification_shown: see favorite confirmation
 
+------------------------------------------------------------------------------------------
+-- SEE HOW MANY LISTING VIEWS GO TO SHOP HOME PAGE
+------------------------------------------------------------------------------------------
+with section_info as ( -- gets whether or not a listing is in a section
+select
+  l.listing_id,
+  l.shop_id,
+  section_id
+from 
+  etsy-data-warehouse-prod.etsy_shard.listings l
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics b using (listing_id) -- only looking at active listings
+where 
+  section_id > 0 -- if section_id is 0, it is not in a section
+)
+, events as (
+select
+  platform,
+  visit_id,
+  event_type,
+  listing_id,
+  sequence_number,
+  lead(event_type) over (partition by visit_id order by sequence_number) as next_page,
+  lead(sequence_number) over (partition by visit_id order by sequence_number) as next_sequence_number,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date- 30  
+  and page_view =1 -- only primary pages 
+  and v.platform in ('boe','mobile_web','desktop')
+group by all
+)
+select
+  platform,
+  count(distinct case when event_type in ('view_listing') then visit_id end) as visits_w_listing_view,
+  count(case when event_type in ('view_listing') then visit_id end) as listing_views,
+  count(distinct case when event_type in ('shop_home') then visit_id end) as visits_w_shop_home,
+  count(case when event_type in ('shop_home') then visit_id end) as shop_home_views,
+  count(distinct case when event_type in ('shop_home') and next_page in ('shop_home') then visit_id end) as visits_lp_to_sh,
+  count(case when event_type in ('shop_home') and next_page in ('shop_home') then visit_id end) as views_lp_to_sh,
+  visit_id,
+  count(sequence_number) as views
+from 
+  events e
+group by all 
+
 ------------------------------
 -- QUERY TO PULL IN LISTING_ID
 ------------------------------
