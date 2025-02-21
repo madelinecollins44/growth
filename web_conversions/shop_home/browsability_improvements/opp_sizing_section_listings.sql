@@ -9,19 +9,7 @@
 ------------------------------------------------------------------------------------------
 -- SEE HOW MANY LISTING VIEWS GO TO SHOP HOME PAGE
 ------------------------------------------------------------------------------------------
-with section_info as ( -- gets whether or not a listing is in a section
-select
-  l.listing_id,
-  l.shop_id,
-  section_id
-from 
-  etsy-data-warehouse-prod.etsy_shard.listings l
-inner join 
-  etsy-data-warehouse-prod.rollups.active_listing_basics b using (listing_id) -- only looking at active listings
-where 
-  section_id > 0 -- if section_id is 0, it is not in a section
-)
-, events as (
+with events as (
 select
   platform,
   visit_id,
@@ -48,8 +36,6 @@ select
   count(case when event_type in ('shop_home') then visit_id end) as shop_home_views,
   count(distinct case when event_type in ('shop_home') and next_page in ('shop_home') then visit_id end) as visits_lp_to_sh,
   count(case when event_type in ('shop_home') and next_page in ('shop_home') then visit_id end) as views_lp_to_sh,
-  visit_id,
-  count(sequence_number) as views
 from 
   events e
 group by all 
