@@ -1,6 +1,6 @@
 select
 	case
-  	when coalesce((a.price_usd/100), lv.price_usd) > 1 then 'Less than $1'
+  	when coalesce((a.price_usd/100), lv.price_usd) < 1 then 'Less than $1'
     when coalesce((a.price_usd/100), lv.price_usd) >= 1 and coalesce((a.price_usd/100), lv.price_usd) < 5 then '$1-$4.99'
     when coalesce((a.price_usd/100), lv.price_usd) >= 5 and coalesce((a.price_usd/100), lv.price_usd) < 10 then '$5-$9.99'
     when coalesce((a.price_usd/100), lv.price_usd) >= 10 and coalesce((a.price_usd/100), lv.price_usd) < 25 then '$10-$24.99'
