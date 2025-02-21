@@ -1,3 +1,6 @@
+------------------------------------------------------------------------------------------
+-- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
+------------------------------------------------------------------------------------------
 select
 	case
   	when coalesce((a.price_usd/100), lv.price_usd) < 1 then 'Less than $1'
@@ -26,7 +29,8 @@ select
 from 
   etsy-data-warehouse-prod.rollups.active_listing_basics a
 left join 
-  etsy-data-warehouse-prod.analytics.listing_views lv 
+ (select * from etsy-data-warehouse-prod.analytics.listing_views where platform in ('mobile_web','desktop')) lv 
     on cast(a.listing_id as int64)=lv.listing_id
-where lv._date >=current_date-30
+where  
+  lv._date >=current_date-30
 group by all
