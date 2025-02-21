@@ -96,11 +96,12 @@ select
   platform,
   in_section,
   count(distinct listing_id) as listings,
-  count(visit_id) as views,
+  sum(views) as views,
   count(distinct visit_id) as visits
 from 
   sh_from_lp 
 group by all 
+order by 1,2 desc
 
 --overall counts to compare
 select
