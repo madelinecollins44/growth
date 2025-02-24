@@ -139,7 +139,7 @@ select
   count(distinct case when shops_w_shipping_promotions = 1 then v.visit_id end) as shipping_promo_visits, -- this is the free shipping guarantee  
   count(distinct v.visit_id) as shop_home_visits,
 from 
-  etsy-bigquery-adhoc-prod._scripte8ca0eda791c6804ad785521ee948fcf649fdaae.all_shops sb
+  etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops sb
 left join 
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits v 
     on cast(sb.shop_id as string)=v.shop_id 
