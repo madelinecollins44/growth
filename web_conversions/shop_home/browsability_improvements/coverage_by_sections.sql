@@ -162,7 +162,101 @@ left join
     on l.seller_user_id= cast(s.seller_user_id as string)
 group by all 
 
+-- etsy plus breakdown 
+  
+with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  is_etsy_plus,
+  b.shop_id,
+  shop_name,
+  b.user_id as seller_user_id, 
+  count(distinct case when active_listing_count > 0 then s.name end) as sections
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1
+group by all
+)
+, shop_visits as ( -- visits that viewed a shop on web
+select
+  seller_user_id,
+  visit_id,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('desktop','mobile_web')
+group by all 
+)
+, shop_gms_converts as ( -- get all shop info at the visit_id level
+select
+  g.seller_user_id,
+  v.visit_id, 
+  sum(gms_net) as gms_net,
+from
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v 
+inner join
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+    on g.transaction_id=v.transaction_id 
+where 
+  g.date >= current_date-30 -- this will also have to be the last 30 days, since looking at a visit level 
+group by all 
+)
+, shop_level as ( -- get everything to seller_user_id level 
+select
+  v.seller_user_id,
+  count(distinct v.visit_id) as visits,
+  count(distinct gc.visit_id) as converts, 
+  sum(gms_net) as gms_net
+from 
+  shop_visits v
+left join 
+  shop_gms_converts gc 
+    on v.seller_user_id= cast(gc.seller_user_id as string)
+    and v.visit_id=gc.visit_id
+group by all 
+)
+select
+  is_etsy_plus,
+  case when s.sections > 0 then 1 else 0 end as has_sections,
+  count(distinct l.seller_user_id) as visited_shops,
+  sum(visits) as visits,
+  sum(converts) as converts,
+  sum(gms_net) as gms_net
+from 
+  shop_sections s -- starting here to get all active shops, and then looking at whether or not those were visited. some shops that were visited are not active.
+left join 
+  shop_level l
+    on l.seller_user_id= cast(s.seller_user_id as string)
+group by all 
 
+----------------------------------------------------------------------
+-- % OF SHOPS THAT ARE ETSY PLUS 
+----------------------------------------------------------------------
+  with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  is_etsy_plus,
+  b.shop_id,
+  shop_name,
+  b.user_id as seller_user_id, 
+  count(distinct case when active_listing_count > 0 then s.name end) as sections
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1
+group by all
+)
+select
+  is_etsy_plus,
+  count(distinct case when sections> 0 then shop_id end) as shop_w_sections,
+  count(distinct case when sections= 0 then shop_id end) as shop_wo_sections,
+  count(distinct shop_id) as shops,
+from shop_sections
+group by all 
 ----------------------------------------------------------------------
 -- GMS FROM SHOP (including from traffic that did not see shop home) 
 ----------------------------------------------------------------------
