@@ -163,7 +163,6 @@ left join
 group by all 
 
 -- etsy plus breakdown 
-  
 with shop_sections as ( -- active shops + if they have sections with listings in them 
 select 
   is_etsy_plus,
@@ -235,7 +234,7 @@ group by all
 ----------------------------------------------------------------------
 -- % OF SHOPS THAT ARE ETSY PLUS 
 ----------------------------------------------------------------------
-  with shop_sections as ( -- active shops + if they have sections with listings in them 
+with shop_sections as ( -- active shops + if they have sections with listings in them 
 select 
   is_etsy_plus,
   b.shop_id,
@@ -252,11 +251,10 @@ group by all
 )
 select
   is_etsy_plus,
-  count(distinct case when sections> 0 then shop_id end) as shop_w_sections,
-  count(distinct case when sections= 0 then shop_id end) as shop_wo_sections,
+  case when sections> 0 then 1 else 0 end as has_sections,
   count(distinct shop_id) as shops,
 from shop_sections
-group by all 
+group by all  
 ----------------------------------------------------------------------
 -- GMS FROM SHOP (including from traffic that did not see shop home) 
 ----------------------------------------------------------------------
