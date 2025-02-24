@@ -27,6 +27,31 @@ left join etsy-data-warehouse-prod.weblog.events e using (visit_id)
 where v._date >= current_date-30
 
 ----------------------------------------------------------------------
+-- SHOPS BY SECTIONS & SELLER TIER
+----------------------------------------------------------------------
+with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  b.shop_id,
+  b.seller_tier_new,
+  shop_name,
+  b.user_id as seller_user_id, 
+  count(distinct case when active_listing_count > 0 then s.name end) as sections
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1
+group by all
+)
+select
+  sections,
+  seller_tier_new,
+  count(distinct shop_id) as shops
+from shop_sections
+group by all
+
+----------------------------------------------------------------------
 -- OF SHOPS W SECTIONS, HOW MANY DO THEY HAVE
 ----------------------------------------------------------------------
   with shop_sections as ( -- active shops + if they have sections with listings in them 
