@@ -57,7 +57,7 @@ where is_frozen = 0
 -- );
 
 
--- shops with a free shipping guarantee, metrics distro
+/* all metrics, free shipping */
 select 
   seller_tier_new,
   -- shops 
@@ -105,13 +105,15 @@ left join
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits v 
     on cast(a.shop_id as string)=v.shop_id 
 
-/* all metrics */
+/* all metrics, shipping promotion */
+-- select shop_id, count(*) from etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops group by all order by 2 desc limit 5
+
 -- begin
 -- create or replace temp table all_shops as (
 -- select  
 --   seller_tier_new,
 --   b.shop_id, -- all active shops
---   case when promotion_type in (3, 6, 7, 8) then 1 else 0 end as shops_w_shipping_promotions -- promotions opted into 
+--   MAX(case when promotion_type in (3, 6, 7, 8) then 1 else 0 end) as shops_w_shipping_promotions -- promotions opted into 
 -- from 
 --   etsy-data-warehouse-prod.rollups.seller_basics b
 -- left join 
@@ -119,9 +121,10 @@ left join
 -- where 
 --   is_frozen = 0
 --   and active_seller_status = 1
+-- group by all
 -- );
 -- end
--- etsy-bigquery-adhoc-prod._scripte8ca0eda791c6804ad785521ee948fcf649fdaae.all_shops
+-- --etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops
 
 select 
   seller_tier_new,
