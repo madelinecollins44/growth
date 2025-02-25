@@ -354,3 +354,27 @@ where mapped_user_id = 47709780
 -- 47709780	157593260	1
 -- 47709780	193510570	1
 -- 47709780	95524522	1
+
+
+
+--TESTING TO MAKE SURE TRANSACTIONS ARE RIGHT
+-- select  
+--     count(distinct mapped_user_id) as users,
+--     count(mapped_user_id) as purchases,
+--     count(distinct case when purchase_days = 1 then mapped_user_id end) as one_time,
+--     count(distinct case when purchase_days > 1 then mapped_user_id end) as more_than_one_time,
+--     count(distinct case when purchase_days >= 2 then mapped_user_id end) as at_least_two_times,
+--     count(distinct case when purchase_days >= 3 then mapped_user_id end) as at_least_three_times,
+--     count(distinct case when purchase_days >= 4 then mapped_user_id end) as at_least_four_times,
+--     count(distinct case when purchase_days >= 5 then mapped_user_id end) as at_least_five_times,
+--     count(distinct case when purchase_days >= 10 then mapped_user_id end) as at_least_ten_times,
+--   from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`
+--   group by all
+
+  select mapped_user_id, count(*) from `etsy-data-warehouse-dev.madelinecollins.shop_repurchases` group by all order by 2 desc limit 10
+
+  select sum(transactions) from `etsy-data-warehouse-dev.madelinecollins.shop_repurchases` where mapped_user_id = 930361868
+  --11968
+
+   select count(transaction_id) from  etsy-data-warehouse-prod.transaction_mart.all_transactions where mapped_user_id = 930361868 and date >= current_date-365
+   --11968
