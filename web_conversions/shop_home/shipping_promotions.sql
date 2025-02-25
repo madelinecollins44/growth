@@ -82,10 +82,15 @@ group by all
 
 
 -- shipping promotion
-with all_shops as (
+/* all metrics, shipping promotion */
+-- select shop_id, count(*) from etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops group by all order by 2 desc limit 5
+
+begin
+create or replace temp table all_shops as (
 select  
+  seller_tier_new,
   b.shop_id, -- all active shops
-  case when promotion_type in (3, 6, 7, 8) then 1 else 0 end as shops_w_shipping_promotions -- promotions opted into 
+  MAX(case when promotion_type in (3, 6, 7, 8) then 1 else 0 end) as shops_w_shipping_promotions -- promotions opted into 
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
 left join 
@@ -93,38 +98,10 @@ left join
 where 
   is_frozen = 0
   and active_seller_status = 1
-)
-select
-  count(distinct a.shop_id) as active_shops,
-  count(distinct v.shop_id) as visited_shops,
-  count(distinct case when shops_w_shipping_promotions = 1 then a.shop_id end) as promotion_active_shops,
-  count(distinct case when shops_w_shipping_promotions = 1 then v.shop_id end) as promotion_visited_shops,
-from 
-  all_shops a
-left join 
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v 
-    on cast(a.shop_id as string)=v.shop_id 
-
-/* all metrics, shipping promotion */
--- select shop_id, count(*) from etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops group by all order by 2 desc limit 5
-
--- begin
--- create or replace temp table all_shops as (
--- select  
---   seller_tier_new,
---   b.shop_id, -- all active shops
---   MAX(case when promotion_type in (3, 6, 7, 8) then 1 else 0 end) as shops_w_shipping_promotions -- promotions opted into 
--- from 
---   etsy-data-warehouse-prod.rollups.seller_basics b
--- left join 
---   etsy-data-warehouse-prod.etsy_shard.seller_marketing_promotion p using (shop_id)
--- where 
---   is_frozen = 0
---   and active_seller_status = 1
--- group by all
--- );
--- end
--- --etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops
+group by all
+);
+end
+--etsy-bigquery-adhoc-prod._script7132dc76c99a23f7f56e3f1dc5b738aac2790b6d.all_shops
 
 select 
   seller_tier_new,
