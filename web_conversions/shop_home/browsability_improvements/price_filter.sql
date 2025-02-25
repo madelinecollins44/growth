@@ -109,9 +109,6 @@ left join
     on l.shop_id=cast(g.shop_id as string)
 group by all 
 
-
-
-
 -- overall counts to confirm
 ------- gms + trans counts 
 -- with agg as (
