@@ -111,7 +111,19 @@ group by all
 
 -- overall counts to confirm
 ------- gms + trans counts 
--- with agg as (
+with visited_shops as (
+select
+  v.shop_id,
+  count(visit_id) as pageviews
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+    on cast(a.shop_id as string)=v.shop_id
+where 
+  platform in ('mobile_web','desktop')
+group by all 
+)
 select
   count(distinct s.shop_id) as shops_w_purchase,
   sum(gms_net) as gms_net,
@@ -125,7 +137,7 @@ inner join
   etsy-data-warehouse-prod.rollups.seller_basics s
     on s.user_id=gms.seller_user_id
 left join 
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v 
+  visited_shops v 
     on v.shop_id=cast(s.shop_id as string)
 where 
   date >= current_date-365 -- transaction in last year 
@@ -134,10 +146,10 @@ group by all
 order by 3 desc
 
 ------- visited shops+ active listings 
+with active_listings as (
 select
-  count(distinct v.shop_id) as shops_visited,
-  count(visit_id) as pageviews,
-  count(distinct a.listing_id) as total_active_listings,
+  v.shop_id,
+  count(distinct listing_id) as active_listings
 from  
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
 inner join 
@@ -146,6 +158,28 @@ inner join
 where 
   platform in ('mobile_web','desktop')
 group by all 
+)
+, pv_count as(
+select
+  v.shop_id,
+  count(visit_id) as pageviews
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+    on cast(a.shop_id as string)=v.shop_id
+where 
+  platform in ('mobile_web','desktop')
+group by all 
+)
+select
+  count(distinct a.shop_id) as visited_shops_w_active_listings,
+  pageviews,
+  active_listings
+from active_listings a
+left join pv_count pv using (shop_id)
+group by all 
+	
 ------------------------------------------------------------------------------------------
 -- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
 ------------------------------------------------------------------------------------------
