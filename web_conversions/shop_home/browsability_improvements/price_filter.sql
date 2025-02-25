@@ -42,29 +42,44 @@ inner join
     on cast(a.shop_id as string)=v.shop_id
 group by all
 
--- number of listings in visited shops + gms coverage for those shops
-with listing_counts as (
+------------------------------------------------------------------------------------------
+-- NUMBER OF ACTIVE LISTINGS PER VISITED SHOP, GMS COVERAGE 
+------------------------------------------------------------------------------------------
+with visited_shops as (
+select
+  shop_id,
+  count(visit_id) as pageviews
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('mobile_web','desktop')
+group by all 
+)
+, listing_counts as (
 select
   v.shop_id, 
-  count(distinct a.listing_id) as active_listings
+  count(distinct a.listing_id) as active_listings, 
+  pageviews
 from  
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+  visited_shops v
 inner join 
   etsy-data-warehouse-prod.rollups.active_listing_basics a
     on cast(a.shop_id as string)=v.shop_id
-where v.platform in ('mobile_web','desktop')
 group by all
 )
 , shop_gms as (
 select
-  shop_id,
+  v.shop_id,
   sum(gms_net) as gms_net,
   count(transaction_id) as transactions
 from 
-  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans gms
+  visited_shops v
 inner join 
-  etsy-data-warehouse-prod.rollups.seller_basics s
-    on s.user_id=gms.seller_user_id
+  etsy-data-warehouse-prod.rollups.seller_basics b
+    on v.shop_id=cast(b.shop_id as string)
+left join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans gms
+    on b.user_id=gms.seller_user_id
 where 
   date >= current_date-365  -- purchases made in last 365 days 
   and active_seller_status=1
@@ -83,7 +98,8 @@ select
     when active_listings  >= 150 and active_listings  < 200 then '150-199'
     else '200+'
   end as number_of_listings,
- count(distinct l.shop_id) as visited_shops,
+	count(distinct l.shop_id) as visited_shops,
+  sum(pageviews) as pageviews,
   sum(gms_net) as gms_net,
   sum(transactions) as transactions
 from 
@@ -92,6 +108,7 @@ left join
   shop_gms g -- gms / trans for each shop
     on l.shop_id=cast(g.shop_id as string)
 group by all 
+
 
 
 
