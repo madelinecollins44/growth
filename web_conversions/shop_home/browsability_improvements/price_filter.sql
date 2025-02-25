@@ -1,6 +1,46 @@
 ------------------------------------------------------------------------------------------
 -- PRICE DISTRO OF LISTINGS IN VISITED SHOPS 
 ------------------------------------------------------------------------------------------
+-- create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_visits as (
+-- select
+--   platform,
+--   beacon.event_name, 
+--   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id, 
+--   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id, 
+--   visit_id, 
+--   sequence_number,
+-- from
+--   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+-- inner join 
+--   etsy-data-warehouse-prod.weblog.visits using (visit_id)
+-- where
+--   date(_partitiontime) >= current_date-30
+--   and _date >= current_date-30
+--   and platform in ('mobile_web','desktop','boe')
+--   and (beacon.event_name in ('shop_home'))
+-- group by all
+-- );
+
+
+-- get price distros for all visited shops 
+select
+  case 
+   when a.price_usd < 1 then 'Less than $1'
+   when a.price_usd >= 1 and a.price_usd < 5 then '$1-$4.99'
+   when a.price_usd >= 5 and a.price_usd < 10 then '$5-$9.99'
+   when a.price_usd >= 10 and a.price_usd < 25 then '$10-$24.99'
+   when a.price_usd >= 25 and a.price_usd < 50 then '$25-$49.99'
+   when a.price_usd >= 50 and a.price_usd < 75 then '$50-$74.99'
+   when a.price_usd >= 75 and a.price_usd < 100 then '$75-$99.99'
+  else '100+'
+  end as price_buckets,
+	count(a.listing_id) as active_listings,
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+inner join 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v -- only looking at listings from visited shops
+    on cast(a.shop_id as string)=v.shop_id
+group by all
 
 ------------------------------------------------------------------------------------------
 -- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
