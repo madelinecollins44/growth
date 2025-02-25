@@ -43,25 +43,34 @@ inner join
 group by all
 
 -- number of listings in visited shops
+with listing_counts as (
 select
-  case 
-   when count(distinct a.listing_id) < 5 then 'Less than 5'
-   when count(distinct a.listing_id)  >= 5 and count(distinct a.listing_id)  < 10 then '5-9'
-   when count(distinct a.listing_id)  >= 10 and count(distinct a.listing_id)  < 25 then '10-24'
-   when count(distinct a.listing_id)  >= 25 and count(distinct a.listing_id)  < 50 then '25-49'
-   when count(distinct a.listing_id)  >= 50 and count(distinct a.listing_id)  < 75 then '50-74'
-   when count(distinct a.listing_id)  >= 75 and count(distinct a.listing_id)  < 100 then '75-99'
-   when count(distinct a.listing_id)  >= 100 and count(distinct a.listing_id)  < 150 then '100-150'
-   when count(distinct a.listing_id)  >= 150 and count(distinct a.listing_id)  < 200 then '150-199'
-   else '200+'
-  end as number_of_listings,
-	count(distinct a.shop_id) as active_listings,
-from 
-  etsy-data-warehouse-prod.rollups.active_listing_basics a
+  v.shop_id, 
+  count(distinct a.listing_id) as active_listings
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
 inner join 
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v -- only looking at listings from visited shops
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
     on cast(a.shop_id as string)=v.shop_id
 group by all
+)
+select
+  case 
+    when active_listings < 5 then 'Less than 5'
+    when active_listings >= 5 and active_listings  < 10 then '5-9'
+    when active_listings  >= 10 and active_listings  < 25 then '10-24'
+    when active_listings  >= 25 and active_listings  < 50 then '25-49'
+    when active_listings  >= 50 and active_listings  < 75 then '50-74'
+    when active_listings  >= 75 and active_listings  < 100 then '75-99'
+    when active_listings  >= 100 and active_listings  < 150 then '100-150'
+    when active_listings  >= 150 and active_listings  < 200 then '150-199'
+    else '200+'
+  end as number_of_listings,
+	count(distinct shop_id) as shops
+from 
+  listing_counts 
+group by all 
+
 ------------------------------------------------------------------------------------------
 -- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
 ------------------------------------------------------------------------------------------
