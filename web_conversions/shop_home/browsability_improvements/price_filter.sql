@@ -165,17 +165,14 @@ select
   count(visit_id) as pageviews
 from  
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
-inner join 
-  etsy-data-warehouse-prod.rollups.active_listing_basics a
-    on cast(a.shop_id as string)=v.shop_id
 where 
   platform in ('mobile_web','desktop')
 group by all 
 )
 select
   count(distinct a.shop_id) as visited_shops_w_active_listings,
-  pageviews,
-  active_listings
+  sum(pageviews) as pageviews,
+  sum(active_listings) as active_listings
 from active_listings a
 left join pv_count pv using (shop_id)
 group by all 
