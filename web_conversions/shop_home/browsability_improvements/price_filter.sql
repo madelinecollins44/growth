@@ -138,14 +138,17 @@ order by 3 desc
 
 ------- visited shops+ active listings 
 select
-  count(distinct v.shop_id) as visited_shops, 
-  count(distinct a.listing_id) as active_listings
+  count(distinct v.shop_id) as shops_visited,
+  count(visit_id) as pageviews,
+  count(distinct a.listing_id) as total_active_listings,
 from  
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
 inner join 
   etsy-data-warehouse-prod.rollups.active_listing_basics a
     on cast(a.shop_id as string)=v.shop_id
-group by all
+where 
+  platform in ('mobile_web','desktop')
+group by all 
 ------------------------------------------------------------------------------------------
 -- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
 ------------------------------------------------------------------------------------------
