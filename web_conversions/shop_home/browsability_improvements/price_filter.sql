@@ -237,3 +237,82 @@ limit 5
 select shop_name from etsy-data-warehouse-prod.rollups.seller_basics where shop_id = 5400716
 
 select 74197/74308
+
+--TEST 3: check each cte as specific shop level
+with visited_shops as (
+select
+  shop_id,
+  count(visit_id) as pageviews
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('mobile_web','desktop')
+group by all 
+)
+, listing_counts as (
+select
+  v.shop_id, 
+  count(distinct a.listing_id) as active_listings, 
+  pageviews
+from  
+  visited_shops v
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+    on cast(a.shop_id as string)=v.shop_id
+group by all
+)
+-- select shop_id, count(*) from listing_counts group by all order by 2 desc limit 5
+-- select * from listing_counts where shop_id in ('52155281')
+
+, shop_gms as (
+select
+  v.shop_id,
+  sum(gms_net) as gms_net,
+  count(transaction_id) as transactions
+from 
+  visited_shops v
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+    on v.shop_id=cast(b.shop_id as string)
+left join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans gms
+    on b.user_id=gms.seller_user_id
+where 
+  date >= current_date-365  -- purchases made in last 365 days 
+  and active_seller_status=1
+group by all 
+order by 3 desc
+)
+select
+  case 
+    when active_listings < 5 then 'Less than 5'
+    when active_listings >= 5 and active_listings  < 10 then '5-9'
+    when active_listings  >= 10 and active_listings  < 25 then '10-24'
+    when active_listings  >= 25 and active_listings  < 50 then '25-49'
+    when active_listings  >= 50 and active_listings  < 75 then '50-74'
+    when active_listings  >= 75 and active_listings  < 100 then '75-99'
+    when active_listings  >= 100 and active_listings  < 150 then '100-150'
+    when active_listings  >= 150 and active_listings  < 200 then '150-199'
+    else '200+'
+  end as number_of_listings,
+	count(distinct l.shop_id) as visited_shops,
+  sum(pageviews) as pageviews,
+  sum(gms_net) as gms_net,
+  sum(transactions) as transactions
+from 
+  listing_counts l -- visited shops + listings in each shop
+left join 
+  shop_gms g -- gms / trans for each shop
+    on l.shop_id=cast(g.shop_id as string)
+where l.shop_id in ('52155281')
+group by all 
+
+-- shop_id	f0_
+-- 52155281	1
+------- 5 active listings, 42 pageviews, 8 gms, 2 transactions, ACCURATE IN END ROUNDUP 
+-- 10072323	1
+-- 10792869	1
+-- 13304400	1
+-- 39582769	1
+
+SELECT * FROM  etsy-data-warehouse-prod.rollups.seller_basics WHERE SHOP_ID =52155281
