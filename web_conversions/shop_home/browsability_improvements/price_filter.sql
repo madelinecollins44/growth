@@ -42,7 +42,7 @@ inner join
     on cast(a.shop_id as string)=v.shop_id
 group by all
 
--- number of listings in visited shops
+-- number of listings in visited shops + gms coverage for those shops
 with listing_counts as (
 select
   v.shop_id, 
@@ -52,7 +52,24 @@ from
 inner join 
   etsy-data-warehouse-prod.rollups.active_listing_basics a
     on cast(a.shop_id as string)=v.shop_id
+where v.platform in ('mobile_web','desktop')
 group by all
+)
+, shop_gms as (
+select
+  shop_id,
+  sum(gms_net) as gms_net,
+  count(transaction_id) as transactions
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans gms
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics s
+    on s.user_id=gms.seller_user_id
+where 
+  date >= current_date-365  -- purchases made in last 365 days 
+  and active_seller_status=1
+group by all 
+order by 3 desc
 )
 select
   case 
@@ -66,11 +83,52 @@ select
     when active_listings  >= 150 and active_listings  < 200 then '150-199'
     else '200+'
   end as number_of_listings,
-	count(distinct shop_id) as shops
+ count(distinct l.shop_id) as visited_shops,
+  sum(gms_net) as gms_net,
+  sum(transactions) as transactions
 from 
-  listing_counts 
+  listing_counts l -- visited shops + listings in each shop
+left join 
+  shop_gms g -- gms / trans for each shop
+    on l.shop_id=cast(g.shop_id as string)
 group by all 
 
+
+
+-- overall counts to confirm
+------- gms + trans counts 
+-- with agg as (
+select
+  count(distinct s.shop_id) as shops_w_purchase,
+  sum(gms_net) as gms_net,
+  count(transaction_id) as transactions,
+  count(distinct v.shop_id) as visited_shops_w_purchased,
+  sum(case when v.shop_id is not null then gms_net end) as visited_shop_gms_net,
+  count(case when v.shop_id is not null then transaction_id end) as visited_shop_transactions,
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans gms
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics s
+    on s.user_id=gms.seller_user_id
+left join 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v 
+    on v.shop_id=cast(s.shop_id as string)
+where 
+  date >= current_date-365 -- transaction in last year 
+  and active_seller_status=1 -- is a currently active seller 
+group by all 
+order by 3 desc
+
+------- visited shops+ active listings 
+select
+  count(distinct v.shop_id) as visited_shops, 
+  count(distinct a.listing_id) as active_listings
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+    on cast(a.shop_id as string)=v.shop_id
+group by all
 ------------------------------------------------------------------------------------------
 -- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
 ------------------------------------------------------------------------------------------
