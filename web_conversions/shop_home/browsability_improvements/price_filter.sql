@@ -105,3 +105,57 @@ left join
  (select * from etsy-data-warehouse-prod.analytics.listing_views where _date >=current_date-30) lv 
     on cast(a.listing_id as int64)=lv.listing_id
 group by all
+
+
+------------------------------------------------------------------------------------------
+-- LISTING VIEWED + ACTIVE LISTINGS BY PRICE 
+------------------------------------------------------------------------------------------
+-- TEST 1: make sure gms counts make sense w each seller 
+-- with agg as (
+select
+  shop_id,
+  sum(gms_net) as gms_net,
+  count(transaction_id) as transactions
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans gms
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics s
+    on s.user_id=gms.seller_user_id
+where 
+  date >= current_date-365 
+  and active_seller_status=1
+group by all 
+order by 3 desc
+limit 5
+-- shop_id	gms_net	transactions
+-- 10967397	7120186.31221499	537011
+-- 10204022	12455786.76998739	507335
+-- 11779782	1784047.52131355	390411
+-- 20230277	4108186.0001604	387690
+-- 10162345	1049477.07700062	299642
+
+select distinct user_id from etsy-data-warehouse-prod.rollups.seller_basics where shop_id = 10204022
+select sum(gms_net), count(transaction_id) from etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans where seller_user_id= 55496650 and date >= current_date-365 
+
+-- TEST 2: make sure listing counts make sense for each shop
+select
+  v.shop_id, 
+  count(distinct a.listing_id) as active_listings
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+    on cast(a.shop_id as string)=v.shop_id
+group by all
+order by 2 desc
+limit 5
+-- shop_id	active_listings
+-- 24218839	74308
+-- 5400716	61194
+-- 14280094	50165
+-- 16405631	35167
+-- 5413707	33789
+
+select shop_name from etsy-data-warehouse-prod.rollups.seller_basics where shop_id = 5400716
+
+select 74197/74308
