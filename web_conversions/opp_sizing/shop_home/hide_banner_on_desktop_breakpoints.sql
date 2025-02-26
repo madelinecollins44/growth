@@ -35,17 +35,22 @@ where
 create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing as (
 with visits as (
 select 
-  platform,
+  v.platform,
+  is_seller,
+  converted,
   beacon.event_name,
   case when viewport_width >= 900 then 1 else 0 end as lg_plus_screen_size,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id, 
   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id, 
-  visit_id, 
-  sequence_number,
+  b.visit_id, 
+  b.sequence_number,
 from
-  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` b
 inner join 
-  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile p 
+    on v.user_id=p.user_id
 where
   date(_partitiontime) >= current_date-30
   and _date >= current_date-30
@@ -73,6 +78,7 @@ left join
     on cast(ep.shop_id as string)=v.shop_id
     and ep.seller_user_id=ep.seller_user_id
 );
+
 
 ---------------------------------------------------------------
 -- TESTING
