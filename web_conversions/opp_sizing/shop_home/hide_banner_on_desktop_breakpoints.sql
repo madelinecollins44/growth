@@ -31,12 +31,13 @@ where
 ---- exclude any visits to an etsy plus shop home page
 ---- desktop only
 ---------------------------------------------------------------
-begin
-create or replace temp table web_shop_home_visits as (
+  -- create table for all shop home visits 
+create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing as (
+with visits as (
 select 
   platform,
   beacon.event_name,
-  viewport_width,
+  case when viewport_width >= 900 then 1 else 0 end as lg_plus_screen_size,
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id, 
   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id, 
   visit_id, 
@@ -51,13 +52,32 @@ where
   and platform in ('desktop')
   and (beacon.event_name in ('shop_home')) -- pull all shop_home 
 group by all
+)
+, etsy_plus_status as (
+select
+  is_etsy_plus,
+  user_id as seller_user_id,
+  shop_id 
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics
+where 
+  active_seller_status = 1 
+)
+select
+  v.*,
+  is_etsy_plus
+from 
+  visits v
+left join 
+  etsy_plus_status ep 
+    on cast(ep.shop_id as string)=v.shop_id
+    and ep.seller_user_id=ep.seller_user_id
 );
-end
 
 ---------------------------------------------------------------
 -- TESTING
 ---------------------------------------------------------------
--- TEST 1: confirm visits + pageviews from temp table match weblog.events
+-- TEST 1: confirm visits + pageviews from table match weblog.events
 select
   count(distinct visit_id) as desktop_visits,  
   count(visit_id) as desktop_pageviews,  
@@ -75,6 +95,20 @@ where
 select 
   count(distinct visit_id) as visits,
   count(visit_id) as pageviews
-from etsy-bigquery-adhoc-prod._scriptc69a8e301bcb5a780c249f40ff0e44a2cbf09faf.web_shop_home_visits
+from etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing
 -- visits	pageviews
 -- 87680454	140244508
+
+-- TEST 2: test visits on visit_id level
+select visit_id, count(*) from etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing group by all order by 2 desc limit 5
+-- visit_id	f0_
+-- WbtCZohzj0J0UQyL7edwRCocHcLW.1740029073763.2	7210
+-- HAZGJf8xWWeiEUqd_JXqx9fpDHGI.1740111012482.1	6972
+-- HAZGJf8xWWeiEUqd_JXqx9fpDHGI.1740124600192.2	6801
+-- kXKQm5w_5eLViJlHveqV-A-3y49i.1740143336890.1	6667
+-- zQIP2G8sThj3oC9s9NBBGqU-rAky.1740489457820.1	6667
+
+select visit_id, count(visit_id) from etsy-data-warehouse-prod.weblog.events where event_type in ('shop_home') and visit_id in ('WbtCZohzj0J0UQyL7edwRCocHcLW.1740029073763.2','HAZGJf8xWWeiEUqd_JXqx9fpDHGI.1740111012482.1') group by all
+-- visit_id	f0_
+-- HAZGJf8xWWeiEUqd_JXqx9fpDHGI.1740111012482.1	6972
+-- WbtCZohzj0J0UQyL7edwRCocHcLW.1740029073763.2	7210
