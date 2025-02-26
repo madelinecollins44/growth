@@ -93,7 +93,24 @@ left join
     and cast(b.seller_user_id as string)=v.seller_user_id
 );
 
-
+-- visits and conversion across shop home pages
+select
+  -- banners
+  count(distinct case when has_banner =1 then visit_id end) as banner_visits,
+  count(distinct case when has_banner =1 and converted > 0 then visit_id end) as banner_converted_visits,
+  -- no banners
+  count(distinct case when has_banner = 0 then visit_id end) as no_banner_visits,
+  count(distinct case when has_banner = 0 and converted > 0 then visit_id end) as no_banner_converted_visits,
+  -- all traffic
+  count(distinct visit_id) as visits,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing
+where 
+  is_etsy_plus = 0 -- exclude etsy plus accounts
+  and is_seller = 0 -- exclude sellers
+  and lg_plus_screen_size = 1  -- only looking at visits with a large screen
+  
 ---------------------------------------------------------------
 -- TESTING
 ---------------------------------------------------------------
