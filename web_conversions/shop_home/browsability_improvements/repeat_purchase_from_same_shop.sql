@@ -151,6 +151,18 @@ select
 from agg
 group by all
 
+-- confirm overall gms counts
+    select
+  -- mapped_user_id,
+  -- seller_user_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+inner join 
+   `etsy-data-warehouse-dev.madelinecollins.shop_repurchases` using (mapped_user_id, seller_user_id)
+where 
+  date >= current_date-365
+group by all
 ------------------------------------------------------------------------------------------------------------------------
 --DO THE ABOVE WITH UNIQUE USER, SHOP IDENTIFIER
 ------------------------------------------------------------------------------------------------------------------------
