@@ -245,7 +245,17 @@ select
   sum(case when purchase_days >= 10 then gms_net end) as at_least_ten_times_gms,
 from agg
 group by all
-    
+
+-- gms counts to confirm 
+    select sum(gms_net) 
+from etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans a 
+join `etsy-data-warehouse-prod.transaction_mart.transactions_visits` v on a.transaction_id = v.transaction_id 
+join `etsy-data-warehouse-prod.weblog.visits` vv on vv.visit_id = v.visit_id  
+where a.date >= current_date-365
+and vv.platform in ('mobile_web','desktop')
+and vv._date >= current_date-365
+-- 6048686926.97533015
+
 ------------------------------------------------------------------------------------------------------------------------
 -- TESTING
 ------------------------------------------------------------------------------------------------------------------------
@@ -471,3 +481,32 @@ where mapped_user_id = 47709780
 
    select count(transaction_id) from  etsy-data-warehouse-prod.transaction_mart.all_transactions where mapped_user_id = 930361868 and date >= current_date-365
    --11968
+
+-----TESTING TO SEE HOW USER_ID, SELLER_USER_ID WORKS:
+------- mapped_user_id = 931286391 and seller_user_id = 364028327
+------- mapped_user_id = 164377032 and seller_user_id = 100752033
+------- mapped_user_id = 47709780 and seller_user_id = 192648528
+
+----------test gms first
+select
+  mapped_user_id,
+  seller_user_id,
+  sum(gms_net) as gms_net,
+  count(transaction_id) as transactions
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+inner join 
+   `etsy-data-warehouse-dev.madelinecollins.shop_repurchases` using (mapped_user_id, seller_user_id)
+where 
+  date >= current_date-365
+group by all
+order by 3 desc limit 5
+
+-- mapped_user_id	seller_user_id	gms_net	transactions
+-- 47709780	856084033	232814.15384626	563
+-- 164377032	100752033	222264.7692312	371
+-- 47709780	359492998	149713.846154	613
+------------ 931286391	364028327	145703.99147694	6
+-- 47709780	192648528	145423.53846215	384
+
+select * from etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans where mapped_user_id = 931286391 and seller_user_id = 364028327
