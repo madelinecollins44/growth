@@ -151,11 +151,92 @@ select
 from agg
 group by all
 
+------------------------------------------------------------------------------------------------------------------------
+--DO THE ABOVE WITH UNIQUE USER, SHOP IDENTIFIER
+------------------------------------------------------------------------------------------------------------------------
+-- create table with unique user, seller id to get count 
+-- create or replace table `etsy-data-warehouse-dev.madelinecollins.shop_repurchases` as
+-- select
+--   mapped_user_id 
+--   , seller_user_id 
+--   , concat(mapped_user_id,'-',seller_user_id) as user_shop_id
+--   , count(date) as purchase_days 
+--   , count(transaction_id) as transactions  
+--   , count(receipt_id) as receipts  
+--     --, sum(visit_gms) as total_gms
+-- from `etsy-data-warehouse-dev.madelinecollins.last_year_purchase_data` 
+-- where purchased_platform in ('desktop','mobile_web')
+-- group by 1,2 
+-- ;
+-- select user_shop_id, count(*) from `etsy-data-warehouse-dev.madelinecollins.shop_repurchases` group by all order by 2 desc
 
+select  
+    count(distinct user_shop_id) as users_shops,
+    count(distinct case when purchase_days = 1 then user_shop_id end) as one_time,
+    count(distinct case when purchase_days > 1 then user_shop_id end) as more_than_one_time,
+    count(distinct case when purchase_days >= 2 then user_shop_id end) as at_least_two_times,
+    count(distinct case when purchase_days >= 3 then user_shop_id end) as at_least_three_times,
+    count(distinct case when purchase_days >= 4 then user_shop_id end) as at_least_four_times,
+    count(distinct case when purchase_days >= 5 then user_shop_id end) as at_least_five_times,
+    count(distinct case when purchase_days >= 10 then user_shop_id end) as at_least_ten_times,
+  from `etsy-data-warehouse-dev.madelinecollins.shop_repurchases`
+  group by all
+
+
+-- GMS count 
+with days_purchased as (
+select
+  mapped_user_id,
+  seller_user_id,
+  user_shop_id,
+  purchase_days
+from
+  `etsy-data-warehouse-dev.madelinecollins.shop_repurchases`
+)
+, gms as (
+select
+  mapped_user_id,
+  seller_user_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+where 
+  date >= current_date-365
+group by all 
+)
+, agg as (
+select
+  user_shop_id,
+  gms_net,
+  purchase_days
+from days_purchased
+left join gms using (mapped_user_id, seller_user_id)
+)
+select
+  -- user counts
+  count(distinct user_shop_id) as users_shops,
+  count(distinct case when purchase_days = 1 then user_shop_id end) as one_time,
+  count(distinct case when purchase_days > 1 then user_shop_id end) as more_than_one_time,
+  count(distinct case when purchase_days >= 2 then user_shop_id end) as at_least_two_times,
+  count(distinct case when purchase_days >= 3 then user_shop_id end) as at_least_three_times,
+  count(distinct case when purchase_days >= 4 then user_shop_id end) as at_least_four_times,
+  count(distinct case when purchase_days >= 5 then user_shop_id end) as at_least_five_times,
+  count(distinct case when purchase_days >= 10 then user_shop_id end) as at_least_ten_times,
+  --gms
+  sum(gms_net) as users_shops_gms,
+  sum(case when purchase_days = 1 then gms_net end) as one_time_gms,
+  sum(case when purchase_days > 1 then gms_net end) as more_than_one_time_gms,
+  sum(case when purchase_days >= 2 then gms_net end) as at_least_two_times_gms,
+  sum(case when purchase_days >= 3 then gms_net end) as at_least_three_times_gms,
+  sum(case when purchase_days >= 4 then gms_net end) as at_least_four_times_gms,
+  sum(case when purchase_days >= 5 then gms_net end) as at_least_five_times_gms,
+  sum(case when purchase_days >= 10 then gms_net end) as at_least_ten_times_gms,
+from agg
+group by all
     
-------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- TESTING
-------------------------
+------------------------------------------------------------------------------------------------------------------------
 select shop_id, purchase_days from `etsy-data-warehouse-dev.madelinecollins.web_shop_repurchases`  where mapped_user_id = 154488413 
 -----------most purchase days 
 -- mapped_user_id	shop_id	purchase_days	transactions	receipts
