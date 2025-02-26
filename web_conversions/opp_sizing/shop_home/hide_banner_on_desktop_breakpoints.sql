@@ -79,7 +79,8 @@ group by all
 )
 select
   v.*,
-  is_etsy_plus
+  is_etsy_plus,
+  has_banner
 from 
   visits v
 left join 
@@ -91,8 +92,6 @@ left join
     on cast(b.shop_id as string)=v.shop_id
     and b.seller_user_id=ep.seller_user_id
 );
-
-
 
 ---------------------------------------------------------------
 -- TESTING
