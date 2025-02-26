@@ -31,7 +31,7 @@ where
 ---- exclude any visits to an etsy plus shop home page
 ---- desktop only
 ---------------------------------------------------------------
-  -- create table for all shop home visits 
+-- create table for all shop home visits and banner info, etsy plus status, and seller visit info
 create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing as (
 with visits as (
 select 
@@ -68,6 +68,15 @@ from
 where 
   active_seller_status = 1 
 )
+, shop_banners as (
+select
+  shop_id,
+  user_id as seller_user_id,
+  case when branding_option > 0 then 1 else 0 end as has_banner
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_data
+group by all 
+)
 select
   v.*,
   is_etsy_plus
@@ -77,7 +86,12 @@ left join
   etsy_plus_status ep 
     on cast(ep.shop_id as string)=v.shop_id
     and ep.seller_user_id=ep.seller_user_id
+left join 
+  shop_banners b
+    on cast(b.shop_id as string)=v.shop_id
+    and b.seller_user_id=ep.seller_user_id
 );
+
 
 
 ---------------------------------------------------------------
