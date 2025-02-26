@@ -86,12 +86,13 @@ from
 left join 
   etsy_plus_status ep 
     on cast(ep.shop_id as string)=v.shop_id
-    and ep.seller_user_id=ep.seller_user_id
+    and cast(ep.seller_user_id as string)=v.seller_user_id
 left join 
   shop_banners b
     on cast(b.shop_id as string)=v.shop_id
-    and b.seller_user_id=ep.seller_user_id
+    and cast(b.seller_user_id as string)=v.seller_user_id
 );
+
 
 ---------------------------------------------------------------
 -- TESTING
