@@ -69,3 +69,42 @@ select
 from etsy-data-warehouse-prod.etsy_shard.shop_sections 
 where active_listing_count > 0 
 group by all 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TESTING 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* TEST 1: check what im seeing in table with sections table */
+
+-- check section #s
+select * from etsy-data-warehouse-prod.etsy_shard.shop_sections 
+where shop_id= 22114952 group by all 
+
+-- check visit info 
+select shop_id, count(visit_id) as pageviews 
+from etsy-bigquery-adhoc-prod._script146821e037627cbc101047258e54b02ce7ae2a33.visited_shops
+where shop_id in ('22114952')  group by all 
+----ordered by # of sections
+shop_id	shop_name	visited	pageviews	has_sections_w_listings	number_of_sections_w_listings	empty_sections_with_listings
+22114952	RidhiSidhiBeads	1	576	1	20	0
+8598186	DustedFindsEtsy	1	161	1	20	0
+42229232	WildHerbStudioz	1	91	1	20	0
+47575328	25andGoldVintage	1	334	1	20	0
+12961441	PaddingPaws	1	2120	1	20	0
+6887221	OscarsCreations	1	323	1	20	0
+38677051	ChromaticInk	1	108	1	20	0
+20858268	LegendaryApparelShop	1	456	1	20	0
+54407659	DesignByTripleH	1	2302	1	20	0
+11477140	lostinsounddetroit	1	49	1	20	0
+
+-- ordered by # of sections, empty sections
+shop_id	shop_name	visited	pageviews	has_sections_w_listings	number_of_sections_w_listings	empty_sections_with_listings
+27855488	MLSvg	1	425	1	20	20
+37991064	Abimodembroiderybis	1	167	1	20	4
+15502339	PampillesAndCo	1	1820	1	20	20
+15506298	ChiffonnierdePauline	1	194	1	20	20
+38572135	Atelierdadri	1	199	1	20	20
+18210007	Stoffhuzel	1	139	1	20	20
+32913899	dalpassoshop	1	49	1	20	19
+11279481	MotzisBunteWelt2014	1	786	1	20	20
+18041715	BirgitHandarbeiten	1	48	1	20	20
+15467598	WimAffiches	1	216	1	20	20
