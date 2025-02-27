@@ -33,6 +33,18 @@ where
   v._date >= current_date-30
   and e.event_type in ('shop_home')
 
+select
+  count(distinct visit_id) as total_visits,
+  count(distinct case when converted > 0 then visit_id end) as converted,
+  count(distinct case when platform in ('desktop') then visit_id end) as desktop_visits,  
+  count(distinct case when platform in ('desktop') and converted > 0 then visit_id end) as desktop_converted
+from 
+  etsy-data-warehouse-prod.weblog.visits v
+inner join 
+  etsy-data-warehouse-prod.weblog.events e using (visit_id)
+where 
+  v._date >= current_date-30
+  and e.event_type in ('shop_home')
 ---------------------------------------------------------------
 -- LOOKING INTO SHOP HOME SPECIFIC
 ---- viewport_width: tv, xl, lg sizes (900px +) 
