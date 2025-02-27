@@ -1,6 +1,30 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- WHAT % OF SHOPS HAVE NULL SECTIONS? 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- begin 
+-- create or replace temp table visited_shops as (
+-- select
+--   platform,
+--   beacon.event_name, 
+--   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id, 
+--   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id, 
+--   visit_id, 
+--   sequence_number,
+-- from
+--   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+-- inner join 
+--   etsy-data-warehouse-prod.weblog.visits using (visit_id)
+-- where
+--   date(_partitiontime) >= current_date-30
+--   and _date >= current_date-30
+--   and platform in ('mobile_web','desktop')
+--   and (beacon.event_name in ('shop_home'))
+-- group by all
+-- );
+-- end
+-- etsy-bigquery-adhoc-prod._script146821e037627cbc101047258e54b02ce7ae2a33.visited_shops
+
+
 with shop_visits as (
 select
   shop_id,
@@ -38,27 +62,10 @@ select
   sum(case when empty_sections_with_listings > 0 then pageviews end) as pageviews_without_section_names
 from agg
 
-
--- begin 
--- create or replace temp table visited_shops as (
--- select
---   platform,
---   beacon.event_name, 
---   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id, 
---   (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id, 
---   visit_id, 
---   sequence_number,
--- from
---   `etsy-visit-pipe-prod.canonical.visit_id_beacons`
--- inner join 
---   etsy-data-warehouse-prod.weblog.visits using (visit_id)
--- where
---   date(_partitiontime) >= current_date-30
---   and _date >= current_date-30
---   and platform in ('mobile_web','desktop')
---   and (beacon.event_name in ('shop_home'))
--- group by all
--- );
--- end
-
--- etsy-bigquery-adhoc-prod._script146821e037627cbc101047258e54b02ce7ae2a33.visited_shops
+-- sections by name 
+select 
+  case when (name is null or name in ('')) then 1 else 0 end as no_name,
+  count(*)
+from etsy-data-warehouse-prod.etsy_shard.shop_sections 
+where active_listing_count > 0 
+group by all 
