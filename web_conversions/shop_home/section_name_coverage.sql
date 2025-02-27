@@ -83,6 +83,7 @@ where shop_id= 22114952 group by all
 select shop_id, count(visit_id) as pageviews 
 from etsy-bigquery-adhoc-prod._script146821e037627cbc101047258e54b02ce7ae2a33.visited_shops
 where shop_id in ('22114952')  group by all 
+
 ----ordered by # of sections
 shop_id	shop_name	visited	pageviews	has_sections_w_listings	number_of_sections_w_listings	empty_sections_with_listings
 22114952	RidhiSidhiBeads	1	576	1	20	0
