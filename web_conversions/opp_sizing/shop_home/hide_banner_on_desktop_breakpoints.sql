@@ -10,6 +10,15 @@ from
   etsy-data-warehouse-prod.weblog.visits
 where _date >= current_date-30
 
+select
+  count(distinct visit_id) as total_visits,
+  count(distinct case when converted > 0 then visit_id end) as converted,
+  count(distinct case when platform in ('desktop') then visit_id end) as desktop_visits,  
+  count(distinct case when platform in ('desktop') and converted > 0 then visit_id end) as desktop_converted
+from 
+  etsy-data-warehouse-prod.weblog.visits
+where _date >= current_date-30
+
 
 -- visits with shop home
 select
