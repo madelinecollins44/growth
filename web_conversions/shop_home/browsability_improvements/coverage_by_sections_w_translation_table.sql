@@ -1,6 +1,9 @@
+
 --------------------------------------------------
---QUERY TO GET SECTION DISTRIBUTION ACROSS ALL ACTIVE SHOPS
+-- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
 --------------------------------------------------
+begin
+create or replace temp table active_shops_and_section_info as (
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
@@ -12,10 +15,10 @@ qualify row_number() over (
         language asc  -- If no language = 5, take the lowest language number
 ) = 1
 )
-, section_count as (
 select 
   b.shop_id,
   shop_name,
+  is_etsy_plus,
   seller_tier_new,
   case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections_w_listings,
   case when (s.shop_id is not null or t.shop_id is not null) then 1 else 0 end as has_sections,
@@ -37,16 +40,9 @@ where
   and active_listings > 0 -- shops with active listings
   -- and b.shop_id in (20077844)
 group by all
-)
-select 
-  count(distinct shop_id) as active_shops,
-  count(distinct case when sections > 0 then shop_id end) as shops_w_sections,
-  count(distinct case when sections = 0 then shop_id end) as shops_wo_sections,
-  count(distinct case when sections_w_listings > 0 then shop_id end) as shops_w_sections_w_listings,
-  count(distinct case when filled_ids > 0 and missing_ids = 0 then shop_id end) as shop_w_all_names,
-  count(distinct case when filled_ids = 0 and missing_ids > 0 then shop_id end) as shop_w_only_missing,
-  count(distinct case when filled_ids > 0 and missing_ids > 0 then shop_id end) as shop_w_both
-from section_count
+);
+end
+-- etsy-bigquery-adhoc-prod._scriptce5c5938878add2cffa5a2c34fd1808760349caf.active_shops_and_section_info
 
 --------------------------------------------------
 --TESTING
