@@ -1,3 +1,67 @@
+--------------------------------------------------
+-- COMBINE SECTIONS TO GET GMS/ CR/ VISIT COVERAGE
+--------------------------------------------------
+with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  shop_id,
+  seller_user_id,
+  shop_name,
+  sections_w_listings
+from 
+  etsy-bigquery-adhoc-prod._script32fb9713d90b49e109ed630f241e7819296ce9fa.active_shops_and_section_info
+group by all
+)
+, shop_visits as ( -- visits that viewed a shop on web
+select
+  seller_user_id,
+  visit_id,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('desktop','mobile_web')
+group by all 
+)
+, shop_gms_converts as ( -- get all shop info at the visit_id level
+select
+  g.seller_user_id,
+  v.visit_id, 
+  sum(gms_net) as gms_net,
+from
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v 
+inner join
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+    on g.transaction_id=v.transaction_id 
+where 
+  g.date >= current_date-30 -- this will also have to be the last 30 days, since looking at a visit level 
+group by all 
+)
+, shop_level as ( -- get everything to seller_user_id level 
+select
+  v.seller_user_id,
+  count(distinct v.visit_id) as visits,
+  count(distinct gc.visit_id) as converts, 
+  sum(gms_net) as gms_net
+from 
+  shop_visits v
+left join 
+  shop_gms_converts gc 
+    on v.seller_user_id= cast(gc.seller_user_id as string)
+    and v.visit_id=gc.visit_id
+group by all 
+)
+select
+  case when s.sections_w_listings > 0 then 1 else 0 end as has_sections,
+  count(distinct l.seller_user_id) as visited_shops,
+  sum(visits) as visits,
+  sum(converts) as converts,
+  sum(gms_net) as gms_net
+from 
+  shop_sections s -- starting here to get all active shops, and then looking at whether or not those were visited. some shops that were visited are not active.
+left join 
+  shop_level l
+    on l.seller_user_id= cast(s.seller_user_id as string)
+group by all 
 
 --------------------------------------------------
 -- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
