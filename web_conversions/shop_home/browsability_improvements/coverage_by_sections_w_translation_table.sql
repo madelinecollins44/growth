@@ -1,3 +1,6 @@
+--------------------------------------------------
+--QUERY TO GET SECTION DISTRIBUTION ACROSS ALL ACTIVE SHOPS
+--------------------------------------------------
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
@@ -14,8 +17,10 @@ select
   b.shop_id,
   shop_name,
   seller_tier_new,
-  case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections,
-  count(case when active_listing_count > 0 then s.id end) as sections,
+  case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections_w_listings,
+  case when (s.shop_id is not null or t.shop_id is not null) then 1 else 0 end as has_sections,
+  count(s.id) as sections,
+  count(case when active_listing_count > 0 then s.id end) as sections_w_listings,
   count(case when ((coalesce(nullif(s.name, ''),t.name)) is not null) and active_listing_count > 0 then s.id end) as filled_ids,
   count(case when ((coalesce(nullif(s.name, ''),t.name)) is null) and active_listing_count > 0 then s.id end) as missing_ids,
 from 
@@ -37,11 +42,11 @@ select
   count(distinct shop_id) as active_shops,
   count(distinct case when sections > 0 then shop_id end) as shops_w_sections,
   count(distinct case when sections = 0 then shop_id end) as shops_wo_sections,
+  count(distinct case when sections_w_listings > 0 then shop_id end) as shops_w_sections_w_listings,
   count(distinct case when filled_ids > 0 and missing_ids = 0 then shop_id end) as shop_w_all_names,
   count(distinct case when filled_ids = 0 and missing_ids > 0 then shop_id end) as shop_w_only_missing,
   count(distinct case when filled_ids > 0 and missing_ids > 0 then shop_id end) as shop_w_both
 from section_count
--- where missing_ids > 0 and filled_ids> 0
 
 --------------------------------------------------
 --TESTING
