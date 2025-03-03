@@ -17,6 +17,7 @@ qualify row_number() over (
 )
 select 
   b.shop_id,
+  b.user_id as seller_user_id,
   shop_name,
   is_etsy_plus,
   seller_tier_new,
@@ -38,11 +39,10 @@ where
   active_seller_status = 1 -- active sellers
   and is_frozen = 0  -- not frozen accounts 
   and active_listings > 0 -- shops with active listings
-  -- and b.shop_id in (20077844)
 group by all
 );
 end
--- etsy-bigquery-adhoc-prod._scriptce5c5938878add2cffa5a2c34fd1808760349caf.active_shops_and_section_info
+-- etsy-bigquery-adhoc-prod._script32fb9713d90b49e109ed630f241e7819296ce9fa.active_shops_and_section_info
 
 --------------------------------------------------
 --TESTING
