@@ -1,16 +1,31 @@
 --------------------------------------------------
 -- OVERALL COUNTS TO CONFIRM
 --------------------------------------------------
---overall visit
+--overall visit to active, nonfrozen shops with active listings
+with shop_visits as ( -- visits that viewed a shop on web
 select
-  count(distinct seller_user_id) as unique_shops,
-  count(distinct visit_id) as visits,
-  count(sequence_number) as pageviews
+  shop_id,
+  seller_user_id,
+  visit_id,
+  count(sequence_number) as views
 from  
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
 where 
   platform in ('desktop','mobile_web')
 group by all 
+)
+select 
+  count(distinct seller_user_id) as shops,
+  count(distinct visit_id) as visits,
+  sum(views) as total_pageviews,
+from shop_visits v
+inner join etsy-data-warehouse-prod.rollups.seller_basics  b
+  on v.seller_user_id=cast(b.user_id as string)
+where 
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
+  -- and b.shop_id in (46026156)
   
 --------------------------------------------------
 -- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
