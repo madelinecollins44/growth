@@ -14,10 +14,10 @@ select
   b.shop_id,
   shop_name,
   seller_tier_new,
-  case when s.shop_id is not null or t.shop_id is not null then 1 else 0 end as has_sections,
+  case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections,
   count(case when active_listing_count > 0 then s.id end) as sections,
-  count(case when (coalesce(nullif(s.name, ''),t.name)) is not null then s.id end) as filled_ids,
-  count(case when (coalesce(nullif(s.name, ''),t.name)) is null then s.id end) as missing_ids,
+  count(case when ((coalesce(nullif(s.name, ''),t.name)) is not null) and active_listing_count > 0 then s.id end) as filled_ids,
+  count(case when ((coalesce(nullif(s.name, ''),t.name)) is null) and active_listing_count > 0 then s.id end) as missing_ids,
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
 left join 
@@ -30,15 +30,18 @@ where
   active_seller_status = 1 -- active sellers
   and is_frozen = 0  -- not frozen accounts 
   and active_listings > 0 -- shops with active listings
+  -- and b.shop_id in (20077844)
 group by all
 )
-select
+select 
   count(distinct shop_id) as active_shops,
-  count(distinct case when has_sections > 0 then shop_id end) as shops_w_sections_hs,
-  count(distinct case when has_sections = 0 then shop_id end) as shops_wo_sections_hs,
   count(distinct case when sections > 0 then shop_id end) as shops_w_sections,
   count(distinct case when sections = 0 then shop_id end) as shops_wo_sections,
+  count(distinct case when filled_ids > 0 and missing_ids = 0 then shop_id end) as shop_w_all_names,
+  count(distinct case when filled_ids = 0 and missing_ids > 0 then shop_id end) as shop_w_only_missing,
+  count(distinct case when filled_ids > 0 and missing_ids > 0 then shop_id end) as shop_w_both
 from section_count
+-- where missing_ids > 0 and filled_ids> 0
 
 --------------------------------------------------
 --TESTING
