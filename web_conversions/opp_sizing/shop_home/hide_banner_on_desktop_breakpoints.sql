@@ -1,4 +1,19 @@
 ---------------------------------------------------------------
+-- % OF TRAFFIC TO SHOP HOME BY SCREEN SIZE 
+---------------------------------------------------------------
+select
+lg_plus_screen_size,
+  count(distinct visit_id) as visits,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_home_traffic_opp_sizing
+where 
+  is_etsy_plus = 0 -- exclude etsy plus accounts
+  and is_seller = 0 -- exclude sellers
+  -- and lg_plus_screen_size = 1  -- only looking at visits with a large screen
+group by all
+
+---------------------------------------------------------------
 -- OVERALL TRAFFIC COUNTS 
 ---------------------------------------------------------------
 -- total traffic counts
