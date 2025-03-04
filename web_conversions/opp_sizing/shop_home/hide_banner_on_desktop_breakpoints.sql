@@ -72,7 +72,7 @@ create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_home_tr
 with visits as (
 select 
   v.platform,
-  is_seller,
+  coalesce(is_seller,0) as is_seller,
   converted,
   beacon.event_name,
   case when viewport_width >= 900 then 1 else 0 end as lg_plus_screen_size,
