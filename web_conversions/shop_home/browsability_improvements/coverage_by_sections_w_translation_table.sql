@@ -52,7 +52,29 @@ from etsy-data-warehouse-prod.weblog.visits v
 left join etsy-data-warehouse-prod.weblog.events e using (visit_id)
 where v._date >= current_date-30
 
-  
+----------------------------------------------------------------------
+-- RUN QUERY TO GET SHOP HOME VISIT INFO 
+----------------------------------------------------------------------
+create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_visits as (
+select
+  platform,
+  beacon.event_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id, 
+  (select value from unnest(beacon.properties.key_value) where key = "shop_id") as seller_user_id, 
+  visit_id, 
+  sequence_number,
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+  date(_partitiontime) >= current_date-30
+  and _date >= current_date-30
+  and platform in ('mobile_web','desktop','boe')
+  and (beacon.event_name in ('shop_home'))
+group by all
+);
+
 --------------------------------------------------
 -- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
 --------------------------------------------------
