@@ -131,7 +131,7 @@ select
   shop_name,
   sections_w_listings
 from 
-  etsy-bigquery-adhoc-prod._script32fb9713d90b49e109ed630f241e7819296ce9fa.active_shops_and_section_info
+  etsy-bigquery-adhoc-prod._scriptcd3e1918c37eed53b72a6c86c27f2ed8fc51fd52.active_shops_and_section_info
 group by all
 )
 , shop_visits as ( -- visits that viewed a shop on web
@@ -162,8 +162,9 @@ group by all
 , shop_level as ( -- get everything to seller_user_id level 
 select
   v.seller_user_id,
-  count(distinct v.visit_id) as visits,
-  count(distinct gc.visit_id) as converts, 
+  v.visit_id,
+  sum(v.views) as pageviews,
+  case when gc.visit_id is not null then 1 else 0 end as converts, 
   sum(gms_net) as gms_net
 from 
   shop_visits v
@@ -176,7 +177,8 @@ group by all
 select
   case when s.sections_w_listings > 0 then 1 else 0 end as has_sections,
   count(distinct l.seller_user_id) as visited_shops,
-  sum(visits) as visits,
+  count(distinct visit_id) as visits,
+  sum(pageviews) as pageviews,
   sum(converts) as converts,
   sum(gms_net) as gms_net
 from 
@@ -185,7 +187,7 @@ left join
   shop_level l
     on l.seller_user_id= cast(s.seller_user_id as string)
 group by all 
-
+order by 1 desc
 --------------------------------------------------
 --TESTING
 --------------------------------------------------
