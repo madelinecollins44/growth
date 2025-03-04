@@ -13,6 +13,18 @@ where
   -- and lg_plus_screen_size = 1  -- only looking at visits with a large screen
 group by all
 
+--overall traffic by screen size
+select 
+  case when viewport_width >= 900 then 1 else 0 end as lg_plus_screen_size,
+  count(distinct visit_id) as traffic,
+  count(distinct case when converted > 0 then visit_id end) as converted_traffic,
+from
+  etsy-data-warehouse-prod.weblog.visits
+where
+  _date >= current_date-30
+  and platform in ('desktop')
+group by all
+
 ---------------------------------------------------------------
 -- OVERALL TRAFFIC COUNTS 
 ---------------------------------------------------------------
