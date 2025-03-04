@@ -75,7 +75,7 @@ select
   shop_name,
   is_etsy_plus,
   seller_tier_new,
-  case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections_w_listings,
+  -- case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections_w_listings,
   case when (s.shop_id is not null or t.shop_id is not null) then 1 else 0 end as has_sections,
   count(s.id) as sections,
   count(case when active_listing_count > 0 then s.id end) as sections_w_listings,
@@ -96,7 +96,7 @@ where
 group by all
 );
 end
--- etsy-bigquery-adhoc-prod._script32fb9713d90b49e109ed630f241e7819296ce9fa.active_shops_and_section_info
+-- etsy-bigquery-adhoc-prod._scriptcd3e1918c37eed53b72a6c86c27f2ed8fc51fd52.active_shops_and_section_info
 
   
 --------------------------------------------------
