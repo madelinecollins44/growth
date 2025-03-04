@@ -108,7 +108,7 @@ group by all
 )
 , etsy_plus_status as (
 select
-  is_etsy_plus,
+  coalesce(is_etsy_plus,0) as is_etsy_plus,
   user_id as seller_user_id,
   shop_id 
 from 
@@ -127,7 +127,7 @@ group by all
 )
 select
   v.*,
-  is_etsy_plus,
+  coalesce(is_etsy_plus,0) as is_etsy_plus,
   has_banner
 from 
   visits v
