@@ -435,3 +435,32 @@ group by all
 -- 0	30925932
 -- 1	104316226
 -- 2	4334133
+
+
+-- TEST 4: what % of shop home traffic is to etsy plus sellers?
+with shop_visits as ( -- visits that viewed a shop on web
+select
+  seller_user_id,
+  is_etsy_plus,
+  visit_id,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+    on v.seller_user_id=cast(b.user_id as string)
+where 
+  platform in ('desktop','mobile_web')
+  ---here, i am only counting visits to active shops that are not frozen and have active listings
+  and active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
+group by all 
+)
+select
+  is_etsy_plus,
+  count(distinct seller_user_id) as shops,
+  count(distinct visit_id) as visits,
+  sum(views) as pageviews
+from shop_visits
+group by all 
