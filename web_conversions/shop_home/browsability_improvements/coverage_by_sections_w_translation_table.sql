@@ -136,9 +136,16 @@ select
   visit_id,
   count(sequence_number) as views
 from  
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+    on v.seller_user_id=cast(b.user_id as string)
 where 
   platform in ('desktop','mobile_web')
+  ---here, i am only counting visits to active shops that are not frozen and have active listings
+  and active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
 group by all 
 )
 , shop_gms_converts as ( -- get all shop info at the visit_id level
@@ -178,7 +185,7 @@ select
   count(distinct case when converts > 0 then visit_id end) as converts,
   sum(gms_net) as gms_net
 from 
-  shop_level l -- starting with all visited shops
+  shop_level l -- starting with all visited shops, then seeing if those shops 
 left join 
   shop_sections s
     on l.seller_user_id= cast(s.seller_user_id as string)
@@ -378,3 +385,44 @@ group by all
 -- more_than_1_shop	visits --> 10% of visits only look at one shop
 -- 0	125225198
 -- 1	14351093
+
+/* how many visits are getting double counted? */
+with shop_visits as ( -- visits that viewed a shop on web
+select
+  visit_id,
+  seller_user_id,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('desktop','mobile_web')
+group by all 
+)
+, shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  case when sections_w_listings > 0 then 1 else 0 end as has_sections,
+  seller_user_id,
+from 
+  etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info
+group by all
+)
+, visits_overlap as (
+select 
+  visit_id,
+  count(distinct has_sections) as types_of_shops,
+  count(distinct v.seller_user_id) as shops,
+from shop_visits v
+left join shop_sections s 
+    on v.seller_user_id= cast(s.seller_user_id as string)
+group by all 
+order by 2 desc
+)
+select 
+  types_of_shops,
+  count(distinct visit_id) as visits
+from visits_overlap
+group by all 
+-- types_of_shops	visits
+-- 0	30925932
+-- 1	104316226
+-- 2	4334133
