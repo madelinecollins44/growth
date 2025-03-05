@@ -271,7 +271,7 @@ group by all
 select seller_user_id, count(*) from shop_sections group by all order by 2 desc limit 5
 --each seller_user_id is unique */
 
-with shop_visits as ( -- visits that viewed a shop on web
+, shop_visits as ( -- visits that viewed a shop on web
 select
   seller_user_id,
   visit_id,
@@ -282,9 +282,14 @@ where
   platform in ('desktop','mobile_web')
 group by all 
 )
-select count(distinct visit_id) as visits, count(visit_id) as pageviews from shop_visits 
---visits:
---pageviews:
+/* select count(distinct visit_id) as visits, sum(views) as pageviews from shop_visits  
+--visits:139576291
+--pageviews:250793193
+
+select seller_user_id, visit_id, count(*) from shop_visits group by all order by 3 desc limit 5
+--each seller_user_id, visit_id is unique 
+*/
+
 , shop_gms_converts as ( -- get all shop info at the visit_id level
 select
   g.seller_user_id,
@@ -295,15 +300,17 @@ from
 inner join
   etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
     on g.transaction_id=v.transaction_id 
-inner join 
-  shop_visits v
-    on v.seller_user_id= cast(gc.seller_user_id as string)
-    and v.visit_id=gc.visit_id
 where 
   g.date >= current_date-30 -- this will also have to be the last 30 days, since looking at a visit level 
 group by all 
 )
-select count(distinct seller_user_id) as shops, count(distinct visit_id) as visits, sum(gms_net) as gms from shop_gms_converts
+/* select count(distinct seller_user_id) as shops, count(distinct visit_id) as visits, sum(gms_net) as gms from shop_gms_converts
+--visits:
+--pageviews:
+
+select seller_user_id, visit_id, count(*) from shop_gms_converts group by all order by 3 desc limit 5
+--each seller_user_id, visit_id is unique 
+*/
 , shop_level as ( -- get everything to seller_user_id level 
 select
   v.seller_user_id,
@@ -319,17 +326,32 @@ left join
     and v.visit_id=gc.visit_id
 group by all 
 )
+/* select count(distinct visit_id) as visits, sum(pageviews) as pageviews, count(distinct case when converts > 0 then visit_id end) as converted_visits, sum(gms_net) from shop_level 
+--visits: 139576291
+--pageviews: 250793193
+--converted visits: 2517592
+--gms_net: 110078136.65344191
+
+select seller_user_id, visit_id, count(*) from shop_level group by all order by 3 desc limit 5
+--each seller_user_id, visit_id is unique */
+
 select
-  case when s.sections_w_listings > 0 then 1 else 0 end as has_sections,
+  case when coalesce(s.sections_w_listings,0) > 0 then 1 else 0 end as has_sections,
   count(distinct l.seller_user_id) as visited_shops,
   count(distinct visit_id) as visits,
   sum(pageviews) as pageviews,
-  sum(converts) as converts,
+  count(distinct case when converts > 0 then visit_id end) as converts,
   sum(gms_net) as gms_net
 from 
-  shop_sections s -- starting here to get all active shops, and then looking at whether or not those were visited. some shops that were visited are not active.
+  shop_level  l -- starting with all visited shops
 left join 
-  shop_level l
+  shop_sections s
     on l.seller_user_id= cast(s.seller_user_id as string)
 group by all 
 order by 1 desc
+/* select count(distinct visit_id) as visits, sum(pageviews) as pageviews, count(distinct case when converts > 0 then visit_id end) as converted_visits, sum(gms_net) from shop_level 
+--visits: 139576291
+--pageviews: 250793193
+--converted visits: 2517592
+--gms_net: 110078136.65344191
+*/
