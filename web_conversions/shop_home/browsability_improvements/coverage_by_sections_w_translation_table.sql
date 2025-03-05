@@ -78,8 +78,7 @@ group by all
 --------------------------------------------------
 -- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
 --------------------------------------------------
-begin
-create or replace temp table active_shops_and_section_info as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info as (
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
@@ -95,7 +94,7 @@ select
   b.shop_id,
   b.user_id as seller_user_id,
   shop_name,
-  is_etsy_plus,
+  coalesce(is_etsy_plus,0) as is_etsy_plus,
   seller_tier_new,
   -- case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections_w_listings,
   case when (s.shop_id is not null or t.shop_id is not null) then 1 else 0 end as has_sections,
@@ -117,10 +116,7 @@ where
   and active_listings > 0 -- shops with active listings
 group by all
 );
-end
--- etsy-bigquery-adhoc-prod._scriptcd3e1918c37eed53b72a6c86c27f2ed8fc51fd52.active_shops_and_section_info
 
-  
 --------------------------------------------------
 -- COMBINE SECTIONS TO GET GMS/ CR/ VISIT COVERAGE
 --------------------------------------------------
@@ -255,3 +251,85 @@ select
 *
 from section_count
 where has_sections = 1 and sections = 0 
+
+
+-- TEST 2: make sure totals of each cte match up 
+with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  shop_id,
+  seller_user_id,
+  shop_name,
+  sections_w_listings
+from 
+  etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info
+group by all
+)
+/* select count(distinct shop_id) as shops, count(distinct case when sections_w_listings > 0 then shop_id end) as shops_w_sections from shop_sections
+--shops: 2935061
+--shops w sections: 1371999
+
+select seller_user_id, count(*) from shop_sections group by all order by 2 desc limit 5
+--each seller_user_id is unique */
+
+with shop_visits as ( -- visits that viewed a shop on web
+select
+  seller_user_id,
+  visit_id,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('desktop','mobile_web')
+group by all 
+)
+select count(distinct visit_id) as visits, count(visit_id) as pageviews from shop_visits 
+--visits:
+--pageviews:
+, shop_gms_converts as ( -- get all shop info at the visit_id level
+select
+  g.seller_user_id,
+  v.visit_id, 
+  sum(gms_net) as gms_net,
+from
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v 
+inner join
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+    on g.transaction_id=v.transaction_id 
+inner join 
+  shop_visits v
+    on v.seller_user_id= cast(gc.seller_user_id as string)
+    and v.visit_id=gc.visit_id
+where 
+  g.date >= current_date-30 -- this will also have to be the last 30 days, since looking at a visit level 
+group by all 
+)
+select count(distinct seller_user_id) as shops, count(distinct visit_id) as visits, sum(gms_net) as gms from shop_gms_converts
+, shop_level as ( -- get everything to seller_user_id level 
+select
+  v.seller_user_id,
+  v.visit_id,
+  sum(v.views) as pageviews,
+  case when gc.visit_id is not null then 1 else 0 end as converts, 
+  sum(gms_net) as gms_net
+from 
+  shop_visits v
+left join 
+  shop_gms_converts gc 
+    on v.seller_user_id= cast(gc.seller_user_id as string)
+    and v.visit_id=gc.visit_id
+group by all 
+)
+select
+  case when s.sections_w_listings > 0 then 1 else 0 end as has_sections,
+  count(distinct l.seller_user_id) as visited_shops,
+  count(distinct visit_id) as visits,
+  sum(pageviews) as pageviews,
+  sum(converts) as converts,
+  sum(gms_net) as gms_net
+from 
+  shop_sections s -- starting here to get all active shops, and then looking at whether or not those were visited. some shops that were visited are not active.
+left join 
+  shop_level l
+    on l.seller_user_id= cast(s.seller_user_id as string)
+group by all 
+order by 1 desc
