@@ -127,7 +127,7 @@ select
   shop_name,
   sections_w_listings
 from 
-  etsy-bigquery-adhoc-prod._scriptcd3e1918c37eed53b72a6c86c27f2ed8fc51fd52.active_shops_and_section_info
+  etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info
 group by all
 )
 , shop_visits as ( -- visits that viewed a shop on web
@@ -171,19 +171,20 @@ left join
 group by all 
 )
 select
-  case when s.sections_w_listings > 0 then 1 else 0 end as has_sections,
+  case when coalesce(s.sections_w_listings,0) > 0 then 1 else 0 end as has_sections,
   count(distinct l.seller_user_id) as visited_shops,
   count(distinct visit_id) as visits,
   sum(pageviews) as pageviews,
-  sum(converts) as converts,
+  count(distinct case when converts > 0 then visit_id end) as converts,
   sum(gms_net) as gms_net
 from 
-  shop_sections s -- starting here to get all active shops, and then looking at whether or not those were visited. some shops that were visited are not active.
+  shop_level l -- starting with all visited shops
 left join 
-  shop_level l
+  shop_sections s
     on l.seller_user_id= cast(s.seller_user_id as string)
 group by all 
 order by 1 desc
+  
 --------------------------------------------------
 --TESTING
 --------------------------------------------------
@@ -252,7 +253,6 @@ select
 from section_count
 where has_sections = 1 and sections = 0 
 
-
 -- TEST 2: make sure totals of each cte match up 
 with shop_sections as ( -- active shops + if they have sections with listings in them 
 select 
@@ -271,7 +271,8 @@ group by all
 select seller_user_id, count(*) from shop_sections group by all order by 2 desc limit 5
 --each seller_user_id is unique */
 
-, shop_visits as ( -- visits that viewed a shop on web
+, 
+with shop_visits as ( -- visits that viewed a shop on web
 select
   seller_user_id,
   visit_id,
@@ -282,9 +283,10 @@ where
   platform in ('desktop','mobile_web')
 group by all 
 )
-/* select count(distinct visit_id) as visits, sum(views) as pageviews from shop_visits  
+/* select count(distinct visit_id) as visits, sum(views), count(distinct seller_user_id) as shops  from shop_visits 
 --visits:139576291
 --pageviews:250793193
+--shops: 7464173
 
 select seller_user_id, visit_id, count(*) from shop_visits group by all order by 3 desc limit 5
 --each seller_user_id, visit_id is unique 
@@ -355,3 +357,24 @@ order by 1 desc
 --converted visits: 2517592
 --gms_net: 110078136.65344191
 */
+
+-- TEST 3: how many visits view multiple shops?
+with shop_visits as ( -- visits that viewed a shop on web
+select
+  visit_id,
+  count(distinct seller_user_id) as shops,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+where 
+  platform in ('desktop','mobile_web')
+group by all 
+)
+select
+  case when shops > 1 then 1 else 0 end as more_than_1_shop,
+  count(distinct visit_id) as visits
+from shop_visits
+group by all 
+-- more_than_1_shop	visits --> 10% of visits only look at one shop
+-- 0	125225198
+-- 1	14351093
