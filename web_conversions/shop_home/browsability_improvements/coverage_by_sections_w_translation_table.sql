@@ -524,3 +524,22 @@ select
   sum(views) as pageviews
 from shop_visits
 group by all 
+
+-- TEST 5: how many unique sections are there 
+select 
+  count(distinct s.id) as sections,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+-- left join 
+--   translated_sections t 
+--     on s.shop_id=t.shop_id
+--     and s.id=t.id
+where
+  b.active_seller_status = 1 -- active sellers
+  and b.is_frozen = 0  -- not frozen accounts 
+  and b.active_listings > 0 -- shops with active listings
+  and s.id is not null 
+group by all
+--9608445 sections 
