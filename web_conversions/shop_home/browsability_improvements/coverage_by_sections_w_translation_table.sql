@@ -525,9 +525,12 @@ select
 from shop_visits
 group by all 
 
--- TEST 5: how many unique sections are there 
+-- TEST 5: how many unique sections are there (distro of listings in each section)
 select 
-  count(distinct s.id) as sections,
+  count(distinct case when b.active_listings > 0 then s.id end) as shops_w_0_plus_listings_sections,
+  count(distinct case when b.active_listings > 10 then s.id end) as shops_w_10_plus_listings_sections,
+  count(distinct case when b.active_listings > 50 then s.id end) as shops_w_50_plus_listings_sections,
+  count(distinct case when b.active_listings > 100 then s.id end) as shops_w_100_plus_listings_sections,
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
 left join 
@@ -539,7 +542,8 @@ left join
 where
   b.active_seller_status = 1 -- active sellers
   and b.is_frozen = 0  -- not frozen accounts 
-  and b.active_listings > 0 -- shops with active listings
+  -- and b.active_listings > 0 -- shops with active listings
   and s.id is not null 
 group by all
---9608445 sections 
+-- shops_w_0_plus_listings_sections	shops_w_10_plus_listings_sections	shops_w_50_plus_listings_sections	shops_w_100_plus_listings_sections
+-- 9608445	7615452	4574655	3024597
