@@ -298,7 +298,7 @@ qualify row_number() over (
         language asc  -- If no language = 5, take the lowest language number
 ) = 1
 )
-, active_shops_section as (
+, active_shops_section as ( -- sections x listing in each section by shop 
 select 
   b.shop_id,
   b.shop_name,
@@ -319,14 +319,18 @@ where
   and active_listings >= 100 -- shops w/ 100 + listings
 group by all
 )
-, listings_per_section as (
-select distinct
-  shop_id
+, listings_per_section as ( -- only grab shops that have some sections with 21-50 listings
+select
+  shop_id,
+  coalesce(count(distinct section_name),0) as number_of_sections,
+  avg(active_listing_count) as avg_listings_per_section,
 from 
   active_shops_section
-where coalesce(active_listing_count,0) > 20 and coalesce(active_listing_count,0) <=50  -- only counting sections with between 21-50 listings
+where 
+  coalesce(active_listing_count,0) > 20 and coalesce(active_listing_count,0) <=50  -- only counting sections with between 21-50 listings
+group by all
 )
-, shop_visits as (
+, shop_visits as ( -- agg all shop home visits 
 select
   shop_id,
   count(distinct visit_id) as unique_visits,
@@ -335,8 +339,12 @@ from
   etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
 group by all 
 )
-select
+select -- only look at 
+  number_of_sections,
+  count(distinct v.shop_id) as shops,
   sum(pageviews) as pageviews
+  -- avg(number_of_sections) as avg_number_of_sections,
+  -- avg(avg_listings_per_section) as avg_listings_per_section,  
 from 
   listings_per_section s
 inner join
@@ -345,7 +353,6 @@ inner join
 group by all 
 
 
-  
 --------------------------------------------------
 --TESTING
 --------------------------------------------------
