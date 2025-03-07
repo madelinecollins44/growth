@@ -352,7 +352,62 @@ inner join
     on cast(s.shop_id as string) =v.shop_id
 group by all 
 
-
+----------------------------------------------------------------------------------------------------
+-- OF SHOPS WITH X SECTIONS, HOW MANY LISTINGS DO THEY TYPICALLY HAVE IN THAT SECTION
+----------------------------------------------------------------------------------------------------
+with translated_sections as ( -- grab english translations, or whatever translation is set to 1
+select 
+  *
+from etsy-data-warehouse-prod.etsy_shard.shop_sections_translations
+qualify row_number() over (
+    partition by id 
+    order by
+        case when language = 5 then 1 else 2 end,  -- Prioritize language = 5
+        language asc  -- If no language = 5, take the lowest language number
+) = 1
+)
+, active_shops_section as (
+select 
+  b.shop_id,
+  b.shop_name,
+  s.id as section,
+  coalesce(nullif(s.name, ''),t.name) as section_name,
+  sum(active_listing_count) as active_listing_count,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+left join 
+  translated_sections t 
+    on s.shop_id=t.shop_id
+    and s.id=t.id
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
+group by all
+)
+, shop_level as (
+select
+  v.shop_id,
+  s.shop_name,
+  coalesce(count(distinct section),0) as sections_w_listings_active_shops, -- how many sections have this many active listings
+  avg(active_listing_count) avg_listings_per_sections
+from 
+  active_shops_section s
+inner join
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+    on cast(s.shop_id as string) =v.shop_id
+where 
+  active_listing_count > 0 -- only count sections with active listings 
+group by all 
+)
+select
+  sections_w_listings_active_shops, 
+  avg(avg_listings_per_sections) as avg_listings_per_sections -- across all shops
+from shop_level
+group by all  
+  
 --------------------------------------------------
 --TESTING
 --------------------------------------------------
