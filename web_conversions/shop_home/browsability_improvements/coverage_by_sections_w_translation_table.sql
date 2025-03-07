@@ -355,7 +355,7 @@ group by all
 ----------------------------------------------------------------------------------------------------
 -- OF SHOPS WITH X SECTIONS, HOW MANY LISTINGS DO THEY TYPICALLY HAVE IN THAT SECTION
 ----------------------------------------------------------------------------------------------------
-with translated_sections as ( -- grab english translations, or whatever translation is set to 1
+ with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
 from etsy-data-warehouse-prod.etsy_shard.shop_sections_translations
@@ -371,6 +371,7 @@ select
   b.shop_id,
   b.shop_name,
   s.id as section,
+  sum(active_listings) as active_listings,
   coalesce(nullif(s.name, ''),t.name) as section_name,
   sum(active_listing_count) as active_listing_count,
 from 
@@ -391,8 +392,9 @@ group by all
 select
   v.shop_id,
   s.shop_name,
+  sum(active_listings) as active_listings,
   coalesce(count(distinct section),0) as sections_w_listings_active_shops, -- how many sections have this many active listings
-  avg(active_listing_count) avg_listings_per_sections
+  sum(active_listing_count) avg_listings_per_sections
 from 
   active_shops_section s
 inner join
@@ -403,10 +405,14 @@ where
 group by all 
 )
 select
+  shop_id,
+  shop_name,
   sections_w_listings_active_shops, 
-  avg(avg_listings_per_sections) as avg_listings_per_sections -- across all shops
+  avg(avg_listings_per_sections) as avg_listings_per_sections, -- across all shops
+  avg(active_listings) as active_listings_in_each_shop
 from shop_level
 group by all  
+ORDER BY 2,3,4 ASC
   
 --------------------------------------------------
 --TESTING
