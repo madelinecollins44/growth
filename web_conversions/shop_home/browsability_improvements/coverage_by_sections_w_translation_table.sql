@@ -355,7 +355,7 @@ group by all
 ----------------------------------------------------------------------------------------------------
 -- OF SHOPS WITH X SECTIONS, HOW MANY LISTINGS DO THEY TYPICALLY HAVE IN THAT SECTION
 ----------------------------------------------------------------------------------------------------
- with translated_sections as ( -- grab english translations, or whatever translation is set to 1
+with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
 from etsy-data-warehouse-prod.etsy_shard.shop_sections_translations
@@ -371,9 +371,9 @@ select
   b.shop_id,
   b.shop_name,
   s.id as section,
-  sum(active_listings) as active_listings,
+  active_listings,
   coalesce(nullif(s.name, ''),t.name) as section_name,
-  sum(active_listing_count) as active_listing_count,
+  active_listing_count,
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
 left join 
@@ -388,31 +388,40 @@ where
   and active_listings > 0 -- shops with active listings
 group by all
 )
+, shop_visits as ( -- agg all shop home visits 
+select
+  shop_id,
+  count(distinct visit_id) as unique_visits,
+  count(sequence_number) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+group by all 
+)
 , shop_level as (
 select
   v.shop_id,
   s.shop_name,
-  sum(active_listings) as active_listings,
+  coalesce(active_listings,0) as active_listings,
   coalesce(count(distinct section),0) as sections_w_listings_active_shops, -- how many sections have this many active listings
-  sum(active_listing_count) avg_listings_per_sections
+  coalesce(avg(active_listing_count),0) as avg_listings_per_sections
 from 
   active_shops_section s
 inner join
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+  shop_visits v
     on cast(s.shop_id as string) =v.shop_id
 where 
   active_listing_count > 0 -- only count sections with active listings 
 group by all 
 )
 select
-  shop_id,
-  shop_name,
+  -- shop_id,
+  -- shop_name,
   sections_w_listings_active_shops, 
   avg(avg_listings_per_sections) as avg_listings_per_sections, -- across all shops
   avg(active_listings) as active_listings_in_each_shop
 from shop_level
 group by all  
-ORDER BY 2,3,4 ASC
+order by 1 asc
   
 --------------------------------------------------
 --TESTING
