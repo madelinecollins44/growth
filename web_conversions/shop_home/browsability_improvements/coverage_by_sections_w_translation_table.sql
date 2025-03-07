@@ -402,7 +402,7 @@ select
   v.shop_id,
   s.shop_name,
   coalesce(active_listings,0) as active_listings,
-  coalesce(count(distinct section),0) as sections_w_listings_active_shops, -- how many sections have this many active listings
+  coalesce(count(distinct section),0) as sections_w_listings, -- how many sections have this many active listings
   coalesce(avg(active_listing_count),0) as avg_listings_per_sections
 from 
   active_shops_section s
@@ -416,7 +416,7 @@ group by all
 select
   -- shop_id,
   -- shop_name,
-  sections_w_listings_active_shops, 
+  sections_w_listings, 
   avg(avg_listings_per_sections) as avg_listings_per_sections, -- across all shops
   avg(active_listings) as active_listings_in_each_shop
 from shop_level
