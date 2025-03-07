@@ -252,6 +252,100 @@ left join
     on cast(s.shop_id as string) =v.shop_id
 group by all 
 order by 1 asc 
+
+----------------------------------------------------------------------------------------------------
+-- WHAT % OF SHOP HOME TRAFFIC TO SHOPS WITH 100+ LISTINGS HAVE SECTIONS WITH 21-50 LISTINGS IN A SECTION?
+----------------------------------------------------------------------------------------------------
+-- total traffic to shop home pages for shops with 100+ listings
+with shop_visits as (
+select
+  shop_id,
+  count(distinct visit_id) as unique_visits,
+  count(sequence_number) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+group by all 
+)
+, shops_w_100_listings as ( 
+select distinct
+  shop_id,
+  shop_name,
+  active_listings
+from   
+  etsy-data-warehouse-prod.rollups.seller_basics
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings >= 100 -- shops w/ 100 + listings
+order by active_listings asc
+)
+select
+  sum(pageviews) as pageviews
+from shop_visits v
+inner join shops_w_100_listings s
+on cast(s.shop_id as string) =v.shop_id
+
+-- total traffic to shop home pages for shops with 100+ listings AND sections with 21-50 listings
+--how amny pageviews do shops with 100+ listings and have some sections with 21-50 listing have? 
+with translated_sections as ( -- grab english translations, or whatever translation is set to 1
+select 
+  *
+from etsy-data-warehouse-prod.etsy_shard.shop_sections_translations
+qualify row_number() over (
+    partition by id 
+    order by
+        case when language = 5 then 1 else 2 end,  -- Prioritize language = 5
+        language asc  -- If no language = 5, take the lowest language number
+) = 1
+)
+, active_shops_section as (
+select 
+  b.shop_id,
+  b.shop_name,
+  s.id as section,
+  coalesce(nullif(s.name, ''),t.name) as section_name,
+  sum(active_listing_count) as active_listing_count,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+left join 
+  translated_sections t 
+    on s.shop_id=t.shop_id
+    and s.id=t.id
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings >= 100 -- shops w/ 100 + listings
+group by all
+)
+, listings_per_section as (
+select distinct
+  shop_id
+from 
+  active_shops_section
+where coalesce(active_listing_count,0) > 20 and coalesce(active_listing_count,0) <=50  -- only counting sections with between 21-50 listings
+)
+, shop_visits as (
+select
+  shop_id,
+  count(distinct visit_id) as unique_visits,
+  count(sequence_number) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits 
+group by all 
+)
+select
+  sum(pageviews) as pageviews
+from 
+  listings_per_section s
+inner join
+  shop_visits v
+    on cast(s.shop_id as string) =v.shop_id
+group by all 
+
+
+  
 --------------------------------------------------
 --TESTING
 --------------------------------------------------
