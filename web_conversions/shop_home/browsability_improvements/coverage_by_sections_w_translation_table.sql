@@ -256,7 +256,7 @@ order by 1 asc
 ----------------------------------------------------------------------------------------------------
 -- WHAT % OF SHOP HOME TRAFFIC TO SHOPS WITH 100+ LISTINGS HAVE SECTIONS WITH 21-50 LISTINGS IN A SECTION?
 ----------------------------------------------------------------------------------------------------
--- total traffic to shop home pages for shops with 100+ listings
+-- how many shop home ppageviews do shops with 100+ listings get?
 with shop_visits as (
 select
   shop_id,
@@ -280,13 +280,13 @@ where
 order by active_listings asc
 )
 select
+  avg(active_listings) as avg_listing_count,
   sum(pageviews) as pageviews
 from shop_visits v
 inner join shops_w_100_listings s
 on cast(s.shop_id as string) =v.shop_id
 
 -- total traffic to shop home pages for shops with 100+ listings AND sections with 21-50 listings
---how amny pageviews do shops with 100+ listings and have some sections with 21-50 listing have? 
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
