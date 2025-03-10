@@ -196,7 +196,7 @@ order by 1 desc
 --------------------------------------------------
 -- HOW MANY LISTINGS ARE IN EACH SECTION?
 --------------------------------------------------
- with translated_sections as ( -- grab english translations, or whatever translation is set to 1
+  with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
 from etsy-data-warehouse-prod.etsy_shard.shop_sections_translations
@@ -211,7 +211,7 @@ qualify row_number() over (
 select 
   b.shop_id,
   b.shop_name,
-  s.id as section,
+  coalesce(s.id,0) as section,-- if null, no sections
   coalesce(nullif(s.name, ''),t.name) as section_name,
   sum(active_listing_count) as active_listing_count,
 from 
@@ -229,7 +229,7 @@ where
 group by all
 )
 select
-  -- v.shop_id,
+  -- count(distinct v.shop_id) as shops,
   -- s.shop_name,
   case 
     when coalesce(active_listing_count,0) = 0 then '0'
