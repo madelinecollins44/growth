@@ -169,3 +169,17 @@ where
 group by all
 -- names	filled_in	missing_ids
 -- 9585659	9568522	17137
+
+--------------------------------------------------
+-- TESTING
+--------------------------------------------------
+-- how many section names are getting repeated? is this because they actually show up twice? 
+select shop_id, shop_name, section_name, count(*) from etsy-data-warehouse-dev.madelinecollins.section_names where section_name not in ('missing section name') and active_listings > 0 group by all order by 4 desc limit 5
+-- shop_id	shop_name	section_name	f0_
+-- 13042804	SoleilDuNordShop		5
+-- 5437285	ahldraws	prints	3 --------> SHOWS UP THREE TIMES 
+-- 10972477	Maryandpatch	Patterns in French	2--------> SHOWS UP TWICE  
+-- 38539730	HelloEloCha	Spring	2--------> SHOWS UP TWICE  
+-- 33053189	ChromaticsDesigns	Art	2--------> SHOWS UP TWICE  
+
+select * from etsy-data-warehouse-dev.madelinecollins.section_names where shop_id in (5437285) and section_name in ('prints')
