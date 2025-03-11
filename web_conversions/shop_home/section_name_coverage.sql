@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------
 -- RUN QUERY TO GET SHOP HOME VISIT INFO 
 ----------------------------------------------------------------------
-create or replace table etsy-data-warehouse-dev.madelinecollins.web_shop_visits as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.shop_home_visits as (
 select
   platform,
   beacon.event_name, 
@@ -16,7 +16,7 @@ inner join
 where
   date(_partitiontime) >= current_date-30
   and _date >= current_date-30
-  and platform in ('mobile_web','desktop','boe')
+  and platform in ('mobile_web','desktop')
   and (beacon.event_name in ('shop_home'))
 group by all
 );
