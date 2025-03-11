@@ -60,9 +60,9 @@ where
 group by all
 );
   
---------------------------------------------------
--- NAME TYPE BY # OF SECTIONS
---------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+-- NAME TYPE BY # OF SECTIONS (this looks at section coverage only, does not include gms/ conversion)
+---------------------------------------------------------------------------------------------------------------
 with visit_info as (
 select  
   shop_id, 
@@ -101,7 +101,6 @@ inner join
   visit_info vi
     on cast(sn.shop_id as string)=vi.shop_id
 group by all
-
 
 --------------------------------------------------
 -- share of sections without names 
