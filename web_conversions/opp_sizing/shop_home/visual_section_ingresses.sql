@@ -101,6 +101,7 @@ where
 -- group by all
 -- );
 -- end
+-----etsy-bigquery-adhoc-prod._script21c9b882b08f76514ed1fe83477a64aff1366131.shop_home_visits
 
 
 select
