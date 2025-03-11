@@ -24,7 +24,7 @@ group by all
 ----------------------------------------------------------------------------------------------------
 -- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS (only looking at shops with sections) 
 ----------------------------------------------------------------------------------------------------
--- create or replace table etsy-data-warehouse-dev.madelinecollins.section_names as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.section_names as (
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
@@ -43,12 +43,12 @@ select
   coalesce(is_etsy_plus,0) as is_etsy_plus,
   seller_tier_new,
   case when (s.shop_id is not null or t.shop_id is not null) then 1 else 0 end as has_sections,
-  coalesce(nullif(s.name, ''),t.name) as section_name,
+  coalesce(coalesce(nullif(s.name, ''),t.name), 'missing section name') as section_name,
   active_listing_count as active_listings ,
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
-left join 
-  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+inner join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id) -- only looking at shops with sections 
 left join 
   translated_sections t 
     on s.shop_id=t.shop_id
@@ -58,7 +58,7 @@ where
   and is_frozen = 0  -- not frozen accounts 
   and active_listings > 0 -- shops with active listings
 group by all
--- );
+);
   
 --------------------------------------------------
 -- COMBINE SECTIONS TO GET GMS/ CR/ VISIT COVERAGE
