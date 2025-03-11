@@ -101,7 +101,45 @@ inner join
   visit_info vi
     on cast(sn.shop_id as string)=vi.shop_id
 group by all
-
+  
+---------------------------------------------------------------------------------------------------------------
+-- GMS / CONVERSION RATE / PAGEVIEWS BY SECTION NAME 
+---------------------------------------------------------------------------------------------------------------
+  with visit_metrics as (
+select 
+  shv.visit_id,
+  coalesce(v.converted,0) as converted,
+  coalesce(v.total_gms,0) as total_gms
+from 
+  (select distinct visit_id from etsy-data-warehouse-dev.madelinecollins.shop_home_visits) shv
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date-30
+  and platform in ('mobile_web','desktop')
+)
+, shop_visit_metrics as (
+select  
+  shop_id, 
+  visit_id,
+  count(sequence_number) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.shop_home_visits 
+group by all
+)
+, combo_visit_metrics as (
+select
+  svm.shop_id,
+  count(distinct svm.visit_id) as unique_visits,
+  count(distinct case when converted > 0 then svm.visit_id end) as converted_visits,
+  sum(total_gms) as total_gms,
+  sum(pageviews) as pageviews
+from 
+  shop_visit_metrics
+inner join 
+  visit_metrics using (visit_id)
+group by all 
+)
 --------------------------------------------------
 -- share of sections without names 
 --------------------------------------------------
