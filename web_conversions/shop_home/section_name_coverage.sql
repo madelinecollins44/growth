@@ -24,7 +24,7 @@ group by all
 --------------------------------------------------
 -- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
 --------------------------------------------------
-create or replace table etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info as (
+-- create or replace table etsy-data-warehouse-dev.madelinecollins.section_names as (
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
   *
@@ -42,12 +42,9 @@ select
   shop_name,
   coalesce(is_etsy_plus,0) as is_etsy_plus,
   seller_tier_new,
-  -- case when (s.shop_id is not null or t.shop_id is not null) and active_listing_count > 0 then 1 else 0 end as has_sections_w_listings,
   case when (s.shop_id is not null or t.shop_id is not null) then 1 else 0 end as has_sections,
-  count(s.id) as sections,
-  count(case when active_listing_count > 0 then s.id end) as sections_w_listings,
-  count(case when ((coalesce(nullif(s.name, ''),t.name)) is not null) and active_listing_count > 0 then s.id end) as filled_ids,
-  count(case when ((coalesce(nullif(s.name, ''),t.name)) is null) and active_listing_count > 0 then s.id end) as missing_ids,
+  coalesce(nullif(s.name, ''),t.name) as section_name,
+  active_listing_count as active_listings ,
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
 left join 
@@ -61,8 +58,78 @@ where
   and is_frozen = 0  -- not frozen accounts 
   and active_listings > 0 -- shops with active listings
 group by all
-);
-
---------------------------------------------------------
--- WHAT TYPES OF SECTIONS ARE SHOPS USING? 
---------------------------------------------------------
+-- );
+--------------------------------------------------
+-- COMBINE SECTIONS TO GET GMS/ CR/ VISIT COVERAGE
+--------------------------------------------------
+with shop_sections as ( -- active shops + if they have sections with listings in them 
+select 
+  shop_id,
+  seller_user_id,
+  shop_name,
+  sections_w_listings
+from 
+  etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info
+group by all
+)
+, shop_visits as ( -- visits that viewed a shop on web
+select
+  seller_user_id,
+  visit_id,
+  count(sequence_number) as views
+from  
+  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+    on v.seller_user_id=cast(b.user_id as string)
+where 
+  platform in ('desktop','mobile_web')
+  ---here, i am only counting visits to active shops that are not frozen and have active listings
+  and active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
+group by all 
+)
+, shop_gms_converts as ( -- get all shop info at the visit_id level
+select
+  g.seller_user_id,
+  v.visit_id, 
+  sum(gms_net) as gms_net,
+from
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits v 
+inner join
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+    on g.transaction_id=v.transaction_id 
+where 
+  g.date >= current_date-30 -- this will also have to be the last 30 days, since looking at a visit level 
+group by all 
+)
+, shop_level as ( -- get everything to seller_user_id level 
+select
+  v.seller_user_id,
+  v.visit_id,
+  sum(v.views) as pageviews,
+  case when gc.visit_id is not null then 1 else 0 end as converts, 
+  sum(gms_net) as gms_net
+from 
+  shop_visits v
+left join 
+  shop_gms_converts gc 
+    on v.seller_user_id= cast(gc.seller_user_id as string)
+    and v.visit_id=gc.visit_id
+group by all 
+)
+select
+  case when coalesce(s.sections_w_listings,0) > 0 then 1 else 0 end as has_sections,
+  count(distinct l.seller_user_id) as visited_shops,
+  count(distinct visit_id) as visits,
+  sum(pageviews) as pageviews,
+  count(distinct case when converts > 0 then visit_id end) as converts,
+  sum(gms_net) as gms_net
+from 
+  shop_level l -- starting with all visited shops, then seeing if those shops 
+left join 
+  shop_sections s
+    on l.seller_user_id= cast(s.seller_user_id as string)
+group by all 
+order by 1 desc
