@@ -21,9 +21,9 @@ where
 group by all
 );
 
---------------------------------------------------
--- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS
---------------------------------------------------
+----------------------------------------------------------------------------------------------------
+-- CREATE TABLE TO GET SECTIONS FOR ALL SHOPS (only looking at shops with sections) 
+----------------------------------------------------------------------------------------------------
 -- create or replace table etsy-data-warehouse-dev.madelinecollins.section_names as (
 with translated_sections as ( -- grab english translations, or whatever translation is set to 1
 select 
@@ -59,6 +59,7 @@ where
   and active_listings > 0 -- shops with active listings
 group by all
 -- );
+  
 --------------------------------------------------
 -- COMBINE SECTIONS TO GET GMS/ CR/ VISIT COVERAGE
 --------------------------------------------------
@@ -133,3 +134,38 @@ left join
     on l.seller_user_id= cast(s.seller_user_id as string)
 group by all 
 order by 1 desc
+
+
+--------------------------------------------------
+-- share of sections without names 
+--------------------------------------------------
+with translated_sections as ( -- grab english translations, or whatever translation is set to 1
+select 
+  *
+from etsy-data-warehouse-prod.etsy_shard.shop_sections_translations
+qualify row_number() over (
+    partition by id 
+    order by
+        case when language = 5 then 1 else 2 end,  -- Prioritize language = 5
+        language asc  -- If no language = 5, take the lowest language number
+) = 1
+)
+select 
+  count(s.id) as names,
+  sum(case when coalesce(nullif(s.name, ''),t.name) is not null then 1 else 0 end) as filled_in,
+  sum(case when coalesce(nullif(s.name, ''),t.name) is null then 1 else 0 end) as missing_ids,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+inner join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+left join 
+  translated_sections t 
+    on s.shop_id=t.shop_id
+    and s.id=t.id
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
+group by all
+-- names	filled_in	missing_ids
+-- 9585659	9568522	17137
