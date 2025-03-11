@@ -173,7 +173,7 @@ group by all
 --------------------------------------------------
 -- TESTING
 --------------------------------------------------
--- how many section names are getting repeated? is this because they actually show up twice? 
+-- TEST 1: how many section names are getting repeated? is this because they actually show up twice? 
 select shop_id, shop_name, section_name, count(*) from etsy-data-warehouse-dev.madelinecollins.section_names where section_name not in ('missing section name') and active_listings > 0 group by all order by 4 desc limit 5
 -- shop_id	shop_name	section_name	f0_
 -- 13042804	SoleilDuNordShop		5
@@ -182,4 +182,27 @@ select shop_id, shop_name, section_name, count(*) from etsy-data-warehouse-dev.m
 -- 38539730	HelloEloCha	Spring	2--------> SHOWS UP TWICE  
 -- 33053189	ChromaticsDesigns	Art	2--------> SHOWS UP TWICE  
 
-select * from etsy-data-warehouse-dev.madelinecollins.section_names where shop_id in (5437285) and section_name in ('prints')
+with agg as (
+select 
+  shop_id, 
+  shop_name, 
+  section_name, 
+  count(*) as total_count
+from etsy-data-warehouse-dev.madelinecollins.section_names 
+where 
+  section_name not in ('missing section name')
+  and active_listings > 0 
+group by all 
+order by 4 desc 
+)
+select 
+  total_count,
+  count(section_name) as names
+from agg 
+group by all
+order by 1 asc
+-- total_count	names
+-- 1	6498023
+-- 2	112
+-- 3	1
+-- 5	1
