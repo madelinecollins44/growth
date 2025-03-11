@@ -105,7 +105,7 @@ group by all
 ---------------------------------------------------------------------------------------------------------------
 -- GMS / CONVERSION RATE / PAGEVIEWS BY SECTION NAME 
 ---------------------------------------------------------------------------------------------------------------
-  with visit_metrics as (
+with visit_metrics as (
 select 
   shv.visit_id,
   coalesce(v.converted,0) as converted,
@@ -130,7 +130,7 @@ group by all
 , combo_visit_metrics as (
 select
   svm.shop_id,
-  count(distinct svm.visit_id) as unique_visits,
+  svm.visit_id,
   count(distinct case when converted > 0 then svm.visit_id end) as converted_visits,
   sum(total_gms) as total_gms,
   sum(pageviews) as pageviews
@@ -140,6 +140,21 @@ inner join
   visit_metrics using (visit_id)
 group by all 
 )
+, shop_sections as (
+select
+  shop_id,
+  count(case when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*') then section_name end) as price_sections,
+  count(case when not regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*') then section_name end) as not_price_sections,
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names
+where 
+  active_listings > 0 -- sections with active listings 
+  )
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names
+)
+, 
+
 --------------------------------------------------
 -- share of sections without names 
 --------------------------------------------------
