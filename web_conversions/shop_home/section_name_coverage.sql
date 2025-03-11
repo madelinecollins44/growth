@@ -61,79 +61,32 @@ group by all
 );
   
 --------------------------------------------------
--- COMBINE SECTIONS TO GET GMS/ CR/ VISIT COVERAGE
+-- NAME TYPE BY # OF SECTIONS
 --------------------------------------------------
-with shop_sections as ( -- active shops + if they have sections with listings in them 
-select 
-  shop_id,
-  seller_user_id,
-  shop_name,
-  sections_w_listings
+with visit_info as (
+select  
+  shop_id, 
+  count(distinct visit_id) as unique_visits,
+  count(sequence_number) as pageviews
 from 
-  etsy-data-warehouse-dev.madelinecollins.active_shops_and_section_info
+  etsy-data-warehouse-dev.madelinecollins.shop_home_visits 
 group by all
 )
-, shop_visits as ( -- visits that viewed a shop on web
-select
-  seller_user_id,
-  visit_id,
-  count(sequence_number) as views
-from  
-  etsy-data-warehouse-dev.madelinecollins.web_shop_visits v
+select  
+  case 
+    when regexp_contains(section_name, r'(?i)\b(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\b')
+    then 1 else 0 
+  end as price_section,
+  section_name,
+  count(section_name) as total_sections,
+  count(case when vi.shop_id is not null then section_name end) as visited_shop_sections,
+  sum(pageviews) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names sn
 inner join 
-  etsy-data-warehouse-prod.rollups.seller_basics b
-    on v.seller_user_id=cast(b.user_id as string)
-where 
-  platform in ('desktop','mobile_web')
-  ---here, i am only counting visits to active shops that are not frozen and have active listings
-  and active_seller_status = 1 -- active sellers
-  and is_frozen = 0  -- not frozen accounts 
-  and active_listings > 0 -- shops with active listings
-group by all 
-)
-, shop_gms_converts as ( -- get all shop info at the visit_id level
-select
-  g.seller_user_id,
-  v.visit_id, 
-  sum(gms_net) as gms_net,
-from
-  etsy-data-warehouse-prod.transaction_mart.transactions_visits v 
-inner join
-  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
-    on g.transaction_id=v.transaction_id 
-where 
-  g.date >= current_date-30 -- this will also have to be the last 30 days, since looking at a visit level 
-group by all 
-)
-, shop_level as ( -- get everything to seller_user_id level 
-select
-  v.seller_user_id,
-  v.visit_id,
-  sum(v.views) as pageviews,
-  case when gc.visit_id is not null then 1 else 0 end as converts, 
-  sum(gms_net) as gms_net
-from 
-  shop_visits v
-left join 
-  shop_gms_converts gc 
-    on v.seller_user_id= cast(gc.seller_user_id as string)
-    and v.visit_id=gc.visit_id
-group by all 
-)
-select
-  case when coalesce(s.sections_w_listings,0) > 0 then 1 else 0 end as has_sections,
-  count(distinct l.seller_user_id) as visited_shops,
-  count(distinct visit_id) as visits,
-  sum(pageviews) as pageviews,
-  count(distinct case when converts > 0 then visit_id end) as converts,
-  sum(gms_net) as gms_net
-from 
-  shop_level l -- starting with all visited shops, then seeing if those shops 
-left join 
-  shop_sections s
-    on l.seller_user_id= cast(s.seller_user_id as string)
-group by all 
-order by 1 desc
+  visit_info vi
+    on cast(sn.shop_id as string)=vi.shop_id
+group by all
 
 
 --------------------------------------------------
