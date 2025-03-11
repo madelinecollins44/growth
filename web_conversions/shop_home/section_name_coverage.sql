@@ -73,11 +73,25 @@ from
 group by all
 )
 select  
-  case 
-    when regexp_contains(section_name, r'(?i)\b(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\b')
+  -- case 
+  --   when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*')
+  --   then 1 else 0 
+  -- end as price_section,
+
+  -- case
+  --   when regexp_contains(section_name, r'(?i)(mother|mom|father|dad|parent|grandma|grandmother|grandpa|grandfather|wife|husband|boyfriend|girlfriend|partner|bride|groom|couple|friend|best\s?friend|teacher|coach|boss|coworker|colleague|neighbor|baby|infant|newborn|kid|child|children|teen|boy|girl|son|daughter|family|pet|dog|cat)\w*')
+  --   then 1 else 0 
+  -- end as recipient_section,
+
+  -- case
+  --   when regexp_contains(section_name, r'(?i)(birthday|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
+  --   then 1 else 0 
+  -- end as occasion_section,
+
+    -- case
+    -- when regexp_contains(section_name, r'(?i)(earring|accessor|keychain|ornament|digital|download|pottery|card|decor|pin|magnet|apparel|gift|comic|book|item|top|flower|ring|bracelet|watch|necklace|tumbler|lighting|set|bundle|journal|calendar|drinkware|cup|patch|pendant|charm|brooch|anklet|jewel|clothing|shirt|t-shirt|sweater|hoodie|jacket|coat|dress|skirt|pant|jean|short|shoe|sneaker|boot|heel|sandal|bag|handbag|backpack|wallet|coaster|belt|hat|scarf|glove|sock|home\s?decor|furniture|candle|vase|mug|glass|plate|bowl|cutlery|bedding|pillow|blanket|rug|towel|lamp|mirror|clock|art|painting|poster|print|sticker|toy|game|puzzle|book|notebook|planner|pen|stationery|craft|yarn|fabric|tool|gadget|tech|phone\s?case|charger|headphones|earbuds|laptop\s?stand|tablet\s?case|kitchen|cookware|bakeware|appliance|utensil|pet\s?toy|pet\s?bed|collar|leash|harness|figurine|statue|doll|button|chain)\w*')
     then 1 else 0 
-  end as price_section,
-  section_name,
+  end as item_section,
   count(section_name) as total_sections,
   count(case when vi.shop_id is not null then section_name end) as visited_shop_sections,
   sum(pageviews) as pageviews
