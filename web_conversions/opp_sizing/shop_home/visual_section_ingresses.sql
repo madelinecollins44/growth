@@ -105,10 +105,13 @@ where
 
 
 select
+  platform,
   count(distinct visit_id) as unique_visits,
   count(distinct case when converted > 0 then visit_id end) as converted_visits
-from v
+from etsy-bigquery-adhoc-prod._script21c9b882b08f76514ed1fe83477a64aff1366131.shop_home_visits v
 inner join 
   etsy-bigquery-adhoc-prod._script78b8cdbea7896696f8aea4f016f1216ed6385e29.shops_w_4_sections s
     on v.shop_id=cast(s.shop_id as string)
-where v.platform in ('mobile_web','desktop')
+where 
+  v.platform in ('mobile_web','desktop')
+group by all 
