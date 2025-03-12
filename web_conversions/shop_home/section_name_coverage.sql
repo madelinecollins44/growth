@@ -1,4 +1,20 @@
 ----------------------------------------------------------------------
+-- OVERALL COUNTS TO CONFIRM
+----------------------------------------------------------------------
+-- total listing views + purchase after views 
+select
+  count(sequence_number) as listing_views,
+  sum(purchased_after_view) as purchased_after_view
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 1=1
+  and referring_page_event in ('shop_home')
+  and platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+group by all 
+order by 2 desc 
+
+----------------------------------------------------------------------
 -- RUN QUERY TO GET SHOP HOME VISIT INFO 
 ----------------------------------------------------------------------
 create or replace table etsy-data-warehouse-dev.madelinecollins.shop_home_visits as (
