@@ -56,6 +56,15 @@ left join
 where 1=1
 group by all
 
+-- total sections
+select
+count(distinct section_id)
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names sn
+-- inner join 
+--     etsy-data-warehouse-dev.madelinecollins.shop_home_visits  vi
+--   on cast(sn.shop_id as string)=vi.shop_id
+
 ----------------------------------------------------------------------
 -- RUN QUERY TO GET SHOP HOME VISIT INFO 
 ----------------------------------------------------------------------
