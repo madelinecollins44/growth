@@ -54,6 +54,32 @@ CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
     v._date BETWEEN start_date AND end_date
 );
 
+-- Get feature tag related events for all bucketed visits 
+CREATE OR REPLACE TEMPORARY TABLE tag_events AS (
+select
+  visit_id,
+  sequence_number,
+  beacon.event_name as event_name,
+  (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type
+from 
+  etsy-visit-pipe-prod.canonical.visit_id_beacons b
+inner join 
+  xp_visits v using (visit_id)
+where
+  date(b._partitiontime) >= current_date-30
+  and beacon.event_name in ('reviews_feature_tags_seen','reviews_feature_tag_clicked') 
+);
+
+-- How many clicks did each type of tag get? 
+select
+  tag_type,
+  count(sequence_number) as clicks
+from 
+  tag_events
+where
+  event_name ('reviews_feature_tag_clicked')
+group by all 
+
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
