@@ -1,8 +1,23 @@
 ----------------------------------------------------------------------
 -- OVERALL COUNTS TO CONFIRM
 ----------------------------------------------------------------------
--- total listing views + purchase after views 
 select
+  count(sequence_number) as listing_views,
+  sum(purchased_after_view) as purchased_after_view
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 1=1
+  and referring_page_event in ('shop_home')
+  and platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+group by all 
+order by 2 desc 
+
+-- total gms 
+with sh_listing_views as (
+select
+  visit_id,
+  listing_id,
   count(sequence_number) as listing_views,
   sum(purchased_after_view) as purchased_after_view
 from 
@@ -13,6 +28,33 @@ where 1=1
   and _date >= current_date-30
 group by all 
 order by 2 desc 
+)
+, all_trans as ( -- get all transactions on visit + listing data 
+select
+	tv.visit_id, 
+	t.listing_id, 
+  sum(tg.trans_gms_net) as total_gms, 
+	count(distinct t.transaction_id) as transactions
+from
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_visits tv
+join
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_gms_by_trans tg using(transaction_id)
+join
+	`etsy-data-warehouse-prod`.transaction_mart.all_transactions t
+    on tv.transaction_id = t.transaction_id
+where
+	tv.date >= current_date-30
+group by all
+order by 3 desc
+)
+select
+  sum(total_gms) as total_gms
+from
+  sh_listing_views lv -- only looking at visits that viewed the listing from shop home 
+left join 
+  all_trans t using (listing_id, visit_id)
+where 1=1
+group by all
 
 ----------------------------------------------------------------------
 -- RUN QUERY TO GET SHOP HOME VISIT INFO 
