@@ -55,7 +55,7 @@ where
 --   count(case when active_listing_count >= 3 then s.id end) as sections_w_3_listings,
 -- from 
 --   etsy-data-warehouse-prod.rollups.seller_basics b
--- left join 
+-- inner join 
 --   etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
 -- left join 
 --   translated_sections t 
@@ -69,6 +69,7 @@ where
 -- )
 -- select 
 --   shop_id, 
+--   shop_name,
 --   sections_w_3_listings
 -- from 
 --   shop_sections 
@@ -76,7 +77,7 @@ where
 --   sections_w_3_listings >= 4
 -- );
 -- end
--- etsy-bigquery-adhoc-prod._script78b8cdbea7896696f8aea4f016f1216ed6385e29.shops_w_4_sections
+-- etsy-bigquery-adhoc-prod._script10d8cf461d692da51c5f467b32facbca91790b2e.shops_w_4_sections
 
 -- -- visits info 
 -- begin
@@ -108,9 +109,10 @@ select
   platform,
   count(distinct visit_id) as unique_visits,
   count(distinct case when converted > 0 then visit_id end) as converted_visits
-from etsy-bigquery-adhoc-prod._script21c9b882b08f76514ed1fe83477a64aff1366131.shop_home_visits v
+from 
+    etsy-bigquery-adhoc-prod._script21c9b882b08f76514ed1fe83477a64aff1366131.shop_home_visits v
 inner join 
-  etsy-bigquery-adhoc-prod._script78b8cdbea7896696f8aea4f016f1216ed6385e29.shops_w_4_sections s
+  etsy-bigquery-adhoc-prod._script10d8cf461d692da51c5f467b32facbca91790b2e.shops_w_4_sections s -- only looking at visits with these shop quals
     on v.shop_id=cast(s.shop_id as string)
 where 
   v.platform in ('mobile_web','desktop')
