@@ -103,99 +103,99 @@ inner join
 group by all
   
 ---------------------------------------------------------------------------------------------------------------
--- GMS / PAGEVIEWS BY SECTION NAME 
+-- GMS / LISTING VIEWS BY SECTION NAME 
 ---------------------------------------------------------------------------------------------------------------
-with visit_metrics as (
-select 
-  shv.visit_id,
-  coalesce(v.converted,0) as converted,
-  coalesce(v.total_gms,0) as total_gms
-from 
-  (select distinct visit_id from etsy-data-warehouse-dev.madelinecollins.shop_home_visits) shv
-inner join 
-  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
-where 
-  v._date >= current_date-30
-  and platform in ('mobile_web','desktop')
-)
-, shop_visit_metrics as (
-select  
-  shop_id, 
+with sh_listing_views as (
+select
   visit_id,
-  count(sequence_number) as pageviews
-from 
-  etsy-data-warehouse-dev.madelinecollins.shop_home_visits 
-group by all
-)
-, combo_visit_metrics as (
-select
-  svm.shop_id,
-  svm.visit_id,
-  count(distinct case when converted > 0 then svm.visit_id end) as converted_visits,
-  sum(total_gms) as total_gms,
-  sum(pageviews) as pageviews
-from 
-  shop_visit_metrics
-inner join 
-  visit_metrics using (visit_id)
-group by all 
-)
-, shop_sections as (
-select
-  shop_id,
-  count(case when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*') then section_name end) as price_sections,
-  count(case when not regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*') then section_name end) as not_price_sections,
-from 
-  etsy-data-warehouse-dev.madelinecollins.section_names
-where 
-  active_listings > 0 -- sections with active listings 
-  )
-from 
-  etsy-data-warehouse-dev.madelinecollins.section_names
-)
-, 
-
-
-
-
-
-  -------version 2
-with listing_gms as (
-select
   listing_id,
-  sum(gms_net) as gms_net
+  count(sequence_number) as listing_views,
+  sum(purchased_after_view) as purchased_after_view
 from 
-  etsy-data-warehouse-prod.transaction_mart.all_transactions a
-inner join 
-  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans t using (transaction_id)
-where 
-  a.date >= current_date-365 -- gms over last year 
-group by all
-)
-, sh_listing_views as (
-select
-  listing_id,
-  count(sequence_number) as listing_views
-where
-  referring_page_event in ('shop_home')
+  etsy-data-warehouse-prod.analytics.listing_views
+where 1=1
+  and referring_page_event in ('shop_home')
   and platform in ('mobile_web','desktop')
   and _date >= current_date-30
+group by all 
+order by 2 desc 
 )
-, section_gms as (
+, all_trans as ( -- get all transactions on visit + listing data 
 select
-  s.section_id,
-  sum(gms_net) as gms_net
+	tv.visit_id, 
+	t.listing_id, 
+  sum(tg.trans_gms_net) as total_gms, 
+	count(distinct t.transaction_id) as transactions
+from
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_visits tv
+join
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_gms_by_trans tg using(transaction_id)
+join
+	`etsy-data-warehouse-prod`.transaction_mart.all_transactions t
+    on tv.transaction_id = t.transaction_id
+where
+	tv.date >= current_date-30
+group by all
+order by 3 desc
+)
+, listing_metrics as ( -- get listing gms from visits that viewed listing from shop home 
+select
+  lv.listing_id,
+  count(distinct lv.visit_id) as unique_visits,
+  sum(listing_views) as listing_views,
+  sum(purchased_after_view) as purchased_after_view,
+  count(distinct t.visit_id) as unique_converting_visits, 
+  sum(total_gms) as total_gms
+from
+  sh_listing_views lv -- only looking at visits that viewed the listing from shop home 
+left join 
+  all_trans t using (listing_id, visit_id)
+where 1=1
+  -- and lv.listing_id in (1873482987)
+group by all
+order by 3 desc
+)
+, section_info as (
+select
+  -- s.section_id,
+  section_name,
+	-- shop_name,
+  listing_id
 from 
   etsy-data-warehouse-dev.madelinecollins.section_names s
 inner join 
   etsy-data-warehouse-prod.etsy_shard.listings l using (section_id)
-left join 
-  listing_gms g
-    on l.listing_id=g.listing_id
-left join 
-  
+where 
+	is_displayable > 0 
+	and is_available > 0 
 group by all
-)
+) 
+select
+    case 
+    when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*')
+    then 1 else 0 
+  end as price_section,
+
+  -- case
+  --   when regexp_contains(section_name, r'(?i)(mother|mom|father|dad|parent|grandma|grandmother|grandpa|grandfather|wife|husband|boyfriend|girlfriend|partner|bride|groom|couple|friend|best\s?friend|teacher|coach|boss|coworker|colleague|neighbor|baby|infant|newborn|kid|child|children|teen|boy|girl|son|daughter|family|pet|dog|cat)\w*')
+  --   then 1 else 0 
+  -- end as recipient_section,
+
+  -- case
+  --   when regexp_contains(section_name, r'(?i)(birthday|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
+  --   then 1 else 0 
+  -- end as occasion_section,
+
+    -- case
+    -- when regexp_contains(section_name, r'(?i)(earring|accessor|keychain|ornament|digital|download|pottery|card|decor|pin|magnet|apparel|gift|comic|book|item|top|flower|ring|bracelet|watch|necklace|tumbler|lighting|set|bundle|journal|calendar|drinkware|cup|patch|pendant|charm|brooch|anklet|jewel|clothing|shirt|t-shirt|sweater|hoodie|jacket|coat|dress|skirt|pant|jean|short|shoe|sneaker|boot|heel|sandal|bag|handbag|backpack|wallet|coaster|belt|hat|scarf|glove|sock|home\s?decor|furniture|candle|vase|mug|glass|plate|bowl|cutlery|bedding|pillow|blanket|rug|towel|lamp|mirror|clock|art|painting|poster|print|sticker|toy|game|puzzle|book|notebook|planner|pen|stationery|craft|yarn|fabric|tool|gadget|tech|phone\s?case|charger|headphones|earbuds|laptop\s?stand|tablet\s?case|kitchen|cookware|bakeware|appliance|utensil|pet\s?toy|pet\s?bed|collar|leash|harness|figurine|statue|doll|button|chain)\w*')
+  --   then 1 else 0 
+  -- end as item_section,
+  sum(listing_views) as listing_views,
+  sum(purchased_after_view) as purchased_after_view,
+  sum(total_gms) as total_gms
+from listing_metrics
+inner join section_info using (listing_id)
+group by all 
 
 --------------------------------------------------
 -- share of sections without names 
