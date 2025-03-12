@@ -140,7 +140,7 @@ from
 group by all
 )
 select  
-  -- case 
+   --   case 
   --   when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*')
   --   then 1 else 0 
   -- end as price_section,
@@ -151,24 +151,40 @@ select
   -- end as recipient_section,
 
   -- case
-  --   when regexp_contains(section_name, r'(?i)(birthday|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
+  --   when regexp_contains(section_name, r'(?i)(birthday|party|celebrat|event|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
   --   then 1 else 0 
   -- end as occasion_section,
 
-    -- case
-    -- when regexp_contains(section_name, r'(?i)(earring|accessor|keychain|ornament|digital|download|pottery|card|decor|pin|magnet|apparel|gift|comic|book|item|top|flower|ring|bracelet|watch|necklace|tumbler|lighting|set|bundle|journal|calendar|drinkware|cup|patch|pendant|charm|brooch|anklet|jewel|clothing|shirt|t-shirt|sweater|hoodie|jacket|coat|dress|skirt|pant|jean|short|shoe|sneaker|boot|heel|sandal|bag|handbag|backpack|wallet|coaster|belt|hat|scarf|glove|sock|home\s?decor|furniture|candle|vase|mug|glass|plate|bowl|cutlery|bedding|pillow|blanket|rug|towel|lamp|mirror|clock|art|painting|poster|print|sticker|toy|game|puzzle|book|notebook|planner|pen|stationery|craft|yarn|fabric|tool|gadget|tech|phone\s?case|charger|headphones|earbuds|laptop\s?stand|tablet\s?case|kitchen|cookware|bakeware|appliance|utensil|pet\s?toy|pet\s?bed|collar|leash|harness|figurine|statue|doll|button|chain)\w*')
+  --   case
+  --   when regexp_contains(section_name, r'(?i)(earring|design|page|certificate|accessor|keychain|ornament|digital|download|pottery|card|decor|pin|magnet|apparel|gift|comic|book|item|top|flower|ring|bracelet|watch|necklace|tumbler|lighting|set|bundle|journal|calendar|drinkware|cup|patch|pendant|charm|brooch|anklet|jewel|clothing|shirt|t-shirt|sweater|hoodie|jacket|coat|dress|skirt|pant|jean|short|shoe|sneaker|boot|heel|sandal|bag|handbag|backpack|wallet|coaster|belt|hat|scarf|glove|sock|home\s?decor|furniture|candle|vase|mug|glass|plate|bowl|cutlery|bedding|pillow|blanket|rug|towel|lamp|mirror|clock|art|painting|poster|print|sticker|toy|game|puzzle|notebook|planner|pen|stationery|craft|yarn|fabric|tool|carpet|runner|chair|trunk|storage|gadget|tech|phone\s?case|charger|headphones|earbuds|laptop\s?stand|tablet\s?case|kitchen|cookware|bakeware|appliance|utensil|pet\s?toy|pet\s?bed|collar|leash|harness|figurine|statue|doll|button|chain)\w*')
+  --   then 1 else 0 
+  -- end as item_section,
+    
+  --   case
+  --   when regexp_contains(section_name, r'(?i)(china|pottery|metal|steel|gold|silver|platinum|copper|brass|aluminum|iron|bronze|titanium|zinc|nickel|lead|tin|pewter|stainless\s?steel|copper\s?alloy|gold\s?plated|silver\s?plated|brass\s?finish|iron\s?cast|aluminum\s?frame|wood|leather|cotton|wool|linen|silk|polyester|nylon|acrylic|rubber|plastic|ceramic|porcelain|stone|marble|granite|clay|glass|paper|bamboo|linen|rattan|satin)\w*')
+  --   then 1 else 0 
+  -- end as material_section,
+
+  --     case
+  --   when regexp_contains(section_name, r'(?i)(shipping|ship|delivery|post|postal|courier|freight|express|delivery\s?fee|delivery\s?cost|tracking|package|box|shipment|shipped|shipping\s?method|standard\s?shipping|priority\s?shipping|same\s?day\s?delivery|free\s?shipping|next\s?day\s?delivery|international\s?shipping|domestic\s?shipping|return\s?shipping|shipping\s?time|shipped\s?out|handling|pickup|order\s?tracking|shipping\s?label)\w*')
+  --   then 1 else 0 
+  -- end as shipping_section,
+
+        case
+    when regexp_contains(section_name, r'(?i)(vintage|mini|little|large|big|retro|antique|boho|bohemian|minimal|minimalist|hadwrit|modern|contemporary|rustic|industrial|classic|traditional|elegant|chic|aesthetic|goth|gothic|punk|grunge|steampunk|art\s?deco|mid\s?century|round|square|oval|rectangle|farmhouse|coastal|cottage|shabby\s?chic|scandinavian|french\s?country|baroque|rococo|victorian|edgy|casual|formal|streetwear|y2k|kawaii|preppy|sporty|futuristic|avant\s?garde|eclectic|handmade|woven|artisanal|craftsman|tribal|southwestern|luxury|glam|sleek|geometric|floral|abstract|monochrome|ombre|pastel|bold|neutral|warm\s?tone|cool\s?tone|colorful|earthy)\w*')
     then 1 else 0 
-  end as item_section,
+  end as style_section,
+
   count(section_name) as total_sections,
   count(case when vi.shop_id is not null then section_name end) as visited_shop_sections,
-  sum(pageviews) as pageviews
+  -- sum(pageviews) as pageviews
 from 
   etsy-data-warehouse-dev.madelinecollins.section_names sn
-inner join 
+left join 
   visit_info vi
     on cast(sn.shop_id as string)=vi.shop_id
 group by all
-  
+order by 1 asc
 ---------------------------------------------------------------------------------------------------------------
 -- GMS / LISTING VIEWS BY SECTION NAME 
 ---------------------------------------------------------------------------------------------------------------
