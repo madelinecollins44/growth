@@ -267,3 +267,52 @@ order by 1 asc
 -- 2	112
 -- 3	1
 -- 5	1
+
+-- TEST 2: make sure listing metrics make sense 
+with sh_listing_views as (
+select
+  visit_id,
+  listing_id,
+  count(sequence_number) as listing_views,
+  sum(purchased_after_view) as purchased_after_view
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 1=1
+  and referring_page_event in ('shop_home')
+  and platform in ('mobile_web','desktop')
+  and _date >= current_date-30
+group by all 
+order by 2 desc 
+)
+-- , listing_gms as ( -- get listing gms from visits that viewed listing from shop home 
+select
+  -- listing_id,
+  count(distinct lv.visit_id) as visits, -- this should match # of purchases after view from above cte?
+  sum(gms_net) as gms_net
+from 
+  (select distinct visit_id from sh_listing_views) lv -- only looking at visits that viewed the listing from shop home 
+inner join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_visits tv using (visit_id)
+inner join 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions a
+    on tv.transaction_id=a.transaction_id
+inner join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans t 
+    on t.transaction_id=a.transaction_id
+where 1=1
+  and a.date >= current_date-365 -- gms over last year 
+  and listing_id in (1873482987)
+group by all
+-- )
+-- select
+--   lv.listing_id,
+--   sum(listing_views) as sh_listing_views,
+--   sum(purchased_after_view) as purchased_after_view, 
+--   sum(gms_net) as sh_gms_net
+-- from  
+--   sh_listing_views lv
+-- left join 
+--   listing_gms g using (listing_id, visit_id)
+-- group by all 
+-- order by 2 desc
+-- limit 50
