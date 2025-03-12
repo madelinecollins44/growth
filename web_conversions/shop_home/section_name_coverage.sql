@@ -103,7 +103,7 @@ inner join
 group by all
   
 ---------------------------------------------------------------------------------------------------------------
--- GMS / CONVERSION RATE / PAGEVIEWS BY SECTION NAME 
+-- GMS / PAGEVIEWS BY SECTION NAME 
 ---------------------------------------------------------------------------------------------------------------
 with visit_metrics as (
 select 
@@ -154,6 +154,47 @@ from
   etsy-data-warehouse-dev.madelinecollins.section_names
 )
 , 
+
+
+
+
+
+  -------version 2
+  with shop_visit_metrics as (
+select  
+  shop_id, 
+  visit_id,
+  count(sequence_number) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.shop_home_visits 
+group by all
+)
+, listing_gms as (
+select
+  listing_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-prod.transaction_mart.all_transactions a
+inner join 
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans t using (transaction_id)
+where 
+  a.date >= current_date-365 -- gms over last year 
+group by all
+)
+, section_gms as (
+select
+  s.section_id,
+  sum(gms_net) as gms_net
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names s
+inner join 
+  etsy-data-warehouse-prod.etsy_shard.listings l using (section_id)
+left join 
+  listing_gms g
+    on l.listing_id=g.listing_id
+group by all
+)
+
 
 --------------------------------------------------
 -- share of sections without names 
