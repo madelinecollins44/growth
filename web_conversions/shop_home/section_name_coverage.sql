@@ -385,3 +385,18 @@ group by all
 -- group by all 
 -- order by 2 desc
 -- limit 50
+
+
+-- TEST 3: look at mos visited shops to see if can add anything to regex
+select  
+  vi.shop_id, 
+  shop_name,
+  count(distinct visit_id) as unique_visits,
+  count(sequence_number) as pageviews
+from 
+  etsy-data-warehouse-dev.madelinecollins.shop_home_visits vi
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sn
+    on cast(sn.shop_id as string)=vi.shop_id
+group by all
+order by 4 desc 
