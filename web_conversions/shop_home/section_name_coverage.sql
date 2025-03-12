@@ -249,22 +249,38 @@ select
   --   then 1 else 0 
   -- end as recipient_section,
 
-  case
-    when regexp_contains(section_name, r'(?i)(birthday|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
-    then 1 else 0 
-  end as occasion_section,
+  -- case
+  --   when regexp_contains(section_name, r'(?i)(birthday|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
+  --   then 1 else 0 
+  -- end as occasion_section,
 
   --   case
   --   when regexp_contains(section_name, r'(?i)(earring|accessor|keychain|ornament|digital|download|pottery|card|decor|pin|magnet|apparel|gift|comic|book|item|top|flower|ring|bracelet|watch|necklace|tumbler|lighting|set|bundle|journal|calendar|drinkware|cup|patch|pendant|charm|brooch|anklet|jewel|clothing|shirt|t-shirt|sweater|hoodie|jacket|coat|dress|skirt|pant|jean|short|shoe|sneaker|boot|heel|sandal|bag|handbag|backpack|wallet|coaster|belt|hat|scarf|glove|sock|home\s?decor|furniture|candle|vase|mug|glass|plate|bowl|cutlery|bedding|pillow|blanket|rug|towel|lamp|mirror|clock|art|painting|poster|print|sticker|toy|game|puzzle|book|notebook|planner|pen|stationery|craft|yarn|fabric|tool|gadget|tech|phone\s?case|charger|headphones|earbuds|laptop\s?stand|tablet\s?case|kitchen|cookware|bakeware|appliance|utensil|pet\s?toy|pet\s?bed|collar|leash|harness|figurine|statue|doll|button|chain)\w*')
   --   then 1 else 0 
   -- end as item_section,
+    
+  --   case
+  --   when regexp_contains(section_name, r'(?i)(metal|steel|gold|silver|platinum|copper|brass|aluminum|iron|bronze|titanium|zinc|nickel|lead|tin|pewter|stainless\s?steel|copper\s?alloy|gold\s?plated|silver\s?plated|brass\s?finish|iron\s?cast|aluminum\s?frame|wood|leather|cotton|wool|linen|silk|polyester|nylon|acrylic|rubber|plastic|ceramic|porcelain|stone|marble|granite|clay|glass|paper|bamboo|linen|rattan|satin)\w*')
+  --   then 1 else 0 
+  -- end as material_section,
+
+  --     case
+  --   when regexp_contains(section_name, r'(?i)(shipping|ship|delivery|post|postal|courier|freight|express|delivery\s?fee|delivery\s?cost|tracking|package|box|shipment|shipped|shipping\s?method|standard\s?shipping|priority\s?shipping|same\s?day\s?delivery|free\s?shipping|next\s?day\s?delivery|international\s?shipping|domestic\s?shipping|return\s?shipping|shipping\s?time|shipped\s?out|handling|pickup|order\s?tracking|shipping\s?label)\w*')
+  --   then 1 else 0 
+  -- end as shipping_section,
+
+        case
+    when regexp_contains(section_name, r'(?i)(vintage|retro|antique|boho|bohemian|minimal|minimalist|hadwrit|modern|contemporary|rustic|industrial|classic|traditional|elegant|chic|aesthetic|goth|gothic|punk|grunge|steampunk|art\s?deco|mid\s?century|farmhouse|coastal|cottage|shabby\s?chic|scandinavian|french\s?country|baroque|rococo|victorian|edgy|casual|formal|streetwear|y2k|kawaii|preppy|sporty|futuristic|avant\s?garde|eclectic|handmade|artisanal|craftsman|tribal|southwestern|luxury|glam|sleek|geometric|floral|abstract|monochrome|ombre|pastel|bold|neutral|warm\s?tone|cool\s?tone|colorful|earthy)\w*')
+    then 1 else 0 
+  end as style_section,
+
   sum(listing_views) as listing_views,
   sum(purchased_after_view) as purchased_after_view,
   sum(total_gms) as total_gms
 from listing_metrics
 left join section_info using (listing_id)
 group by all 
-order by occasion_section asc
+order by style_section asc
 
 --------------------------------------------------
 -- share of sections without names 
