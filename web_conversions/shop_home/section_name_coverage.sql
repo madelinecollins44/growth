@@ -171,15 +171,15 @@ where
 group by all
 ) 
 select
-    case 
-    when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*')
-    then 1 else 0 
-  end as price_section,
-
-  -- case
-  --   when regexp_contains(section_name, r'(?i)(mother|mom|father|dad|parent|grandma|grandmother|grandpa|grandfather|wife|husband|boyfriend|girlfriend|partner|bride|groom|couple|friend|best\s?friend|teacher|coach|boss|coworker|colleague|neighbor|baby|infant|newborn|kid|child|children|teen|boy|girl|son|daughter|family|pet|dog|cat)\w*')
+  --   case 
+  --   when regexp_contains(section_name, r'(?i)(sale|discount|cheap|affordable|budget|expensive|premium|luxury|deal|bargain|clearance|off|% off|under\\s?[\\$€£]\\d+|over\\s?[\\$€£]\\d+|[\\$€£]\\d+)\w*')
   --   then 1 else 0 
-  -- end as recipient_section,
+  -- end as price_section,
+
+  case
+    when regexp_contains(section_name, r'(?i)(mother|mom|father|dad|parent|grandma|grandmother|grandpa|grandfather|wife|husband|boyfriend|girlfriend|partner|bride|groom|couple|friend|best\s?friend|teacher|coach|boss|coworker|colleague|neighbor|baby|infant|newborn|kid|child|children|teen|boy|girl|son|daughter|family|pet|dog|cat)\w*')
+    then 1 else 0 
+  end as recipient_section,
 
   -- case
   --   when regexp_contains(section_name, r'(?i)(birthday|anniversary|wedding|engagement|baby\s?shower|bridal\s?shower|graduation|retirement|housewarming|promotion|new\s?job|new\s?home|farewell|get\s?well|sympathy|thank\s?you|congratulations|valentine|galentine|easter|mother\'?s\s?day|father\'?s\s?day|christmas|xmas|hanukkah|kwanzaa|new\s?year|thanksgiving|halloween|st\s?patrick\'?s\s?day|4th\s?of\s?july|independence\s?day|holiday|ramadan|eid|diwali|hanukkah|graduation|back\s?to\s?school)\w*')
@@ -196,6 +196,7 @@ select
 from listing_metrics
 inner join section_info using (listing_id)
 group by all 
+order by recipient_section asc
 
 --------------------------------------------------
 -- share of sections without names 
