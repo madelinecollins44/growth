@@ -160,16 +160,7 @@ from
 
 
   -------version 2
-  with shop_visit_metrics as (
-select  
-  shop_id, 
-  visit_id,
-  count(sequence_number) as pageviews
-from 
-  etsy-data-warehouse-dev.madelinecollins.shop_home_visits 
-group by all
-)
-, listing_gms as (
+with listing_gms as (
 select
   listing_id,
   sum(gms_net) as gms_net
@@ -180,6 +171,15 @@ inner join
 where 
   a.date >= current_date-365 -- gms over last year 
 group by all
+)
+, sh_listing_views as (
+select
+  listing_id,
+  count(sequence_number) as listing_views
+where
+  referring_page_event in ('shop_home')
+  and platform in ('mobile_web','desktop')
+  and _date >= current_date-30
 )
 , section_gms as (
 select
@@ -192,9 +192,10 @@ inner join
 left join 
   listing_gms g
     on l.listing_id=g.listing_id
+left join 
+  
 group by all
 )
-
 
 --------------------------------------------------
 -- share of sections without names 
