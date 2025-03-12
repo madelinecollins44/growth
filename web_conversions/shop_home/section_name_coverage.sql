@@ -430,3 +430,47 @@ inner join
     on cast(sn.shop_id as string)=vi.shop_id
 group by all
 order by 4 desc 
+
+-- TEST 4: spot checking listings to make sure theyre in proper sections
+select
+  -- s.section_id,
+  shop_name,
+  coalesce(section_name,'no section name') as section_name,
+	-- shop_name,
+  listing_id
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names s
+left join 
+  etsy-data-warehouse-prod.etsy_shard.listings l using (section_id)
+where 
+	is_displayable > 0 
+	and is_available > 0 
+  and section_id in (29324829)
+  and shop_name in ('DearCowboyVintage')
+group by all
+-- shop_name	section_name	listing_id
+-- DearCowboyVintage	Suits	1125869702
+-- DearCowboyVintage	Suits	1080859829
+
+
+select
+  -- s.section_id,
+  shop_name,
+  coalesce(section_name,'no section name') as section_name,
+	-- shop_name,
+  listing_id
+from 
+  etsy-data-warehouse-dev.madelinecollins.section_names s
+left join 
+  etsy-data-warehouse-prod.etsy_shard.listings l using (section_id)
+where 
+	is_displayable > 0 
+	and is_available > 0 
+group by all
+limit 5
+-- shop_name	section_name	listing_id
+-- Termademig	Tantric ritual objects	1777368018
+-- PrimalArc	Originals	1397213269
+-- DaisyPapers	Circle Icons	965847232
+-- HelloOnlyGifts	Anniversary Cards	1518017971
+-- HessianandTwine	Journal • Diary	1760318786
