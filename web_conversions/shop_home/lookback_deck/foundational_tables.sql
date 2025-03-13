@@ -1,3 +1,24 @@
+ select
+ _DATE
+  , event_name
+  , browser_id
+  , (select value from unnest(properties.map) where key = "shop_shop_id") as shop_id
+  , (select value from unnest(properties.map) where key = "shop_id") as seller_user_id
+  , count((select value from unnest(properties.map) where key = "sequence_number")) as pageviews
+from 
+  etsy-visit-pipe-prod.canonical.beacon_main_2024_01 
+where
+  event_name in ('shop_home')
+  and _DATE is not null   
+group by all 
+limit 40
+
+
+
+
+
+
+   
 declare i int64 default 1;
 declare dates ARRAY<date>;
 
