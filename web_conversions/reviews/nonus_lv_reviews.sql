@@ -45,3 +45,14 @@ order by 2 desc
 ---------------------------------------------------------------
 -- WHAT % OF REVIEWS ARE LEFT BY NON-US BUYERS? 
 ---------------------------------------------------------------
+select
+  mup.country,
+  count(case when has_review > 0 then transaction_id end) as reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr
+left join 
+  etsy-data-warehouse-prod.user_mart.mapped_user_profile mup
+    on mup.user_id=tr.buyer_user_id
+group by all
+order by 2 desc
+
