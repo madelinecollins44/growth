@@ -99,7 +99,8 @@ select
   sum(listing_views) as all_listing_views,
   sum(purchases) as all_purchases,
   sum(reviews) as all_reviews,
-  sum(case when r.listing_id is not null then listing_views end) as listing_views_for_listings_w_reviews
+  sum(case when r.listing_id is not null then listing_views end) as listing_views_for_listings_w_reviews,
+  sum(case when r.listing_id is not null then purchases end) as purchases_for_listings_w_reviews
 from 
   views v
 left join 
