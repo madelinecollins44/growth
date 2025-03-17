@@ -96,7 +96,7 @@ group by all
 --------------------------------------------------------------------------------
 -- TESTING
 --------------------------------------------------------------------------------
--- test 1: see if target_listing_id or page_listing_id is better to extract listing_id from MFTS module
+/* TEST 1: see if target_listing_id or page_listing_id is better to extract listing_id from MFTS module */
 select
   count(sequence_number) as mfts_modules_seen,
 	count((select value from unnest(beacon.properties.key_value) where key = "target_listing_id")) as target_listing_id, 
@@ -107,6 +107,8 @@ inner join
   etsy-data-warehouse-prod.weblog.visits using (visit_id)
 where
 	date(_partitiontime) >= current_date-30
+-- mfts_modules_seen	target_listing_id	page_listing_id
+-- 34234772	34234772	34234772
   and _date >= current_date-30
 	and (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side")) -- MFTS modules 
   and platform in ('mobile_web','desktop')
