@@ -27,13 +27,15 @@ select
     when detected_region in ('US') then 'US'
     else 'non-US'
     end as region,
-  count(distinct visit_id)
+  count(distinct visit_id) as visits,
+  count(distinct case when converted> 0 then visit_id end) as converted_visits
 from 
   etsy-data-warehouse-prod.weblog.visits
 where 
   platform in ('mobile_web','desktop') 
   and _date >= current_date-30
-group by all   
+group by all 
+  
 ---------------------------------------------------------------
 -- WHAT % OF LISTING VIEWS ARE FROM NON-US USERS? 
 ---------------------------------------------------------------
