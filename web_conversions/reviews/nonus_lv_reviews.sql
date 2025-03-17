@@ -21,6 +21,19 @@ from
   etsy-data-warehouse-prod.rollups.transaction_reviews tr
 group by all
 
+-- % of visits 
+select
+    case 
+    when detected_region in ('US') then 'US'
+    else 'non-US'
+    end as region,
+  count(distinct visit_id)
+from 
+  etsy-data-warehouse-prod.weblog.visits
+where 
+  platform in ('mobile_web','desktop') 
+  and _date >= current_date-30
+group by all   
 ---------------------------------------------------------------
 -- WHAT % OF LISTING VIEWS ARE FROM NON-US USERS? 
 ---------------------------------------------------------------
