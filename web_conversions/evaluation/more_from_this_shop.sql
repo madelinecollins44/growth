@@ -2,17 +2,14 @@
 -- WHAT % OF LISTING VIEWS SEE THE 'MORE FROM THIS SHOP' MODULE? 
 --------------------------------------------------------------------------------
 -- MFTS seen events 
-select
-count(distinct visit_id) as visits,
-count(sequence_number) as views,
--- beacon.event_name as event_name,
-from
-	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
 where
 	date(_partitiontime) >= current_date-30
-and
-	beacon.event_name in ("recommendations_module_seen")
-	and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side")
+  and _date >= current_date-30
+	and (beacon.event_name in ("view_listing") -- listing views 
+      or (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side"))) -- MFTS modules 
+  and platform in ('mobile_web','desktop')
 
 -- listing views from the MFTS module (clicks on module)
 select
