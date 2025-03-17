@@ -3,9 +3,9 @@
 --------------------------------------------------------------------------------
 -- MFTS seen events 
 select
-	visit_id,
-	sequence_number,
-	beacon.event_name as event_name,
+count(distinct visit_id) as visits,
+count(sequence_number) as views,
+-- beacon.event_name as event_name,
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
