@@ -20,6 +20,7 @@ from
 where 
   platform in ('mobile_web','desktop')
   and ref_tag like ('related%')
+  and _date >= current_date-30
 
 --------------------------------------------------------------------------------
 -- LOOKING AT LISTING VIEWS THAT THEN SAW MFTS MODULE (using lead functions)
