@@ -10,7 +10,7 @@
 -- DESKTOP
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Define variables
-DECLARE config_flag_param STRING DEFAULT " growth_regx.lp_review_feature_tags_desktop";
+DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_feature_tags_desktop";
 DECLARE start_date DATE;
 DECLARE end_date DATE;
 
@@ -54,35 +54,9 @@ CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
     v._date BETWEEN start_date AND end_date
 );
 
-/* HERE, FIND CLICKS FOR TAG TYPE */
--- Get feature tag related events for all bucketed visits 
-CREATE OR REPLACE TEMPORARY TABLE tag_events AS (
-select
-  visit_id,
-  sequence_number,
-  beacon.event_name as event_name,
-  (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type
-from 
-  etsy-visit-pipe-prod.canonical.visit_id_beacons b
-inner join 
-  xp_visits v using (visit_id)
-where
-  date(b._partitiontime) >= current_date-30
-  and beacon.event_name in ('reviews_feature_tags_seen','reviews_feature_tag_clicked') 
-);
-
--- How many clicks did each type of tag get? 
-select
-  tag_type,
-  count(sequence_number) as clicks
-from 
-  tag_events
-where
-  event_name ('reviews_feature_tag_clicked')
-group by all 
 
 /* HERE, RECREATE METRICS IN CATAPULT USING EVENT FILTER */
--- Get browsers who viewed a listing page with review photos
+-- Get browsers who saw the top of the reviews section
 CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   SELECT DISTINCT
     v.bucketing_id
@@ -212,7 +186,7 @@ with browser_count as
   sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
   sum(case when variant_id = 'off' then browsers end) as browsers_c,
 from 
-  etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_desktop
+  etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_desktop_filtered
 )
 , z_values as (
   select 
@@ -226,6 +200,38 @@ select
   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
 from z_values
 ;
+
+/* HERE, FIND CLICKS FOR TAG TYPE */
+-- Get feature tag related events for all bucketed visits 
+begin
+CREATE OR REPLACE TEMPORARY TABLE tag_events AS (
+select
+  visit_id,
+  bucketing_id,
+  sequence_number,
+  beacon.event_name as event_name,
+  (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type
+from 
+  etsy-visit-pipe-prod.canonical.visit_id_beacons b
+inner join 
+  etsy-bigquery-adhoc-prod._script01c9de2fec9177cf0c84a9fc72d257b8f61bc8dd.xp_visits v using (visit_id)
+where
+  date(b._partitiontime) >= current_date-30
+  and beacon.event_name in ('reviews_feature_tags_seen','reviews_feature_tag_clicked') 
+);
+end
+
+-- How many clicks did each type of tag get? 
+select
+  tag_type,
+  count(sequence_number) as clicks,
+  count(distinct bucketing_id) as browsers,
+  count(distinct visit_id) as visits
+from 
+  tag_events
+where
+  event_name ('reviews_feature_tag_clicked')
+group by all 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB 
@@ -452,5 +458,6 @@ from z_values
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- TEST 1: make sure browser counts in xp_visits match catapult 
 -----desktop:
-select count(distinct bucketing_id) from 
--- catapult: 4,476,144
+select count(distinct bucketing_id) from etsy-bigquery-adhoc-prod._script01c9de2fec9177cf0c84a9fc72d257b8f61bc8dd.xp_visits
+-- catapult: 4,476,857 (control) + 4,476,144 (treatment) = 8,953,001
+-- query: 8,953,002
