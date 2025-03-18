@@ -2,14 +2,30 @@
 -- WHAT % OF LISTING VIEWS SEE THE 'MORE FROM THIS SHOP' MODULE? 
 --------------------------------------------------------------------------------
 -- MFTS seen events 
+select
+  platform,
+  beacon.event_name,
+  	case
+    when beacon.event_name in ('view_listing') then 'view_listing'
+    when beacon.event_name in ('recommendations_module_seen') then 'mfts_module'
+    when beacon.event_name in ('favorite_shop') then 'favorite_shop'
+    when beacon.event_name in ('favorite_listing_added') then 'favorite_listing'
+  end as event_name,
+  count(distinct visit_id) as visits,
+  count(sequence_number) as views
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 inner join 
   etsy-data-warehouse-prod.weblog.visits using (visit_id)
 where
 	date(_partitiontime) >= current_date-30
   and _date >= current_date-30
-	and (beacon.event_name in ("view_listing") -- listing views 
-      or (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side"))) -- MFTS modules 
   and platform in ('mobile_web','desktop')
+	and (beacon.event_name in ("view_listing") -- listing views 
+      or (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side")) -- MFTS modules 
+      or (beacon.event_name in ("favorite_shop") and (select value from unnest(beacon.properties.key_value) where key = "source") in ("listing_same_shop")) -- favoriting shop from module 
+      or (beacon.event_name in ("favorite_listing_added") and (select value from unnest(beacon.properties.key_value) where key = "page_type") in ("listing")and (select value from unnest(beacon.properties.key_value) where key = "source") in ("recs_ribbon_same_shop"))) -- favoriting listing from module
+group by all 
 
 -- listing views from the MFTS module (clicks on module)
 select
