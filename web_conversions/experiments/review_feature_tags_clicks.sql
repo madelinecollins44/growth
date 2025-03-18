@@ -232,7 +232,7 @@ group by all
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
--- MOBILE WEB 
+-- MOBILE WEB
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Define variables
 DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_feature_tags_mweb";
@@ -278,35 +278,8 @@ CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
   WHERE
     v._date BETWEEN start_date AND end_date
 );
-/* HERE, FIND CLICKS FOR TAG TYPE */
--- Get feature tag related events for all bucketed visits 
-CREATE OR REPLACE TEMPORARY TABLE tag_events AS (
-select
-  visit_id,
-  sequence_number,
-  beacon.event_name as event_name,
-  (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type
-from 
-  etsy-visit-pipe-prod.canonical.visit_id_beacons b
-inner join 
-  xp_visits v using (visit_id)
-where
-  date(b._partitiontime) >= current_date-30
-  and beacon.event_name in ('reviews_feature_tags_seen','reviews_feature_tag_clicked') 
-);
-
--- How many clicks did each type of tag get? 
-select
-  tag_type,
-  count(sequence_number) as clicks
-from 
-  tag_events
-where
-  event_name ('reviews_feature_tag_clicked')
-group by all 
-
 /* HERE, RECREATE METRICS IN CATAPULT USING EVENT FILTER */
--- Get browsers who viewed a listing page with review photos
+-- Get browsers who saw the top of the reviews section
 CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   SELECT DISTINCT
     v.bucketing_id
@@ -398,7 +371,7 @@ GROUP BY
 ORDER BY
   1);
 
--- Key Health Metrics (Winsorized ACBV and AOV) - Only browsers who viewed a listing page with review photos
+-- Key Health Metrics (Winsorized ACBV and AOV) - Only browsers who viewed a listing page reviews
 create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb_filtered as (
 SELECT
   xp.variant_id,
@@ -431,12 +404,12 @@ ORDER BY
 -- z score calc
 with browser_count as 
 (select
-  sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
+  sum(case when variant_id = 'on' then atc_browsers end) as cr_browsers_t,
   sum(case when variant_id = 'on' then browsers end) as browsers_t,
-  sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
+  sum(case when variant_id = 'off' then atc_browsers end) as cr_browsers_c,
   sum(case when variant_id = 'off' then browsers end) as browsers_c,
 from 
-  etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb
+  etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb_filtered
 )
 , z_values as (
   select 
@@ -450,6 +423,40 @@ select
   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
 from z_values
 ;
+
+/* HERE, FIND CLICKS FOR TAG TYPE */
+-- Get feature tag related events for all bucketed visits 
+begin
+CREATE OR REPLACE TEMPORARY TABLE tag_events AS (
+select
+  visit_id,
+  bucketing_id,
+  sequence_number,
+  beacon.event_name as event_name,
+  (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type
+from 
+  etsy-visit-pipe-prod.canonical.visit_id_beacons b
+inner join 
+  etsy-bigquery-adhoc-prod._script8c932f9e3deb6ff6844f63d9e96957bc34449c8c.xp_visits v using (visit_id)
+where
+  date(b._partitiontime) >= current_date-30
+  and beacon.event_name in ('reviews_feature_tags_seen','reviews_feature_tag_clicked') 
+);
+end
+
+-- How many clicks did each type of tag get? 
+select
+  event_name, 
+  tag_type,
+  count(sequence_number) as clicks,
+  count(distinct bucketing_id) as browsers,
+  count(distinct visit_id) as visits
+from 
+  etsy-bigquery-adhoc-prod._scriptfab259923f57ad4294c77ba8a93749dccaeaf778.tag_events
+where
+  event_name in ('reviews_feature_tag_clicked','reviews_feature_tags_seen')
+group by all 
+
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- TESTING
