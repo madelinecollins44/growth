@@ -446,3 +446,11 @@ select
   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
 from z_values
 ;
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TESTING
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TEST 1: make sure browser counts in xp_visits match catapult 
+-----desktop:
+select count(distinct bucketing_id) from 
+-- catapult: 4,476,144
