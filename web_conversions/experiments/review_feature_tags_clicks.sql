@@ -4,8 +4,6 @@
 ---- desktop: https://atlas.etsycorp.com/catapult/1356053756481 (growth_regx.lp_review_feature_tags_desktop)
 ---- mobile web: https://atlas.etsycorp.com/catapult/1356137762600 (growth_regx.lp_review_feature_tags_mweb)
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- DESKTOP
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -53,8 +51,6 @@ CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
   WHERE
     v._date BETWEEN start_date AND end_date
 );
-
-
 /* HERE, RECREATE METRICS IN CATAPULT USING EVENT FILTER */
 -- Get browsers who saw the top of the reviews section
 CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
@@ -223,15 +219,17 @@ end
 
 -- How many clicks did each type of tag get? 
 select
-  tag_type,
+  event_name, 
+  -- tag_type,
   count(sequence_number) as clicks,
   count(distinct bucketing_id) as browsers,
   count(distinct visit_id) as visits
 from 
-  tag_events
+  etsy-bigquery-adhoc-prod._script08c8a6df727157f78a944bc5faaacb71f1e5dd5f.tag_events
 where
-  event_name ('reviews_feature_tag_clicked')
+  event_name in ('reviews_feature_tag_clicked','reviews_feature_tags_seen')
 group by all 
+
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB 
