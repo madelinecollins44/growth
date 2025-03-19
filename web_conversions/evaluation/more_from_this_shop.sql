@@ -29,6 +29,7 @@ group by all
 
 -- listing views from the MFTS module (clicks on module)
 select
+  platform,
   count(distinct visit_id) as visits,
   count(sequence_number) as listing_views
 from 
@@ -37,7 +38,7 @@ where
   platform in ('mobile_web','desktop')
   and ref_tag like ('related%')
   and _date >= current_date-30
-
+group by all
 --------------------------------------------------------------------------------
 -- LOOKING AT LISTING VIEWS THAT THEN SAW MFTS MODULE (using lead functions)
 --------------------------------------------------------------------------------
