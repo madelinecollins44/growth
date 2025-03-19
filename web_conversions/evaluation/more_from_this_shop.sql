@@ -4,7 +4,7 @@
 -- MFTS seen events 
 select
   platform,
-  beacon.event_name,
+  -- beacon.event_name,
   	case
     when beacon.event_name in ('view_listing') then 'view_listing'
     when beacon.event_name in ('recommendations_module_seen') then 'mfts_module'
