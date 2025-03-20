@@ -133,8 +133,7 @@ FROM
   xp_units AS xp
 LEFT JOIN
   xp_khm_agg_events_by_unit AS e USING (bucketing_id)
-GROUP BY
-  1
+GROUP BY all
 ORDER BY
   1);
 
@@ -167,6 +166,7 @@ LEFT JOIN
 GROUP BY ALL
 ORDER BY
   1);
+
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MOBILE WEB
@@ -280,7 +280,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
 );
 
 -- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
-create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb_unit as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb_units as (
 SELECT
   xp.variant_id,
   xp.bucketing_id,
@@ -303,13 +303,12 @@ FROM
   xp_units AS xp
 LEFT JOIN
   xp_khm_agg_events_by_unit AS e USING (bucketing_id)
-GROUP BY
-  1
+GROUP BY all
 ORDER BY
   1);
 
 -- Key Health Metrics (Winsorized ACBV and AOV) - Only browsers who viewed a listing page reviews
-create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb_filtered_unit as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_mweb_filtered_units as (
 SELECT
   xp.variant_id,
   xp.bucketing_id,
