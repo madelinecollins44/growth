@@ -15,7 +15,7 @@ select
   platform,
   event_type,
   count(distinct visit_id) as visits,
-  count(distinct case when converted > 0 then visit_id end) as visits
+  count(distinct case when converted > 0 then visit_id end) as converted_visits
 from 
   etsy-data-warehouse-prod.weblog.events e  
 inner join 
