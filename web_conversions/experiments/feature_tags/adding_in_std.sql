@@ -51,7 +51,7 @@ CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   SELECT DISTINCT
     v.bucketing_id
   FROM
-    `etsy-data-warehouse-prod.webloevents` AS e
+    `etsy-data-warehouse-prod.weblog.events` AS e
   INNER JOIN 
     xp_visits AS v USING(visit_id)
   WHERE
@@ -136,12 +136,12 @@ SELECT
   COUNTIF(e.orders > 0) AS converted_browsers,
   COUNTIF(e.atc_count > 0) AS atc_browsers,
   -- standard deviation of metrics
-  stddev(converted) as sd_conversion_rate, 
-  stddev(total_orders) as sd_total_orders_per_unit, 
-  stddev(total_visits) as sd_visits,
-  stddev(engaged_visits) as sd_engaged_visits, 
-  stddev(converting_unit_value) as sd_acuv, 
-  stddev(coalesce(converting_unit_value,0)) as sd_gms_per_unit, 
+  stddev(e.orders) as sd_conversion_rate, 
+  stddev(e.atc_count) as sd_atc,
+  stddev(e.visits) as sd_visits,
+  stddev(e.engaged_visits) as sd_engaged_visits,
+  stddev(e.completed_checkouts) as sd_total_orders_per_browser, 
+  stddev(e.winsorized_gms) as sd_acbv,  
 FROM
   xp_units AS xp
 LEFT JOIN
@@ -187,7 +187,11 @@ LEFT JOIN
 GROUP BY ALL
 ORDER BY
   1);
------------PVALUES
+
+
+
+
+----- pvals
 with sd_metrics as (
 select 
   'Bucketed units' as metric,
