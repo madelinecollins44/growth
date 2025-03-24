@@ -39,6 +39,22 @@ where
   and ref_tag like ('related%')
   and _date >= current_date-30
 group by all
+
+-- listing views from ref_tag 
+select 
+  split(ref_tag,'-')[safe_offset(1)] as index_number, 
+  platform,
+  count(distinct visit_id) as visits,
+  count(sequence_number) as listing_views
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  platform in ('mobile_web','desktop')
+  and ref_tag like ('related%')
+  and _date >= current_date-30
+group by all
+order by 2,4 desc
+
 --------------------------------------------------------------------------------
 -- LOOKING AT LISTING VIEWS THAT THEN SAW MFTS MODULE (using lead functions)
 --------------------------------------------------------------------------------
