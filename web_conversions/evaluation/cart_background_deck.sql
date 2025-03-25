@@ -1,10 +1,12 @@
 ------------------------------
--- TOTAL TRAFFIC
+-- TOTAL TRAFFIC + CONVERSION
 ------------------------------
 select 
   platform, 
   count(distinct visit_id) as visits,
-  count(distinct case when event_type in ('cart_view') then visit_id end) as cart_visits
+  count(distinct case when event_type in ('cart_view') then visit_id end) as cart_visits,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits,
+  count(distinct case when converted > 0 and event_type in ('cart_view') then visit_id end) as converted_cart_visits,
 from etsy-data-warehouse-prod.weblog.visits v
 inner join etsy-data-warehouse-prod.weblog.events e using (visit_id)
 where 1=1
