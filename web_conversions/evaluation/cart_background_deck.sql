@@ -21,8 +21,8 @@ select
 	visit_id,
   sequence_number,
 	event_type,
-	lead(event_type) over (partition by visit_id, listing_id order by sequence_number) as next_event,
-	lead(sequence_number) over (partition by visit_id, listing_id order by sequence_number) as next_sequence_number
+	lead(event_type) over (partition by visit_id order by sequence_number) as next_event,
+	lead(sequence_number) over (partition by visit_id order by sequence_number) as next_sequence_number
 from 
   etsy-data-warehouse-prod.weblog.visits v
 inner join 
