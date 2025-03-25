@@ -1,5 +1,6 @@
-/*  TOTAL TRAFFIC */
-
+------------------------------
+-- TOTAL TRAFFIC
+------------------------------
 select 
   platform, 
   count(distinct visit_id) as visits,
@@ -11,7 +12,9 @@ where 1=1
   and v._date >= current_date-30
 group by all 
 
-/*  REFERRING PAGE */
+------------------------------
+-- REFERRING PAGE 
+------------------------------
 with event_ordered as (
 select
   platform,
@@ -40,7 +43,9 @@ where
   next_event in ('cart_view')
 group by all
 
-/*  GMS */
+------------------------------
+-- GMS
+------------------------------
 -- cart gms
 with cart_visits as (
 select
