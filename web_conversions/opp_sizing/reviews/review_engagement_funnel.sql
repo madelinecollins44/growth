@@ -140,3 +140,20 @@ select
 from 
   listing_views
 group by all 
+
+
+------ overall counts to confirm 
+select
+  platform,
+  event_type,
+  count(distinct visit_id) as unique_visits,
+  count(visit_id) as events
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date-30	
+  and event_type in ("sort_reviews","listing_page_reviews_pagination","appreciation_photo_overlay_opened","view_listing")
+  and platform in ('desktop','mobile_web','boe') 
+group by all 
