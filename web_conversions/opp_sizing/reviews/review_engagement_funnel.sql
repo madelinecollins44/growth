@@ -30,6 +30,7 @@ with listing_views as (
 select
   platform,
   listing_id,
+  visit_id,
   count(visit_id) as listing_views
 from 
   etsy-data-warehouse-prod.analytics.listing_views
@@ -51,12 +52,17 @@ group by all
 select
   platform,
   sum(lv.listing_views) as total_listing_views,
+  count(distinct lv.visit_id) as visits_w_listing_view,
   count(distinct case when r.has_review > 0 then lv.listing_id end) listings_w_review,
   count(distinct case when r.has_image > 0 then lv.listing_id end) listings_w_image,
   count(distinct case when r.has_video > 0 then lv.listing_id end) listings_w_video,
   sum(case when r.has_review > 0 then listing_views end) has_review_lv,
   sum(case when r.has_image > 0 then listing_views end) has_image_lv,
   sum(case when r.has_video > 0 then listing_views end) has_video_lv,
+  count(distinct case when r.has_review > 0 then lv.visit_id end) visits_w_review,
+  count(distinct case when r.has_image > 0 then lv.visit_id end) visits_w_image,
+  count(distinct case when r.has_video > 0 then lv.visit_id end) visits_w_video,
+
 from
   listing_views lv
 left join 
