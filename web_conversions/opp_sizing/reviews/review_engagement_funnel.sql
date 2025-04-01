@@ -154,6 +154,7 @@ inner join
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where 
   v._date >= current_date-30	
-  and event_type in ("sort_reviews","listing_page_reviews_pagination","appreciation_photo_overlay_opened","view_listing")
+  and event_type in ("sort_reviews","listing_page_reviews_pagination","listing_page_reviews_container_top_seen","appreciation_photo_overlay_opened","view_listing","listing_page_reviews_seen")
   and platform in ('desktop','mobile_web','boe') 
 group by all 
+order by 1,2 desc
