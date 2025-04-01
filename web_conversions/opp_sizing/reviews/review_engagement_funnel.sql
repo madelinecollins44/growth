@@ -1,6 +1,6 @@
 /* PURPOSE: this funnel is meant to help us understand if there is a correlation between review engagement and conversion, and if this track of work is worth continuing. */
 
-/* total visits in the last 30 days */
+----- total visits in the last 30 days
 select 
   count(distinct visit_id) as total_visits,
   count(distinct case when platform in ('desktop') then visit_id end) as desktop_traffic,
@@ -25,7 +25,7 @@ where
   _date >= current_date-30
 
 
-/* % of lv with review attributes */
+----- % of lv with review attributes
 with listing_views as (
 select
   platform,
@@ -69,7 +69,7 @@ left join
   reviews r using (listing_id)
 group by all
 
-/* review engagement post listing view */
+----- review engagement post listing view
 with desktop_visits as (
 select 
   platform,
