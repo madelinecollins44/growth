@@ -1,4 +1,4 @@
-with desktop_visits as (
+with platform_visits as (
 select 
   platform,
   visit_id,
@@ -7,7 +7,7 @@ select
 from 
   etsy-data-warehouse-prod.weblog.visits 
 where 
-  platform in ('desktop','mobile_web','boe') 
+  platform in ('desktop','mobile_web') 
   and _date >= current_date-30
 )
 , listing_events as (
@@ -24,7 +24,7 @@ select
   end as event_name,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
 from
-  desktop_visits 
+  platform_visits 
 inner join 
   `etsy-visit-pipe-prod.canonical.visit_id_beacons` using (visit_id) -- only looking at desktop visits 
 where
@@ -70,9 +70,9 @@ select
   count(distinct case when engaged_w_reviews > 0 then visit_id end) as visits_w_listing_and_engage,
   count(distinct case when converted > 0 then visit_id end) as visits_w_lv_and_convert,
   count(distinct case when converted> 0 and engaged_w_reviews > 0 then visit_id end) as visits_w_listing_and_engage_and_convert,
-  -- browser level metrics
+  -- browser level metrics (browsers that have done this in at least one visit)
   count(distinct browser_id) as browser_w_lv,
-  count(case when engaged_w_reviews > 0 then browser_id end) as browser_w_lv_and_engage,
+  count(distinct case when engaged_w_reviews > 0 then browser_id end) as browser_w_lv_and_engage,
   count(distinct case when converted > 0 then browser_id end) as browsers_w_lv_and_convert,
   count(distinct case when converted > 0 and engaged_w_reviews > 0 then browser_id end) as browsers_w_listing_and_engage_and_convert,
 from 
