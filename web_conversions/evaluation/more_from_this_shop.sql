@@ -57,7 +57,7 @@ order by 2,4 desc
 
 -- browse by section clicks
 select 
-  split(ref_tag,'_')[safe_offset(1)] as index_number, 
+  split(ref_tag,'_')[safe_offset(2)] as placement, 
   platform,
   count(distinct visit_id) as visits,
   count(sequence_number) as listing_views
