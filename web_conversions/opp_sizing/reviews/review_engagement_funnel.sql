@@ -158,3 +158,36 @@ where
   and platform in ('desktop','mobile_web','boe') 
 group by all 
 order by 1,2 desc
+
+-----whether or a lv visit engaged / converted
+with listing_views as (
+select
+  platform,
+  converted, 
+  visit_id
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date-30	
+  and platform in ('desktop','mobile_web') 
+  and event_type in ('view_listing')
+group by all 
+)
+select
+  platform,
+  case
+    when countif(event_type in ("sort_reviews","listing_page_reviews_pagination","appreciation_photo_overlay_opened")) > 0 then 1 
+    else 0 
+  end as engaged, 
+  count(distinct visit_id) as visits,
+  count(distinct visit_id) as converted_visits,
+  count(visit_id) as events
+from 
+  listing_views v
+inner join 
+  etsy-data-warehouse-prod.weblog.events e using (visit_id)
+where 
+  e._date >= current_date-30	
+group by all     
