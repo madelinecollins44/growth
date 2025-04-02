@@ -62,11 +62,14 @@ select
   count(distinct visit_id) as visits,
   count(sequence_number) as listing_views
 from 
-  etsy-data-warehouse-prod.analytics.listing_views
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where 
   platform in ('mobile_web','desktop')
   and ref_tag like ('shop_sections%')
-  and _date >= current_date-30
+  and event_type in ('shop_home')
+  and v._date >= current_date-30
 group by all
 order by 2,4 desc
 
