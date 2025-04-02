@@ -57,7 +57,7 @@ order by 2,4 desc
 
 -- browse by section clicks
 select 
-  split(ref_tag,'-')[safe_offset(1)] as index_number, 
+  split(ref_tag,'_')[safe_offset(1)] as index_number, 
   platform,
   count(distinct visit_id) as visits,
   count(sequence_number) as listing_views
@@ -72,7 +72,7 @@ where
   and v._date >= current_date-30
 group by all
 order by 2,4 desc
-
+	
 --------------------------------------------------------------------------------
 -- LOOKING AT LISTING VIEWS THAT THEN SAW MFTS MODULE (using lead functions)
 --------------------------------------------------------------------------------
