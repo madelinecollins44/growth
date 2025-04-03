@@ -1,5 +1,10 @@
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- PULL DATA
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+/* CREATE TEMP TABLES TO RUN FASTER */ 
 -- get browser + listing level stats (browser is platform specific)
-with lv_stats as (
+begin
+create or replace temp table lv_stats as (
 select 
   platform,
   split(visit_id,'.')[safe_offset(0)] as browser_id, -- browser is specific to platform, so no need to look on visit level 
@@ -13,9 +18,12 @@ where
   platform in ('desktop','mobile_web')
   and _date <= current_date-30
 group by all 
-)
--- get engagements for each browser on each listing
-, review_engagements as (
+);
+end 
+----- etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats 
+
+begin
+create or replace temp table review_engagements as (
 select
   beacon.browser_id,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
@@ -30,15 +38,16 @@ where
 	and (beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
       or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing'))  -- sorting on listing page 
 group by all 
-)
--- find engagement on browser/ listing level
+);
+end 
+----- etsy-bigquery-adhoc-prod._script90f1d9a40ab51aa266471f3adf16181872881c72.review_engagements
+	
+/* COMBINE INTO AGG DATA */
 select
   s.platform,
 --lv stats
   count(distinct s.browser_id) as browsers_w_lv,
   count(distinct case when purchases > 0 then s.browser_id end) as browsers_w_purchase,
-  -- sum(unique_visits) as visits_w_lv,
-  -- sum(case when purchases > 0 then unique_visits end) as visits_w_purchase,
   sum(listing_views) as total_lv,
   sum(purchases) as total_purchases,
 -- engagement stats
@@ -46,9 +55,9 @@ select
   count(distinct case when purchases > 0 then r.browser_id end) as engaged_browsers_w_purchase,
   sum(engagements) as total_engagements,
 from 
-  lv_stats s
+  etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats s
 left join 
-  review_engagements r
+  etsy-bigquery-adhoc-prod._script90f1d9a40ab51aa266471f3adf16181872881c72.review_engagements r
     on s.browser_id=r.browser_id
     and cast(s.listing_id as string)=r.listing_id
 group by all 
