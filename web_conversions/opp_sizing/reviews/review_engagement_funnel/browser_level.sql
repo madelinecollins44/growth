@@ -143,9 +143,9 @@ select
   count(distinct case when purchases > 0 then r.browser_id end) as engaged_browsers_w_purchase,
   sum(engagements) as total_engagements,
 from 
-  etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats s
+  etsy-data-warehouse-dev.madelinecollins.lv_stats s
 left join 
-  etsy-bigquery-adhoc-prod._script90f1d9a40ab51aa266471f3adf16181872881c72.review_engagements r
+  etsy-data-warehouse-dev.madelinecollins.review_engagements r
     on s.browser_id=r.browser_id
     and cast(s.listing_id as string)=r.listing_id
 group by all 
@@ -236,3 +236,10 @@ and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciati
 and platform in ('desktop','mobile_web')
 group by all
 -----make sure the browsers match the metrics above
+
+
+------ TEST 3: testing integrity of tables 
+/* test review_engagement table */
+select count(listing_id), sum(case when listing_id in ('null') or listing_id is null then 1 else 0 end) as null_count
+from etsy-data-warehouse-dev.madelinecollins.review_engagements 
+-- select 1-(8963/31115115) --> 0.99971200492108092 nulls areny many
