@@ -158,7 +158,7 @@ etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stat
 etsy-bigquery-adhoc-prod._script9b1b1d2b53f289cb4f1e48f56f21e0abc32b9288.lv_stats_3: 3 DAY LV STATS
 etsy-bigquery-adhoc-prod._script888423cb0faeebec85cc7ea239f776eeef96ce02.review_engagements: ENGAGEMENT 30 DAYS */
 
--- TEST 1: make sure browser + listing counts are accurate
+------- TEST 1: make sure browser + listing counts are accurate
 with lv_stats as (
 select 
   platform,
@@ -186,8 +186,7 @@ group by all
 select * from lv_stats where browser_id in ('SLrH5X9gn_dAdDB4LxUblGuf07wh') group by all 
 
 
--- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
-
+------- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
 /* with browsers as (
 select
   s.browser_id,
@@ -228,8 +227,12 @@ Ie-89MDXxFFQFY6elXU7U_W5-BFP	621	6
 YRKIlKjNH8fLnLMMVky7ohC6ghI6	460	6
 bIY4Hb0xWhetSAjmvuilNiUEMUYW	448	3 */
 
-select * from etsy-data-warehouse-prod.weblog.events 
+select event_type, count(*) as events 
+from etsy-data-warehouse-prod.weblog.events e
+inner join etsy-data-warehouse-prod.weblog.visits v using (visit_id) 
 where split(visit_id,'.')[safe_offset(0)] in ('bIY4Hb0xWhetSAjmvuilNiUEMUYW')
-and _date >= current_date-30 
-and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciation_photo_overlay_opened")
-
+and v._date >= current_date-30 
+and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciation_photo_overlay_opened",'view_listing')
+and platform in ('desktop','mobile_web')
+group by all
+-----make sure the browsers match the metrics above
