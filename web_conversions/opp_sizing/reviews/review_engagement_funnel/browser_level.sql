@@ -186,15 +186,16 @@ select * from lv_stats where browser_id in ('SLrH5X9gn_dAdDB4LxUblGuf07wh') grou
 
 ------- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
 /* with browsers as (
+with browsers as (
 select
   s.browser_id,
   case when r.browser_id is not null then 1 else 0 end as engaged,
-  sum(listing_views) as lv,
-  sum(engagements) as engagements
+  coalesce(sum(listing_views),0) as lv,
+  coalesce(sum(engagements),0) as engagements
 from 
-  etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats s
+  etsy-data-warehouse-dev.madelinecollins.lv_stats s
 left join 
-  etsy-bigquery-adhoc-prod._script90f1d9a40ab51aa266471f3adf16181872881c72.review_engagements r
+  etsy-data-warehouse-dev.madelinecollins.review_engagements  r
     on s.browser_id=r.browser_id
     and cast(s.listing_id as string)=r.listing_id
 group by all 
@@ -202,9 +203,9 @@ group by all
 select
 browser_id, lv, engagements
 from browsers
-where engagements > 0
+-- where engagements = 0
 group by all 
-order by 2 desc limit 5 */
+order by 3 asc limit 5 */
 
 
 /* 
