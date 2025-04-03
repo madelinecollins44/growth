@@ -186,7 +186,6 @@ select * from lv_stats where browser_id in ('SLrH5X9gn_dAdDB4LxUblGuf07wh') grou
 
 ------- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
 /* with browsers as (
-with browsers as (
 select
   s.browser_id,
   case when r.browser_id is not null then 1 else 0 end as engaged,
@@ -203,9 +202,9 @@ group by all
 select
 browser_id, lv, engagements
 from browsers
--- where engagements = 0
+where engagements > 0
 group by all 
-order by 3 asc limit 5 */
+order by 2 desc limit 5 */
 
 
 /* 
