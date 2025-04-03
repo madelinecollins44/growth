@@ -20,16 +20,21 @@ group by all
 select
   count(distinct split(visit_id,'.')[safe_offset(0)]) as browsers_w_lv,
   count(visit_id) as listing_views,
+  sum(purchased_after_view) as total_purchases,
   count(distinct case when platform in ('desktop') then split(visit_id,'.')[safe_offset(0)] end) as desktop_browsers_w_lv,
+  count(distinct case when platform in ('desktop') and purchased_after_view > 0 then split(visit_id,'.')[safe_offset(0)] end) as desktop_browsers_w_purchase,
   count(case when platform in ('desktop') then visit_id end) as desktop_listing_views,
+  sum(case when platform in ('desktop') then purchased_after_view end) as desktop_purchases,
   count(distinct case when platform in ('mobile_web') then split(visit_id,'.')[safe_offset(0)] end) as mweb_browsers_w_lv,
+  count(distinct case when platform in ('mobile_web') and purchased_after_view > 0 then split(visit_id,'.')[safe_offset(0)] end) as mweb_browsers_w_purchase,
   count(case when platform in ('mobile_web') then visit_id end) as mweb_listing_views,
+  sum(case when platform in ('mobile_web') then purchased_after_view end) as desktop_purchases,
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where
   _date >= current_date-30
 group by all 
-
+	
 ----- listing views w/ reviews
 with listing_views as (
 select
