@@ -228,7 +228,7 @@ fAaHRRiBXbLoFBMf-yISCj50ND9z	2975	829 */
 select event_type, count(*) as events 
 from etsy-data-warehouse-prod.weblog.events e
 inner join etsy-data-warehouse-prod.weblog.visits v using (visit_id) 
-where split(visit_id,'.')[safe_offset(0)] in ('2L5ALC3gNr37Mb-GHCGSNgEE5zZf')
+where split(visit_id,'.')[safe_offset(0)] in ('BVEyPdGkNZdoSV67Og1bv4M9aVoJ')
 and v._date >= current_date-30 
 and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciation_photo_overlay_opened",'view_listing','shop_home')
 and platform in ('desktop','mobile_web')
@@ -244,7 +244,12 @@ group by all
 -- event_type	events
 -- view_listing	358035
 */
-
+/* BVEyPdGkNZdoSV67Og1bv4M9aVoJ
+event_type	events
+sort_reviews	1
+shop_home	1
+view_listing	35601
+*/
 select
   beacon.browser_id,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
@@ -256,7 +261,7 @@ from
 where
 	date(_partitiontime) >= current_date-30
 	and beacon.event_name in ("listing_page_reviews_pagination","sort_reviews", "appreciation_photo_overlay_opened") --all these events are lp specific 
-  and beacon.browser_id in ('2L5ALC3gNr37Mb-GHCGSNgEE5zZf')
+  and beacon.browser_id in ('BVEyPdGkNZdoSV67Og1bv4M9aVoJ')
 group by all 
 /* P1d2xsILklaGk16Mm2eDDtR8gHBD
 -- browser_id	listing_id	event_name	primary_event_source	engagements
@@ -265,21 +270,43 @@ group by all
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	697567149	appreciation_photo_overlay_opened		3
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD		sort_reviews	shop_home	18 
 */
+/* 2L5ALC3gNr37Mb-GHCGSNgEE5zZf
+--There is no data to display.
+*/
+/* BVEyPdGkNZdoSV67Og1bv4M9aVoJ
+browser_id	listing_id	event_name	primary_event_source	engagements
+BVEyPdGkNZdoSV67Og1bv4M9aVoJ	1706594477	sort_reviews	view_listing	1
+*/
 
-select * from  etsy-data-warehouse-dev.madelinecollins.review_engagements_event_level where browser_id in ('P1d2xsILklaGk16Mm2eDDtR8gHBD') 
+
+select * from  etsy-data-warehouse-dev.madelinecollins.review_engagements_event_level where browser_id in ('BVEyPdGkNZdoSV67Og1bv4M9aVoJ') 
 /* P1d2xsILklaGk16Mm2eDDtR8gHBD
 -- browser_id	listing_id	event_name	engagements
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	695545769	sort_reviews	1
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	700412485	appreciation_photo_overlay_opened	2
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	697567149	appreciation_photo_overlay_opened	3 
 */
+/* 2L5ALC3gNr37Mb-GHCGSNgEE5zZf
+--There is no data to display.
+*/
+/* BVEyPdGkNZdoSV67Og1bv4M9aVoJ
+browser_id	listing_id	event_name	engagements
+BVEyPdGkNZdoSV67Og1bv4M9aVoJ	1706594477	sort_reviews	1
+*/
 
-select * from  etsy-data-warehouse-dev.madelinecollins.review_engagements where browser_id in ('P1d2xsILklaGk16Mm2eDDtR8gHBD')
+select * from  etsy-data-warehouse-dev.madelinecollins.review_engagements where browser_id in ('BVEyPdGkNZdoSV67Og1bv4M9aVoJ')
 /* P1d2xsILklaGk16Mm2eDDtR8gHBD
 -- browser_id	listing_id	engagements
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	700412485	2
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	695545769	1
 -- P1d2xsILklaGk16Mm2eDDtR8gHBD	697567149	3
+*/
+/* 2L5ALC3gNr37Mb-GHCGSNgEE5zZf
+--There is no data to display.
+*/
+/* BVEyPdGkNZdoSV67Og1bv4M9aVoJ
+browser_id	listing_id	engagements
+BVEyPdGkNZdoSV67Og1bv4M9aVoJ	1706594477	1
 */
 
 
