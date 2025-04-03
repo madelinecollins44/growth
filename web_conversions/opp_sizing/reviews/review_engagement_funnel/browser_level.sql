@@ -185,7 +185,7 @@ select * from lv_stats where browser_id in ('SLrH5X9gn_dAdDB4LxUblGuf07wh') grou
 
 
 ------- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
-/* with browsers as (
+with browsers as (
 select
   s.browser_id,
   case when r.browser_id is not null then 1 else 0 end as engaged,
@@ -204,36 +204,84 @@ browser_id, lv, engagements
 from browsers
 where engagements > 0
 group by all 
-order by 2 desc limit 5 */
+order by 2 desc limit 5
 
 
-/* 
+/*
 -- browsers without engagements 
 browser_id	lv	engagements
-2L5ALC3gNr37Mb-GHCGSNgEE5zZf	358029	
-cBsPGR-6_X-rGg3Oa-SECJo7KXzq	303476	
-vpbkGWQhHQOdp38f-Ys2DZvc_O83	221178	
-xUnw_pLXew3DX9GQSVySn8NNbNWs	184437	
-tSgS5Z655TX14R_dSpHiNlrTtpFb	105911	*/
+2L5ALC3gNr37Mb-GHCGSNgEE5zZf	358029	0
+cBsPGR-6_X-rGg3Oa-SECJo7KXzq	303476	0
+vpbkGWQhHQOdp38f-Ys2DZvc_O83	221178	0
+xUnw_pLXew3DX9GQSVySn8NNbNWs	184437	0
+tSgS5Z655TX14R_dSpHiNlrTtpFb	105905	0	*/
 
 /* 
 -- browsers with engagements 
 browser_id	lv	engagements
-XOD7wp6qfKlBdHc9DZjcCB0deEIM	2037	5
-iNeV7m08UwxeEcW_iKHM0Wnrn0h5	805	792
-Ie-89MDXxFFQFY6elXU7U_W5-BFP	621	6
-YRKIlKjNH8fLnLMMVky7ohC6ghI6	460	6
-bIY4Hb0xWhetSAjmvuilNiUEMUYW	448	3 */
+BVEyPdGkNZdoSV67Og1bv4M9aVoJ	35585	1
+iEGvIDShWME9Ki5LtymXY-i2UXSQ	6746	16761
+NjTAyrgzC5FqoPZl-ObRbpo366O8	3542	2675
+P1d2xsILklaGk16Mm2eDDtR8gHBD	3146	6
+fAaHRRiBXbLoFBMf-yISCj50ND9z	2975	829 */
 
 select event_type, count(*) as events 
 from etsy-data-warehouse-prod.weblog.events e
 inner join etsy-data-warehouse-prod.weblog.visits v using (visit_id) 
-where split(visit_id,'.')[safe_offset(0)] in ('bIY4Hb0xWhetSAjmvuilNiUEMUYW')
+where split(visit_id,'.')[safe_offset(0)] in ('2L5ALC3gNr37Mb-GHCGSNgEE5zZf')
 and v._date >= current_date-30 
-and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciation_photo_overlay_opened",'view_listing')
+and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciation_photo_overlay_opened",'view_listing','shop_home')
 and platform in ('desktop','mobile_web')
 group by all
------make sure the browsers match the metrics above
+/* P1d2xsILklaGk16Mm2eDDtR8gHBD
+    -- event_type	events
+    -- sort_reviews	19 --> some of these sort reviews might be from shop home
+    -- appreciation_photo_overlay_opened	5
+    -- shop_home	193
+    -- view_listing	3395
+*/
+/* 2L5ALC3gNr37Mb-GHCGSNgEE5zZf
+-- event_type	events
+-- view_listing	358035
+*/
+
+select
+  beacon.browser_id,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  beacon.event_name as event_name,
+  (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") as primary_event_source,
+  count(sequence_number) as engagements,
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` b 
+where
+	date(_partitiontime) >= current_date-30
+	and beacon.event_name in ("listing_page_reviews_pagination","sort_reviews", "appreciation_photo_overlay_opened") --all these events are lp specific 
+  and beacon.browser_id in ('2L5ALC3gNr37Mb-GHCGSNgEE5zZf')
+group by all 
+/* P1d2xsILklaGk16Mm2eDDtR8gHBD
+-- browser_id	listing_id	event_name	primary_event_source	engagements
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	695545769	sort_reviews	view_listing	1
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	700412485	appreciation_photo_overlay_opened		2
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	697567149	appreciation_photo_overlay_opened		3
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD		sort_reviews	shop_home	18 
+*/
+
+select * from  etsy-data-warehouse-dev.madelinecollins.review_engagements_event_level where browser_id in ('P1d2xsILklaGk16Mm2eDDtR8gHBD') 
+/* P1d2xsILklaGk16Mm2eDDtR8gHBD
+-- browser_id	listing_id	event_name	engagements
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	695545769	sort_reviews	1
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	700412485	appreciation_photo_overlay_opened	2
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	697567149	appreciation_photo_overlay_opened	3 
+*/
+
+select * from  etsy-data-warehouse-dev.madelinecollins.review_engagements where browser_id in ('P1d2xsILklaGk16Mm2eDDtR8gHBD')
+/* P1d2xsILklaGk16Mm2eDDtR8gHBD
+-- browser_id	listing_id	engagements
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	700412485	2
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	695545769	1
+-- P1d2xsILklaGk16Mm2eDDtR8gHBD	697567149	3
+*/
+
 
 
 ------ TEST 3: testing integrity of tables 
