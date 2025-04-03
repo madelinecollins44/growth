@@ -1,5 +1,82 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
--- PULL DATA
+-- PULL DATA 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+----- total traffic last 30 days 
+select 
+  count(distinct visit_id) as total_visits,
+  count(distinct case when platform in ('desktop') then visit_id end) as desktop_visits,
+  count(distinct case when platform in ('mobile_web') then visit_id end) as mweb_visits,
+
+  count(distinct browser_id) as total_browsers,
+  count(distinct case when platform in ('desktop') then browser_id end) as desktop_browsers,
+  count(distinct case when platform in ('mobile_web') then browser_id end) as mweb_browsers,
+from 
+  etsy-data-warehouse-prod.weblog.visits 
+where 
+ _date >= current_date-30
+group by all 
+
+----- total listing views
+select
+  count(distinct split(visit_id,'.')[safe_offset(0)]) as browsers_w_lv,
+  count(visit_id) as listing_views,
+  count(distinct case when platform in ('desktop') then split(visit_id,'.')[safe_offset(0)] end) as desktop_browsers_w_lv,
+  count(case when platform in ('desktop') then visit_id end) as desktop_listing_views,
+  count(distinct case when platform in ('mobile_web') then split(visit_id,'.')[safe_offset(0)] end) as mweb_browsers_w_lv,
+  count(case when platform in ('mobile_web') then visit_id end) as mweb_listing_views,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where
+  _date >= current_date-30
+group by all 
+
+----- listing views w/ reviews
+with listing_views as (
+select
+  platform,
+  listing_id,
+  split(visit_id,'.')[safe_offset(0)] as browser_id,
+  count(visit_id) as listing_views
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where
+  _date >= current_date-30
+  and platform in ('desktop','mobile_web','boe')
+group by all
+)
+, reviews as (
+select
+  listing_id,
+  sum(has_review) as has_review,
+  sum(has_image) as has_image,
+  sum(has_video) as has_video,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews  
+group by all
+)
+select
+  platform,
+  sum(lv.listing_views) as total_listing_views,
+  count(distinct lv.browser_id) as browsers_w_listing_view,
+  count(distinct case when r.has_review > 0 then lv.listing_id end) listings_w_review,
+  count(distinct case when r.has_image > 0 then lv.listing_id end) listings_w_image,
+  count(distinct case when r.has_video > 0 then lv.listing_id end) listings_w_video,
+  sum(case when r.has_review > 0 then listing_views end) has_review_lv,
+  sum(case when r.has_image > 0 then listing_views end) has_image_lv,
+  sum(case when r.has_video > 0 then listing_views end) has_video_lv,
+  count(distinct case when r.has_review > 0 then lv.browser_id end) browsers_w_review,
+  count(distinct case when r.has_image > 0 then lv.browser_id end) browsers_w_image,
+  count(distinct case when r.has_video > 0 then lv.browser_id end) browsers_w_video,
+from
+  listing_views lv
+left join 
+  reviews r using (listing_id)
+group by all
+	
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- BROWSER ENGAGEMENTS 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 /* 
 create or replace table etsy-data-warehouse-dev.madelinecollins.review_engagements as (
@@ -10,7 +87,7 @@ select
 from
   `etsy-visit-pipe-prod.canonical.visit_id_beacons` b 
 where
-	date(_partitiontime) <= current_date-30
+	date(_partitiontime) >= current_date-30
 	and ((beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
       or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing')))  -- sorting on listing page 
 group by all 
@@ -28,9 +105,10 @@ from
   etsy-data-warehouse-prod.analytics.listing_views
 where 
   platform in ('desktop','mobile_web')
-  and _date <= current_date-30
+  and _date >= current_date-30
 group by all 
 );
+
 */
 	
 select
