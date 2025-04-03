@@ -1,10 +1,22 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- PULL DATA
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-/* CREATE TEMP TABLES TO RUN FASTER */ 
--- get browser + listing level stats (browser is platform specific)
-begin
-create or replace temp table lv_stats as (
+/* 
+create or replace table etsy-data-warehouse-dev.madelinecollins.review_engagements as (
+select
+  beacon.browser_id,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  count(sequence_number) as engagements,
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` b 
+where
+	date(_partitiontime) <= current_date-30
+	and ((beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
+      or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing')))  -- sorting on listing page 
+group by all 
+);
+
+create or replace table etsy-data-warehouse-dev.madelinecollins.lv_stats as (
 select 
   platform,
   split(visit_id,'.')[safe_offset(0)] as browser_id, -- browser is specific to platform, so no need to look on visit level 
@@ -19,30 +31,8 @@ where
   and _date <= current_date-30
 group by all 
 );
-end 
------ etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats 
-
-begin
-create or replace temp table review_engagements as (
-select
-  beacon.browser_id,
-  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
-  count(sequence_number) as engagements,
-from
-  `etsy-visit-pipe-prod.canonical.visit_id_beacons` b 
-inner join -- join here to get platform and only look at browsers that have viewed a listing 
-  lv_stats s
-    on s.browser_id= b.beacon.browser_id
-where
-	date(_partitiontime) <= current_date-30
-	and (beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
-      or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing'))  -- sorting on listing page 
-group by all 
-);
-end 
------ etsy-bigquery-adhoc-prod._script90f1d9a40ab51aa266471f3adf16181872881c72.review_engagements
+*/
 	
-/* COMBINE INTO AGG DATA */
 select
   s.platform,
 --lv stats
