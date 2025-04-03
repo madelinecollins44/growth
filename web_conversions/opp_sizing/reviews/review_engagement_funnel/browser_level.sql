@@ -109,6 +109,21 @@ where
 group by all 
 );
 
+create or replace table etsy-data-warehouse-dev.madelinecollins.review_engagements_event_level as (
+select
+  beacon.browser_id,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  beacon.event_name,
+  count(sequence_number) as engagements,
+from
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` b 
+where
+	date(_partitiontime) >= current_date-30
+	and ((beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
+      or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing')))  -- sorting on listing page 
+group by all 
+);
+
 */
 	
 select
