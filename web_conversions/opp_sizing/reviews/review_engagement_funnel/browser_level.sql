@@ -1,80 +1,60 @@
-with platform_visits as (
+-- find which browsers viewed 
+with lv_stats as (
 select 
   platform,
+  split(visit_id,'-')[safe_offset(0)] as browser_id, 
+  listing_id,
   visit_id,
-  browser_id,
-  converted
+  count(visit_id) as listing_views,
+  count(distinct visit_id) as unique_visits,
+  sum(purchased_after_view) as purchases
 from 
-  etsy-data-warehouse-prod.weblog.visits 
+  etsy-data-warehouse-prod.analytics.listing_views
 where 
-  platform in ('desktop','mobile_web') 
+  platform in ('desktop','mobile_web')
   and _date >= current_date-30
-)
-, listing_events as (
-select
-  platform,
-	date(_partitiontime) as _date,
-	visit_id,
-  browser_id,
-  converted,
-  sequence_number,
-	case 
-    when beacon.event_name in ('view_listing') then 'view_listing'
-    else 'review_engagement' 
-  end as event_name,
-  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
-from
-  platform_visits 
-inner join 
-  `etsy-visit-pipe-prod.canonical.visit_id_beacons` using (visit_id) -- only looking at desktop visits 
-where
-	date(_partitiontime) >= current_date-30
-	and beacon.event_name in ("sort_reviews","listing_page_reviews_pagination","appreciation_photo_overlay_opened","view_listing")
 group by all 
 )
-, ordered_events as (
+, review_engagements as (
 select
-  platform,
-	_date,
-	visit_id,
-  browser_id,
-  converted,
-	listing_id,
-  sequence_number,
-	event_name,
-	lead(event_name) over (partition by visit_id, listing_id order by sequence_number) as next_event,
-	lead(sequence_number) over (partition by visit_id, listing_id order by sequence_number) as next_sequence_number
-from 
-	listing_events
-)
-, listing_views as (
-select
-	visit_id,
-  platform,
-  converted,
-  browser_id,
-	listing_id,
-  sequence_number,
-	case when next_event in ('review_engagement') then 1 else 0 end as engaged_w_reviews
+  s.platform,
+  beacon.browser_id,
+  b.visit_id,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  count(sequence_number) as engagements,
 from
-	ordered_events
-where 
-	event_name in ('view_listing')
+  `etsy-visit-pipe-prod.canonical.visit_id_beacons` b
+inner join -- join here to get platform and only look at browsers that have viewed a listing 
+  lv_stats s
+    on s.browser_id= b.beacon.browser_id
+    and s.visit_id= b.visit_id
+where
+	date(_partitiontime) >= current_date-30
+	and (beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
+      or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing'))  -- sorting on listing page 
+group by all 
 )
 select
-  platform,
-  -- visit level metrics
-  count(visit_id) as listing_views,
-  count(case when engaged_w_reviews > 0 then visit_id end) as saw_listing_and_engage,
-  count(distinct visit_id) as visits_w_lv,
-  count(distinct case when engaged_w_reviews > 0 then visit_id end) as visits_w_listing_and_engage,
-  count(distinct case when converted > 0 then visit_id end) as visits_w_lv_and_convert,
-  count(distinct case when converted> 0 and engaged_w_reviews > 0 then visit_id end) as visits_w_listing_and_engage_and_convert,
-  -- browser level metrics (browsers that have done this in at least one visit)
-  count(distinct browser_id) as browser_w_lv,
-  count(distinct case when engaged_w_reviews > 0 then browser_id end) as browser_w_lv_and_engage,
-  count(distinct case when converted > 0 then browser_id end) as browsers_w_lv_and_convert,
-  count(distinct case when converted > 0 and engaged_w_reviews > 0 then browser_id end) as browsers_w_listing_and_engage_and_convert,
+  s.platform,
+--lv stats
+  count(distinct s.browser_id) as browsers_w_lv,
+  count(distinct case when purchases > 0 then s.browser_id end) as browsers_w_purchase,
+  count(distinct s.visit_id) as visits_w_lv,
+  count(distinct case when purchases > 0 then s.visit_id end) as visits_w_purchase,
+  sum(listing_views) as total_lv,
+  sum(purchases) as total_purchases,
+-- engagement stats
+  count(distinct r.browser_id) as browsers_w_engagement,
+  count(distinct case when purchases > 0 then r.browser_id end) as engaged_browsers_w_purchase,
+  sum(engagements) as total_engagements,
+  count(distinct r.visit_id) as visits_w_engagement,
+   count(distinct case when purchases > 0 then r.visit_id end) as engaged_visits_w_purchase,
 from 
-  listing_views
+  lv_stats s
+left join 
+  review_engagements r
+    on s.browser_id=r.browser_id
+    and cast(s.listing_id as string)=r.listing_id
+    and s.platform=r.platform
+    and s.visit_id=r.visit_id 
 group by all 
