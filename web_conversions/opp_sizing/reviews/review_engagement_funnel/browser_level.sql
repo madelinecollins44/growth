@@ -64,8 +64,8 @@ group by all
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- TESTING 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-/* begin
-create or replace temp table browser_level_engagements as (
+/* -- gather listing stats  
+create or replace table etsy-data-warehouse-dev.madelinecollins.browser_level_engagements as (
 with lv_stats as (
 select 
   platform,
@@ -79,7 +79,7 @@ from
   etsy-data-warehouse-prod.analytics.listing_views
 where 
   platform in ('desktop','mobile_web')
-  and _date >= current_date-10
+  and _date >= current_date-4
 group by all 
 )
 -- look at review engagements on specific listings 
@@ -97,7 +97,7 @@ inner join -- join here to get platform and only look at browsers that have view
     on s.browser_id= b.beacon.browser_id
     and s.visit_id= b.visit_id
 where
-	date(_partitiontime) >= current_date-10
+	date(_partitiontime) >= current_date-4
 	and (beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened") --all these events are lp specific 
       or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing'))  -- sorting on listing page 
 group by all 
@@ -129,9 +129,7 @@ left join
     and s.visit_id=r.visit_id 
 group by all 
 );
-end 
-
-table name : */
+ */
 
 -- TEST 1: make sure browsers match engagement. use the ctes + events table to be sure
 ----browsers + listings w/ engagement
