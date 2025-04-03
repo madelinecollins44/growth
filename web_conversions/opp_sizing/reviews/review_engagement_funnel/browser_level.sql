@@ -156,7 +156,7 @@ group by all
 /* TEMP TABLES:
 etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats : 30 DAY LV STATS
 etsy-bigquery-adhoc-prod._script9b1b1d2b53f289cb4f1e48f56f21e0abc32b9288.lv_stats_3: 3 DAY LV STATS
-etsy-bigquery-adhoc-prod._script888423cb0faeebec85cc7ea239f776eeef96ce02.review_engagements: ENGAGEMENT 30 DAYS
+etsy-bigquery-adhoc-prod._script888423cb0faeebec85cc7ea239f776eeef96ce02.review_engagements: ENGAGEMENT 30 DAYS */
 
 -- TEST 1: make sure browser + listing counts are accurate
 with lv_stats as (
@@ -187,5 +187,49 @@ select * from lv_stats where browser_id in ('SLrH5X9gn_dAdDB4LxUblGuf07wh') grou
 
 
 -- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
-----browsers + listings w/ engagement
-----browsers + listings w/o engagement
+
+/* with browsers as (
+select
+  s.browser_id,
+  case when r.browser_id is not null then 1 else 0 end as engaged,
+  sum(listing_views) as lv,
+  sum(engagements) as engagements
+from 
+  etsy-bigquery-adhoc-prod._scriptff50f4cf1cc12b75b545c2c66abca1b5c8d2e056.lv_stats s
+left join 
+  etsy-bigquery-adhoc-prod._script90f1d9a40ab51aa266471f3adf16181872881c72.review_engagements r
+    on s.browser_id=r.browser_id
+    and cast(s.listing_id as string)=r.listing_id
+group by all 
+)
+select
+browser_id, lv, engagements
+from browsers
+where engagements > 0
+group by all 
+order by 2 desc limit 5 */
+
+
+/* 
+-- browsers without engagements 
+browser_id	lv	engagements
+2L5ALC3gNr37Mb-GHCGSNgEE5zZf	358029	
+cBsPGR-6_X-rGg3Oa-SECJo7KXzq	303476	
+vpbkGWQhHQOdp38f-Ys2DZvc_O83	221178	
+xUnw_pLXew3DX9GQSVySn8NNbNWs	184437	
+tSgS5Z655TX14R_dSpHiNlrTtpFb	105911	*/
+
+/* 
+-- browsers with engagements 
+browser_id	lv	engagements
+XOD7wp6qfKlBdHc9DZjcCB0deEIM	2037	5
+iNeV7m08UwxeEcW_iKHM0Wnrn0h5	805	792
+Ie-89MDXxFFQFY6elXU7U_W5-BFP	621	6
+YRKIlKjNH8fLnLMMVky7ohC6ghI6	460	6
+bIY4Hb0xWhetSAjmvuilNiUEMUYW	448	3 */
+
+select * from etsy-data-warehouse-prod.weblog.events 
+where split(visit_id,'.')[safe_offset(0)] in ('bIY4Hb0xWhetSAjmvuilNiUEMUYW')
+and _date >= current_date-30 
+and event_type in ("sort_reviews", "listing_page_reviews_pagination","appreciation_photo_overlay_opened")
+
