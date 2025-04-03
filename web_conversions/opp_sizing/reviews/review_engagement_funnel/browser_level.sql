@@ -131,9 +131,34 @@ group by all
 );
  */
 
--- TEST 1: make sure browsers match engagement. use the ctes + events table to be sure
+-- TEST 1: make sure browser + listing counts are accurate
+with lv_stats as (
+select 
+  platform,
+  visit_id,
+  split(visit_id,'.')[safe_offset(0)] as browser_id, -- browser is specific to platform, so no need to look on visit level 
+  listing_id,
+  count(visit_id) as listing_views,
+  count(distinct visit_id) as unique_visits,
+  sum(purchased_after_view) as purchases
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  platform in ('desktop','mobile_web')
+  and _date >= current_date-3
+group by all 
+)
+-- select browser_id, count(distinct visit_id), count(distinct listing_id) from lv_stats  group by all having count(distinct listing_id) < 50 and  count(distinct visit_id) < 50 order by 2 desc limit 5
+-- browser_id	f0_	f1_
+-- SLrH5X9gn_dAdDB4LxUblGuf07wh	49	26
+-- jy2FyYjxCI68KxvAQyXRM-KWQo_B	49	36
+-- I3Ey5uu9Un-X3Fxa020DVyq0Uf1F	49	7
+-- BE1kLRi26lUIQuHZlfimBaKy9wWj	49	32
+-- IpV8_PQSMFFJAHvYxlsgy4m75Giy	48	23
+
+select * from lv_stats where browser_id in ('SLrH5X9gn_dAdDB4LxUblGuf07wh') group by all 
+
+
+-- TEST 2: make sure browsers match engagement. use the ctes + events table to be sure
 ----browsers + listings w/ engagement
 ----browsers + listings w/o engagement
-
-
-
