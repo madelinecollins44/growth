@@ -129,5 +129,13 @@ left join
     and s.visit_id=r.visit_id 
 group by all 
 );
-end */
--- 
+end 
+
+table name : */
+
+-- TEST 1: make sure browsers match engagement. use the ctes + events table to be sure
+----browsers + listings w/ engagement
+----browsers + listings w/o engagement
+
+
+
