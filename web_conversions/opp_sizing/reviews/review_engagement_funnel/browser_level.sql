@@ -60,26 +60,24 @@ from
 group by all
 )
 select
-  platform,
-  sum(lv.listing_views) as total_listing_views,
-  count(distinct lv.browser_id) as browsers_w_listing_view,
-  count(distinct case when r.has_review > 0 then lv.listing_id end) listings_w_review,
-  count(distinct case when r.has_image > 0 then lv.listing_id end) listings_w_image,
-  count(distinct case when r.has_video > 0 then lv.listing_id end) listings_w_video,
-  sum(case when r.has_review > 0 then listing_views end) has_review_lv,
-  sum(case when r.has_image > 0 then listing_views end) has_image_lv,
-  sum(case when r.has_video > 0 then listing_views end) has_video_lv,
-  count(distinct case when r.has_review > 0 then lv.browser_id end) browsers_w_review,
-  count(distinct case when r.has_image > 0 then lv.browser_id end) browsers_w_image,
-  count(distinct case when r.has_video > 0 then lv.browser_id end) browsers_w_video,
-from
-  listing_views lv
+  s.platform,
+--lv stats
+  coalesce(count(distinct s.browser_id)) as browsers_w_lv,
+  coalesce(count(distinct case when purchases > 0 then s.browser_id end)) as browsers_w_purchase,
+  coalesce(sum(listing_views)) as total_lv,
+  coalesce(sum(purchases)) as total_purchases,
+-- engagement stats
+  coalesce(count(distinct r.browser_id)) as browsers_w_engagement,
+  coalesce(count(distinct case when purchases > 0 then r.browser_id end)) as engaged_browsers_w_purchase,
+  coalesce(sum(engagements),0) as total_engagements,
+from 
+  etsy-data-warehouse-dev.madelinecollins.lv_stats s
 left join 
-  reviews r using (listing_id)
-group by all
+  etsy-data-warehouse-dev.madelinecollins.review_engagements r
+    on s.browser_id=r.browser_id
+    and cast(s.listing_id as string)=r.listing_id
+group by all 
 	
-
-
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- BROWSER ENGAGEMENTS 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
