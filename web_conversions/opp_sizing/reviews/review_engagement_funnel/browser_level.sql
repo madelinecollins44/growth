@@ -316,3 +316,32 @@ BVEyPdGkNZdoSV67Og1bv4M9aVoJ	1706594477	1
 select count(listing_id), sum(case when listing_id in ('null') or listing_id is null then 1 else 0 end) as null_count
 from etsy-data-warehouse-dev.madelinecollins.review_engagements 
 -- select 1-(8963/31115115) --> 0.99971200492108092 nulls areny many
+
+
+----- TEST 4: see what overlap there is between browsers (browsers can be double counted given its browser, listing level)
+with browser_listing_combos as (
+select
+  s.browser_id,
+  s.listing_id,
+  case when r.browser_id is not null and r.listing_id is not null then 1 else 0 end as duped
+from 
+  etsy-data-warehouse-dev.madelinecollins.lv_stats s
+left join 
+  etsy-data-warehouse-dev.madelinecollins.review_engagements r
+    on s.browser_id=r.browser_id
+    and cast(s.listing_id as string)=r.listing_id
+group by all 
+order by 3 desc
+)
+select 
+  count(*) as browser_listings, 
+  sum(duped) as browser_listing_dupes, 
+  count(distinct browser_id) as total_browsers,
+  count(distinct case when duped > 0 then browser_id end) as duped_browsers,
+  count(distinct case when duped = 0 then browser_id end) as unduped_browsers,
+from 
+browser_listing_combos
+/*browser_listings	browser_listing_dupes	total_browsers	duped_browsers	unduped_browsers
+852732337	30669644	246452958	16317110	243637709 */
+
+
