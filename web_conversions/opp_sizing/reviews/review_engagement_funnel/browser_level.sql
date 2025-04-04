@@ -335,13 +335,17 @@ order by 3 desc
 )
 select 
   count(*) as browser_listings, 
+  count(case when duped > 0 then 1 end) as duped_bl,
+  count(case when duped = 0 then 1 end) as unduped_bl,
   sum(duped) as browser_listing_dupes, 
   count(distinct browser_id) as total_browsers,
   count(distinct case when duped > 0 then browser_id end) as duped_browsers,
   count(distinct case when duped = 0 then browser_id end) as unduped_browsers,
 from 
 browser_listing_combos
-/*browser_listings	browser_listing_dupes	total_browsers	duped_browsers	unduped_browsers
-852732337	30669644	246452958	16317110	243637709 */
+/*browser_listings	duped_bl	unduped_bl	browser_listing_dupes	total_browsers	duped_browsers	unduped_browsers
+852732337	30669644	822062693	30669644	246452958	16317110	243637709 */
+
+
 
 
