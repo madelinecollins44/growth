@@ -319,6 +319,7 @@ from etsy-data-warehouse-dev.madelinecollins.review_engagements
 
 
 ----- TEST 4: see what overlap there is between browsers (browsers can be double counted given its browser, listing level)
+----------browser, listing level
 with browser_listing_combos as (
 select
   s.browser_id,
@@ -345,6 +346,33 @@ from
 browser_listing_combos
 /*browser_listings	duped_bl	unduped_bl	browser_listing_dupes	total_browsers	duped_browsers	unduped_browsers
 852732337	30669644	822062693	30669644	246452958	16317110	243637709 */
+
+----------browser level
+with browser_listing_combos as (
+select
+  s.browser_id,
+  max(case when r.browser_id is not null then 1 else 0 end) as duped
+from 
+  etsy-data-warehouse-dev.madelinecollins.lv_stats s
+left join 
+  etsy-data-warehouse-dev.madelinecollins.review_engagements r
+    on s.browser_id=r.browser_id
+    and cast(s.listing_id as string)=r.listing_id
+group by all 
+)
+select 
+  count(distinct browser_id) as total_browsers,
+  count(distinct case when duped > 0 then browser_id end) as duped_browsers,
+  count(distinct case when duped = 0 then browser_id end) as unduped_browsers,
+from 
+browser_listing_combos
+
+/*total_browsers	duped_browsers	unduped_browsers
+246452958	16317110	230135848*/
+
+
+
+
 
 
 
