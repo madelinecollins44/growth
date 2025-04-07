@@ -104,7 +104,7 @@ select
   approx_quantiles(listing_views, 4)[OFFSET(2)] AS median,
   approx_quantiles(listing_views, 4)[OFFSET(3)] AS q3,
   approx_quantiles(listing_views, 4)[OFFSET(4)] AS q4,
-  avg(listing_views) as avg_listings_seen
+  avg(listing_views) as avg_views_per_listing
 from 
   browser_stats
 group by all 
