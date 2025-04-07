@@ -74,6 +74,40 @@ select
 from 
   browser_stats
 group by all 
+
+  
+------ browser, listing stats
+  with all_lv as (
+select
+  split(visit_id,'.')[safe_offset(0)] as browser_id,
+  listing_id,
+  count(sequence_number) as listing_views,
+  sum(purchased_after_view) as purchases
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+, browser_stats as (
+select
+  browser_id,
+  listing_id,
+  listing_views
+from all_lv
+group by all 
+)
+select
+  count(distinct browser_id) as browsers,
+  approx_quantiles(listing_views, 4)[OFFSET(1)] AS q1,
+  approx_quantiles(listing_views, 4)[OFFSET(2)] AS median,
+  approx_quantiles(listing_views, 4)[OFFSET(3)] AS q3,
+  approx_quantiles(listing_views, 4)[OFFSET(4)] AS q4,
+  avg(listing_views) as avg_listings_seen
+from 
+  browser_stats
+group by all 
 ------------------------------------------------------------------------------------
 -- HOW MANY TIMES DOES A BROWSER VIEW THE LISTINGS IN THE SAME TAXONOMY?
 ------------------------------------------------------------------------------------
