@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------------
 -- HOW MANY TIMES DOES A BROWSER VIEW THE SAME LISTING?
 ------------------------------------------------------------------------------------
--- get all listing views from each view
+------ get all listing views from each view
 with all_lv as (
 select
   split(visit_id,'.')[safe_offset(0)] as browser_id,
@@ -42,6 +42,38 @@ select
   count(distinct case when listing_views > 4 and purchases > 0 then browser_id end) as purchase_browsers_w_4plus_lv,
   count(distinct case when listing_views > 5 and purchases > 0 then browser_id end) as purchase_browsers_w_5plus_lv,
 from all_lv
+
+------ browser level stats
+with all_lv as (
+select
+  split(visit_id,'.')[safe_offset(0)] as browser_id,
+  listing_id,
+  count(sequence_number) as listing_views,
+  sum(purchased_after_view) as purchases
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+, browser_stats as (
+select
+  browser_id,
+  count(distinct listing_id) as listings_seen
+from all_lv
+group by all 
+)
+select
+  count(distinct browser_id) as browsers,
+  approx_quantiles(listings_seen, 4)[OFFSET(1)] AS q1,
+  approx_quantiles(listings_seen, 4)[OFFSET(2)] AS median,
+  approx_quantiles(listings_seen, 4)[OFFSET(3)] AS q3,
+  approx_quantiles(listings_seen, 4)[OFFSET(4)] AS q4,
+  avg(listings_seen) as avg_listings_seen
+from 
+  browser_stats
+group by all 
 ------------------------------------------------------------------------------------
 -- HOW MANY TIMES DOES A BROWSER VIEW THE LISTINGS IN THE SAME TAXONOMY?
 ------------------------------------------------------------------------------------
