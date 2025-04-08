@@ -10,6 +10,8 @@ select
   sum(purchased_after_view) as purchases
 from 
   etsy-data-warehouse-prod.analytics.listing_views
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics using (listing_id)
 where 
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
@@ -42,6 +44,7 @@ select
   count(distinct case when listing_views > 4 and purchases > 0 then browser_id end) as purchase_browsers_w_4plus_lv,
   count(distinct case when listing_views > 5 and purchases > 0 then browser_id end) as purchase_browsers_w_5plus_lv,
 from all_lv
+
 
 ------ browser level stats
 with all_lv as (
