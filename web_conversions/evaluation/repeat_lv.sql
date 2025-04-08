@@ -55,6 +55,8 @@ select
   sum(purchased_after_view) as purchases
 from 
   etsy-data-warehouse-prod.analytics.listing_views
+inner join 
+  etsy-data-warehouse-prod.rollups.active_listing_basics using (listing_id)
 where 
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
@@ -88,6 +90,8 @@ select
   sum(purchased_after_view) as purchases
 from 
   etsy-data-warehouse-prod.analytics.listing_views
+inner join
+  etsy-data-warehouse-prod.rollups.active_listing_basics using (listing_id)
 where 
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
@@ -111,6 +115,7 @@ select
 from 
   browser_stats
 group by all 
+  
 ------------------------------------------------------------------------------------
 -- HOW MANY TIMES DOES A BROWSER VIEW THE LISTINGS IN THE SAME TAXONOMY?
 ------------------------------------------------------------------------------------
