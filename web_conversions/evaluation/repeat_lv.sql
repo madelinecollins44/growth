@@ -161,18 +161,22 @@ order by 2 desc
 ------------------------------------------------------------------------------------
 -- HOW MANY TIMES DOES A BROWSER VIEW THE LISTINGS IN THE SAME PRICE BUCKET?
 ------------------------------------------------------------------------------------
--- get all listing views from each view
+-- -- get all listing views from each view
 with all_lv as (
 select
   split(visit_id,'.')[safe_offset(0)] as browser_id,
   case 
-    when coalesce((b.price_usd/100), v.price_usd)  = 0 then '0'
-    when coalesce((b.price_usd/100), v.price_usd)  between 1 and 10 then '1-10'
-    when coalesce((b.price_usd/100), v.price_usd)  between 11 and 20 then '11-20' 
-    when coalesce((b.price_usd/100), v.price_usd)  between 21 and 50 then '21-50' 
-    when coalesce((b.price_usd/100), v.price_usd)  between 51 and 100 then '51-100' 
-    else 'over 100' 
+    when coalesce(b.price_usd, v.price_usd) > 0 and coalesce(b.price_usd, v.price_usd) <= 10 then'$0-$10'
+    when coalesce(b.price_usd, v.price_usd) > 10 and coalesce(b.price_usd, v.price_usd) <= 20 then'$10-$20'
+    when coalesce(b.price_usd, v.price_usd) > 20 and coalesce(b.price_usd, v.price_usd) <= 40 then'$20-$40'
+    when coalesce(b.price_usd, v.price_usd) > 40 and coalesce(b.price_usd, v.price_usd) <= 60 then'$40-$60'
+    when coalesce(b.price_usd, v.price_usd) > 60 and coalesce(b.price_usd, v.price_usd) <= 80 then'$60-$80'
+    when coalesce(b.price_usd, v.price_usd) > 80 and coalesce(b.price_usd, v.price_usd) <= 100 then'$80-$100'
+    when coalesce(b.price_usd, v.price_usd) > 100 and coalesce(b.price_usd, v.price_usd) <= 120 then'$100-$120'
+    when coalesce(b.price_usd, v.price_usd) > 120 and coalesce(b.price_usd, v.price_usd) <= 150 then'$120-$150'
+    else 'over $150' 
   end as item_price_bucket,
+  listing_id,
   count(sequence_number) as listing_views,
   sum(purchased_after_view) as purchases
 from 
