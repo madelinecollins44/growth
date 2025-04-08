@@ -219,3 +219,21 @@ select
 from all_lv
 group by all 
 order by 1 asc 
+
+--------------------------------------------------------------------------------------------------
+--TESTING
+--------------------------------------------------------------------------------------------------
+-- TEST 1: make sure no browsers are missing from table
+select
+ sum(case when v.browser_id is null then 1 else 0 end) as missing_browser_id
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+left join 
+  etsy-data-warehouse-prod.weblog.visits v 
+    on v.browser_id = split(lv.visit_id,'.')[safe_offset(0)] 
+where 
+  v._date >= current_date-30
+  and lv._date >= current_date-30
+  and lv.platform in ('mobile_web','desktop')
+group by all
+-- no missing browser_ids
