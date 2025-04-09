@@ -1,6 +1,8 @@
 /* this rollup only needs to be run once to backfill the table to look at buyer behavior over the last */
 
 /* STEP 1: create table with all purchase info for mapped_user_ids since 2022 */ 
+--- create large dataset for predicting cluster type starting in 2022 - 2024
+
 -- create dataset with cluster info
 create or replace table `etsy-data-warehouse-dev.madelinecollins.all_buyers` as (
 with gms_2024 as (
@@ -418,7 +420,7 @@ left join
 	a.mapped_user_id,
 	a.top_10_pct,
 	a.n_purch_days as n_purchase_days,
-	a.total_2022_gms as total_gms,
+	a.gms as total_gms,
 	t.transaction_id,
 	date_trunc(t.date, month) as purch_month,
 	date_trunc(t.date, quarter) as purch_quarter,
@@ -574,6 +576,7 @@ on t.mapped_user_id = di.mapped_user_id
 group by all
 );
 
+------------------------------------------------------------------------------------------------
 /* STEP 2: create the model */
 CREATE OR REPLACE MODEL `etsy-data-warehouse-dev.semanuele.cluster_model`
 OPTIONS(model_type='logistic_reg', input_label_cols=['cluster']) AS
