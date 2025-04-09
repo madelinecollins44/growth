@@ -195,7 +195,7 @@ group by all
 
 
 /* STEP 2: run the actual model */
- create or replace table `etsy-data-warehouse-madelinecollins.semanuele.predictions` 
+create or replace table `etsy-data-warehouse-dev.madelinecollins.predictions` 
     as (
 SELECT 
 predicted_cluster,
@@ -203,7 +203,7 @@ mapped_user_id,
 year, 
 top_10_pct
 FROM 
-    ML.PREDICT(MODEL `etsy-data-warehouse-dev.madelinecollins.cluster_model`,
+    ML.PREDICT(MODEL `etsy-data-warehouse-dev.semanuele.cluster_model`,
      (SELECT 
     n_purchase_days,
     total_gms,
