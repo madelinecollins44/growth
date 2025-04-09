@@ -1,6 +1,6 @@
-/* STEP 1: create table with all purchase info for mapped_user_ids since 2022 
-RUN THIS AS A ONCE ROLLUP */ 
+/* this rollup only needs to be run once to backfill the table to look at buyer behavior over the last */
 
+/* STEP 1: create table with all purchase info for mapped_user_ids since 2022 */ 
 -- create dataset with cluster info
 create or replace table `etsy-data-warehouse-dev.madelinecollins.all_buyers` as (
 with gms_2024 as (
@@ -573,3 +573,39 @@ on t.mapped_user_id = di.mapped_user_id
 
 group by all
 );
+
+/* STEP 2: create the model */
+CREATE OR REPLACE MODEL `etsy-data-warehouse-dev.semanuele.cluster_model`
+OPTIONS(model_type='logistic_reg', input_label_cols=['cluster']) AS
+SELECT 
+  cluster,
+    n_purchase_days,
+    total_2024_gms as total_gms,
+    diversity_index_items,
+    diversity_index_gms,
+    n_transactions,
+    n_purch_months,
+    n_purch_quarter,
+    n_categories,
+    n_third_level,
+    n_items_purchased,
+    q1_gms,
+    q2_gms,
+    q3_gms,
+    q4_gms,
+    digital_gms,
+    vintage_gms,
+    mto_gms,
+    pod_gms,
+    custo_perso_gms,
+    home_decor_impro_gms,
+    kids_baby_gms,
+    supplies_gms,
+    wedding_gms,
+    jewelry_gms,
+    pet_supplies_gms,
+    avg_craftmanship,
+    emerging_gms
+FROM 
+    `etsy-data-warehouse-dev.semanuele.top_buyers_2024`
+;
