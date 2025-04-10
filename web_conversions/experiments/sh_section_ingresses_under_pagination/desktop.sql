@@ -42,6 +42,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_units AS (
     bucketing_ts,
     visit_id,
     top_channel,
+    landing_event, 
     start_datetime as visit_start,
     row_number () over (partition by bucketing_id order by visit_id asc) as visit_order
   FROM
@@ -79,6 +80,7 @@ QUALIFY row_number () over (partition by bucketing_id order by visit_id asc) = 1
 CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   SELECT DISTINCT
     v.top_channel,
+    v.landing_event, 
     v.bucketing_id
   FROM
     `etsy-data-warehouse-prod.weblog.events` AS e
@@ -141,7 +143,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
 );
 
 -- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
-create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_channel_desktop as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_desktop_channel as (
 SELECT
   xp.variant_id,
   xp.top_channel,
@@ -201,7 +203,7 @@ ORDER BY
   1);
 
 -- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
-create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_desktop as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_desktop as (
 SELECT
   xp.variant_id,
   COUNT(xp.bucketing_id) AS browsers,
@@ -258,7 +260,67 @@ GROUP BY ALL
 ORDER BY
   1);
 
--- how many bucketed browsers saw the treatment? 
+create or replace table etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_channel_landing_desktop as (
+SELECT
+  xp.variant_id,
+  xp.top_channel,
+  xp.landing_event,
+  COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
+  SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
+  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  SAFE_DIVIDE(SUM(e.orders), COUNTIF(e.orders > 0)) AS ocb,
+  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
+  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.completed_checkouts)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
+FROM
+  xp_units AS xp
+LEFT JOIN
+  xp_khm_agg_events_by_unit AS e USING (bucketing_id)
+GROUP BY ALL
+ORDER BY
+  1);
+
+create or replace table etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_desktop_channel_landing_filtered as (
+SELECT
+  xp.variant_id,
+  xp.top_channel,
+  xp.landing_event,
+  COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
+  SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
+  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  SAFE_DIVIDE(SUM(e.orders), COUNTIF(e.orders > 0)) AS ocb,
+  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
+  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.completed_checkouts)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
+FROM
+  xp_units AS xp
+INNER JOIN
+  browsers_with_key_event AS b USING (bucketing_id)
+LEFT JOIN
+  xp_khm_agg_events_by_unit AS e USING (bucketing_id)
+GROUP BY ALL
+ORDER BY
+  1);
+
+/* how many bucketed browsers saw the treatment? */
 select
   count(distinct v.bucketing_id) as bucketed_browsers,
   count(distinct e.bucketing_id) as browsers_saw_treatment,
