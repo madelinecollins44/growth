@@ -3,9 +3,9 @@ This analysis is meant to figure out if some channels responded better to this.
 -- desktop: https://atlas.etsycorp.com/catapult/1361091594266 (growth_regx.sh_section_ingresses_under_pagination_desktop)
 -- mobile web: https://atlas.etsycorp.com/catapult/1361101148193 (growth_regx.sh_section_ingresses_under_pagination_mweb) */
 
------
+------------------------------------------------------------------------------------------
 -- TESTING
---------
+------------------------------------------------------------------------------------------
 --make sure bucketing_id + visit are still unique
 select visit_id, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script9f5b85181fb4f1b4d3812a20f1ee628f2085669a.xp_visits group by all order by 3 desc 
 
