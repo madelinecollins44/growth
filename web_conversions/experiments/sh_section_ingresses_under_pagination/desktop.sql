@@ -193,25 +193,26 @@ select
   count(distinct e.bucketing_id) as browsers_saw_treatment,
   count(distinct e.bucketing_id) / count(distinct v.bucketing_id) as share_browsers_saw_treatment
 from 
-  etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits v
+  etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.xp_units v
 left join 
-  etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event e using (bucketing_id)
+  etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.browsers_with_key_event e using (bucketing_id)
+  
 ------------------------------------------------------------------------------------------
 -- TESTING
 ------------------------------------------------------------------------------------------
+--how many browsers were bucketed
+select count(distinct bucketing_id) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.xp_units_raw
+----- 4584663
+
 --make sure bucketing_id + visit are still unique
-select visit_id, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits group by all order by 3 desc limit 10
-
---find a browser w/ a high visit count to check visit order
-select bucketing_id, count(visit_id) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits group by all order by 2 desc  limit 10
-
---does ordering work? 
-select * from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits where bucketing_id in ('eUu6shzIyoyHizRX4lFJZTUtm46n') order by visit_order asc
+select visit_id, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.xp_units group by all order by 3 desc limit 10
+select count(distinct bucketing_id) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.xp_units
+----- 4584663 (all units are there)
 
 --make sure the top channel carried over properly
-select top_channel, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 3 desc limit 10
-select bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 2 desc limit 10
-select bucketing_id, count(distinct top_channel), count(top_channel) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 3 desc 
-select top_channel, count(distinct bucketing_id), count(bucketing_id) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 3 desc 
+select top_channel, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.browsers_with_key_event group by all order by 3 desc limit 10
+select bucketing_id, count(*) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.browsers_with_key_event group by all order by 2 desc limit 10
+select bucketing_id, count(distinct top_channel), count(top_channel) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.browsers_with_key_event group by all order by 3 desc 
+select top_channel, count(distinct bucketing_id), count(bucketing_id) from etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.browsers_with_key_event group by all order by 3 desc 
 
 --make sure browser from browsers_with_key_event matches first channel from xp_visits 
