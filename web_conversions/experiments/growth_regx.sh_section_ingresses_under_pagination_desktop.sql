@@ -205,6 +205,16 @@ ORDER BY
 -- from z_values
 -- ;
 
+
+-- how many bucketed browsers saw the treatment? 
+select
+  count(distinct v.bucketing_id) as bucketed_browsers,
+  count(distinct e.bucketing_id) as browsers_saw_treatment,
+  count(distinct e.bucketing_id) / count(distinct v.bucketing_id) as share_browsers_saw_treatment
+from 
+  etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits v
+left join 
+  etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event e using (bucketing_id)
 ------------------------------------------------------------------------------------------
 -- TESTING
 ------------------------------------------------------------------------------------------
