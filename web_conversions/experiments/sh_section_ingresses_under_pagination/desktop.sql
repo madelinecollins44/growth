@@ -2,7 +2,6 @@
 This analysis is meant to figure out if some channels responded better to this. 
 -- desktop: https://atlas.etsycorp.com/catapult/1361091594266 (growth_regx.sh_section_ingresses_under_pagination_desktop)
 -- mobile web: https://atlas.etsycorp.com/catapult/1361101148193 (growth_regx.sh_section_ingresses_under_pagination_mweb) */
-
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- DESKTOP
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -27,23 +26,30 @@ CREATE OR REPLACE TEMPORARY TABLE xp_units AS (
   SELECT 
     bucketing_id,
     variant_id,
-    bucketing_ts
+    bucketing_ts,
+    visit_id,
+    top_channel,
+    start_datetime as visit_start,
+    row_number () over (partition by bucketing_id order by visit_id asc) as visit_order
   FROM
-    `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
+    `etsy-data-warehouse-prod.catapult_unified.bucketing_period` xp
+  INNER JOIN 
+    `etsy-data-warehouse-prod.weblog.visits` AS v
+   ON
+      xp.bucketing_id = v.browser_id
+      AND TIMESTAMP_TRUNC(xp.bucketing_ts, SECOND) <= v.end_datetime
   WHERE
-    _date = end_date
+    xp._date = end_date
     AND experiment_id = config_flag_param
+    AND     v._date BETWEEN start_date AND end_date
+QUALIFY row_number () over (partition by bucketing_id order by visit_id asc) = 1 -- only grab the channel from the first visit
 );
 
 -- Get experiment's bucketed visits
 CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
   SELECT
     v.visit_id,
-    v.top_channel,
     xp.bucketing_id,
-    v.start_datetime,
-    v._date,
-    row_number () over (partition by bucketing_id order by visit_id asc) as visit_order
   FROM
     `etsy-data-warehouse-prod.weblog.visits` AS v
   INNER JOIN
@@ -53,7 +59,6 @@ CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
         AND TIMESTAMP_TRUNC(xp.bucketing_ts, SECOND) <= v.end_datetime
   WHERE
     v._date BETWEEN start_date AND end_date
-order by 4 asc
 );
 
 /* HERE, RECREATE METRICS IN CATAPULT USING EVENT FILTER */
@@ -69,7 +74,6 @@ CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   WHERE
     e._date BETWEEN start_date AND end_date
     AND e.event_type = "shop_home_listing_grid_seen" -- event fires when a browser sees the listing grid 
-    and visit_order = 1 -- only grab channel from first visit
 );
 
 -- Get KHM aggregated events for experiment's bucketed units
@@ -83,7 +87,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events AS (
   FROM
     `etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily` AS e
   INNER JOIN
-    xp_units AS xp USING (bucketing_id)
+   xp_units AS xp USING (bucketing_id)
   WHERE
     e._date BETWEEN start_date AND end_date
     AND e.experiment_id = config_flag_param
@@ -181,29 +185,6 @@ LEFT JOIN
 GROUP BY ALL
 ORDER BY
   1);
-
--- -- z score calc
--- with browser_count as 
--- (select
---   sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
---   sum(case when variant_id = 'on' then browsers end) as browsers_t,
---   sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
---   sum(case when variant_id = 'off' then browsers end) as browsers_c,
--- from 
---   etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_desktop_filtered
--- )
--- , z_values as (
---   select 
---   (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
---   ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
---   (1/browsers_c) + (1/browsers_t) as denom2
--- from 
---   browser_count
---   )
--- select 
---   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
--- from z_values
--- ;
 
 
 -- how many bucketed browsers saw the treatment? 
