@@ -35,7 +35,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_units AS (
     AND experiment_id = config_flag_param
 );
 
--- Get experiment's bucketed visits 
+-- Get experiment's bucketed visits
 CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
   SELECT
     v.visit_id,
@@ -43,7 +43,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
     xp.bucketing_id,
     v.start_datetime,
     v._date,
-    row_number () over (partition by bucketing_id order by visit_id asc) as visit_order -- need this to grab channel from first visit in next step
+    row_number () over (partition by bucketing_id order by visit_id asc) as visit_order
   FROM
     `etsy-data-warehouse-prod.weblog.visits` AS v
   INNER JOIN
@@ -60,7 +60,7 @@ order by 4 asc
 -- Get browsers who saw the listing grid
 CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   SELECT DISTINCT
-    case when visit_order = 1 then v.top_channel end as top_channel,
+    v.top_channel,
     v.bucketing_id
   FROM
     `etsy-data-warehouse-prod.weblog.events` AS e
@@ -69,6 +69,7 @@ CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
   WHERE
     e._date BETWEEN start_date AND end_date
     AND e.event_type = "shop_home_listing_grid_seen" -- event fires when a browser sees the listing grid 
+    and visit_order = 1 -- only grab channel from first visit
 );
 
 -- Get KHM aggregated events for experiment's bucketed units
@@ -154,7 +155,7 @@ ORDER BY
 create or replace table etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_desktop_filtered as (
 SELECT
   xp.variant_id,
-  v.top_channel,
+  b.top_channel,
   COUNT(xp.bucketing_id) AS browsers,
   -- metrics
   SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
@@ -204,16 +205,22 @@ ORDER BY
 -- from z_values
 -- ;
 
-
-
 ------------------------------------------------------------------------------------------
 -- TESTING
 ------------------------------------------------------------------------------------------
 --make sure bucketing_id + visit are still unique
-select visit_id, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script9f5b85181fb4f1b4d3812a20f1ee628f2085669a.xp_visits group by all order by 3 desc 
+select visit_id, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits group by all order by 3 desc limit 10
 
 --find a browser w/ a high visit count to check visit order
-select bucketing_id, count(visit_id) from etsy-bigquery-adhoc-prod._script9f5b85181fb4f1b4d3812a20f1ee628f2085669a.xp_visits group by all order by 2 desc 
+select bucketing_id, count(visit_id) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits group by all order by 2 desc  limit 10
 
 --does ordering work? 
-select * from etsy-bigquery-adhoc-prod._script9f5b85181fb4f1b4d3812a20f1ee628f2085669a.xp_visits where bucketing_id in ('eUu6shzIyoyHizRX4lFJZTUtm46n') order by visit_order asc
+select * from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.xp_visits where bucketing_id in ('eUu6shzIyoyHizRX4lFJZTUtm46n') order by visit_order asc
+
+--make sure the top channel carried over properly
+select top_channel, bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 3 desc limit 10
+select bucketing_id, count(*) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 2 desc limit 10
+select bucketing_id, count(distinct top_channel), count(top_channel) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 3 desc 
+select top_channel, count(distinct bucketing_id), count(bucketing_id) from etsy-bigquery-adhoc-prod._script1cdcf08310b30c3142493312323f1f24251080b7.browsers_with_key_event group by all order by 3 desc 
+
+--make sure browser from browsers_with_key_event matches first channel from xp_visits 
