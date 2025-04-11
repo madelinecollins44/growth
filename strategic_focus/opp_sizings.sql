@@ -53,6 +53,18 @@ where 1=1
 
 /* SHOP TRUST
 -- surfaces: shop home page, 'meet the seller' on listing page */
+select
+  count(distinct v.visit_id) as visits_w_engagement,
+  count(distinct case when v.converted > 0 then v.visit_id end) as visits_w_engagement_convert
+from
+  etsy-data-warehouse-prod.weblog.events e 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where
+  v._date >= current_date-30
+	and event_type in ('shop_home','shop_owners_seen')
+group by all 
+
 
 /* REVIEWS
 -- surfaces: reviews on listing page */
