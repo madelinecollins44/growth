@@ -51,8 +51,7 @@ where 1=1
   and v._date >= current_date-30
   and e.event_type in ('shop_home')	
 
-/* SHOP TRUST
--- surfaces: shop home page, 'meet the seller' on listing page */
+/* SHOP TRUST-- surfaces: shop home page, 'meet the seller' on listing page */
 select
   count(distinct v.visit_id) as visits_w_engagement,
   count(distinct case when v.converted > 0 then v.visit_id end) as visits_w_engagement_convert
@@ -66,8 +65,7 @@ where
 group by all 
 
 
-/* REVIEWS
--- surfaces: reviews on listing page */
+/* REVIEWS-- surfaces: reviews on listing page */
 with engagements as (
 select distinct
   visit_id
@@ -76,7 +74,7 @@ from
 where
 	date(_partitiontime) >= current_date-30
 	and ((beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened",'listing_page_reviews_content_toggle_opened')) --all these events are lp specific 
-      or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing'))  -- sorting on listing page 
+      or ((beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing')))  -- sorting on listing page 
 )
 select
   count(distinct v.visit_id) as visits_w_engagement,
@@ -89,11 +87,5 @@ where 1=1
   and platform in ('mobile_web','desktop')
   and v._date >= current_date-30
 group by all 
-
-
-
-
-/* LISTING SCANNABILITY
--- surfaces: listing page */
 
 
