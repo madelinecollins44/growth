@@ -77,12 +77,15 @@ inner join
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where
 	date(_partitiontime) >= current_date-30
+  and v.platform in ('mobile_web','destkop')
   and v._date >= current_date-30
 	and ((beacon.event_name in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened",'listing_page_reviews_content_toggle_opened') --all these events are lp specific 
       or (beacon.event_name) in ("sort_reviews") and (select value from unnest(beacon.properties.key_value) where key = "primary_event_source") in ('view_listing')))  -- sorting on listing page 
 group by all 
 
 
+
 /* LISTING SCANNABILITY
 -- surfaces: listing page */
+
 
