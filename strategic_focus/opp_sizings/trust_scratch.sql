@@ -125,6 +125,7 @@ where 1=1
   and v._date >= current_date-30
 group by all 
 
+-- shop home + listing page 
 with engagements as (
 select distinct
   visit_id
@@ -132,7 +133,7 @@ from
   etsy-data-warehouse-prod.weblog.events
 where
 	_date >= current_date-30
-	and event_type in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened",'listing_page_reviews_content_toggle_opened','sort_reviews') --all these events are lp specific 
+	and event_type in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened",'listing_page_reviews_content_toggle_opened','sort_reviews','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page') 
 )
 select
   count(distinct v.visit_id) as visits_w_engagement,
