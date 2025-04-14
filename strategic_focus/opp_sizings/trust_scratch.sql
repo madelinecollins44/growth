@@ -125,4 +125,24 @@ where 1=1
   and v._date >= current_date-30
 group by all 
 
-
+with engagements as (
+select distinct
+  visit_id
+from
+  etsy-data-warehouse-prod.weblog.events
+where
+	_date >= current_date-30
+	and event_type in ("listing_page_reviews_pagination","appreciation_photo_overlay_opened",'listing_page_reviews_content_toggle_opened','sort_reviews') --all these events are lp specific 
+)
+select
+  count(distinct v.visit_id) as visits_w_engagement,
+  count(distinct case when v.converted > 0 then v.visit_id end) as visits_w_engagement_convert,
+  sum(total_gms) as total_gms
+from
+  engagements b 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 1=1
+  and platform in ('mobile_web','desktop')
+  and v._date >= current_date-30
+group by all 
