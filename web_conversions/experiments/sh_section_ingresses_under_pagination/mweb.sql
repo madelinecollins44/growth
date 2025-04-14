@@ -320,13 +320,14 @@ GROUP BY ALL
 ORDER BY
   1);
 
--- /* how many bucketed browsers saw the treatment? */
--- select
---   count(distinct v.bucketing_id) as bucketed_browsers,
---   count(distinct e.bucketing_id) as browsers_saw_treatment,
---   count(distinct e.bucketing_id) / count(distinct v.bucketing_id) as share_browsers_saw_treatment
--- from 
---   etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.xp_units v
--- left join 
---   etsy-bigquery-adhoc-prod._scripte6cea76e8600f9a271762f0f24ff96cefa626a6d.browsers_with_key_event e using (bucketing_id)
+/* how many bucketed browsers saw the treatment? */
+select
+  count(distinct v.bucketing_id) as bucketed_browsers,
+  count(distinct e.bucketing_id) as browsers_saw_treatment,
+  count(distinct e.bucketing_id) / count(distinct v.bucketing_id) as share_browsers_saw_treatment
+from 
+  etsy-bigquery-adhoc-prod._scripted5f27326e245a2d1c08976fee715ab79a9f11dc.xp_units v
+left join 
+  etsy-bigquery-adhoc-prod._scripted5f27326e245a2d1c08976fee715ab79a9f11dc.browsers_with_key_event e using (bucketing_id)
+  
   
