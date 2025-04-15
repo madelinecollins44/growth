@@ -1,4 +1,7 @@
--- VIEW LISTING MULTIPLE TIMES: this will show if at 
+/* VIEW LISTING MULTIPLE TIMES
+-- browser is bucketed here if they viewed the same listing 1,2,3,4,5+ times in their bucketing visit 
+*/
+
 with unit_listing_views as (
     -- browser bucketed tests
     select 
@@ -37,3 +40,15 @@ select
       when max(listing_views) = 4 and '4'
      else '5+' end as segment_value
   from unit_listing_views
+
+
+/* REVIEW ENGAGEMENT
+-- bucketing for segment: 
+------ 'engaged' : engaged w reviews, engaged w reviews + saw reviews
+------ 'saw reviews' : saw reviews without engagement 
+------ 'none' : did not see or engage with reviews
+
+-- defintions: 
+------ saw reviews: listing_page_reviews_seen
+------ engage with reviews: listing_page_reviews_pagination, appreciation_photo_overlay_opened, listing_page_reviews_content_toggle_opened, shop_home_reviews_pagination, inline_appreciation_photo_click_shop_page 
+*/
