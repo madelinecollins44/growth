@@ -329,5 +329,31 @@ from
   etsy-bigquery-adhoc-prod._scripted5f27326e245a2d1c08976fee715ab79a9f11dc.xp_units v
 left join 
   etsy-bigquery-adhoc-prod._scripted5f27326e245a2d1c08976fee715ab79a9f11dc.browsers_with_key_event e using (bucketing_id)
+
+
+/* z score calc -- use this to find significance */
+-- conversion rate 
+with browser_count as 
+(select
+  sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
+  sum(case when variant_id = 'on' then browsers end) as browsers_t,
+  sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
+  sum(case when variant_id = 'off' then browsers end) as browsers_c,
+from 
+  table etsy-data-warehouse-dev.madelinecollins.xp_section_ingress_mweb
+)
+, z_values as (
+  select 
+  (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
+  ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
+  (1/browsers_c) + (1/browsers_t) as denom2
+from 
+  browser_count
+  )
+select 
+  abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
+from z_values
+;
+
   
   
