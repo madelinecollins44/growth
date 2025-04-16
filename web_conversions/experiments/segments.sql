@@ -33,12 +33,12 @@ select
   bucketing_id, 
   bucketing_id_type,
   case 
-      -- when recent_listing_views = 0 then '0' (default segment value will be applied)
-      when max(listing_views) = 1 then '1'
-      when max(listing_views) = 2 then '2'
-      when max(listing_views) = 3 then '3'
-      when max(listing_views) = 4 then '4'
-     else '5+' end as segment_value
+    when max(listing_views) = 0 then '0' 
+    when max(listing_views) = 1 then '1'
+    when max(listing_views) = 2 then '2'
+    when max(listing_views) = 3 then '3'
+    when max(listing_views) = 4 then '4'
+    else '5+' end as segment_value
   from unit_listing_views
 
 
