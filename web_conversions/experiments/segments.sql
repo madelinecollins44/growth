@@ -1,16 +1,16 @@
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- VIEW LISTING MULTIPLE TIMES
------ browser is bucketed here if they viewed the same listing 1,2,3,4,5+ times in their bucketing visit 
+----- Segmentation definition: a bucketed units repeat listing views (views of the same listing) in the last 14 days before bucketing
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-with unit_listing_views as (
+-- segmentations 
+with unit_recent_listing_views as (
     -- browser bucketed tests
     select 
       {{input_run_date}} as _date,
       split(lv.visit_id, ".")[0] as bucketing_id, 
       1 as bucketing_id_type, 
-      lv.listing_id,
-      count(lv.sequence_number)) as listing_views
+      listing_id,
+      count(distinct concat(lv.visit_id, lv.sequence_number)) as recent_listing_views
     from `etsy-data-warehouse-prod.analytics.listing_views` lv
     where lv._date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
     group by all
@@ -20,8 +20,8 @@ with unit_listing_views as (
       {{input_run_date}} as _date,
       cast(v.user_id as string) as bucketing_id, 
       2 as bucketing_id_type, 
-      lv.listing_id,
-      count(lv.sequence_number)) as listing_views
+      listing_id,
+      count(distinct concat(lv.visit_id, lv.sequence_number)) as recent_listing_views
     from `etsy-data-warehouse-prod.analytics.listing_views` lv
     left join `etsy-data-warehouse-prod.weblog.visits` v 
       on v.visit_id = lv.visit_id
@@ -34,13 +34,12 @@ select
   bucketing_id, 
   bucketing_id_type,
   case 
-    when max(listing_views) = 0 then '0' 
     when max(listing_views) = 1 then '1'
     when max(listing_views) = 2 then '2'
     when max(listing_views) = 3 then '3'
     when max(listing_views) = 4 then '4'
     else '5+' end as segment_value
-  from unit_listing_views
+  from unit_recent_listing_views
 
 ------TESTING
 with unit_listing_views as (
