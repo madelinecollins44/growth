@@ -90,6 +90,12 @@ from agg
 where segment_value is not null
 QUALIFY ROW_NUMBER() OVER (PARTITION BY segment_value ORDER BY RAND()) = 1
 LIMIT 5
+/* bucketing_id	segment_value
+MsUnXKe1w4CAtqR5Ho2G8kWhyFC2	1
+E887B3FB031D47B083C19923A2A8	5+
+wjiWrNJIQWGVdM9TxBy80A	2
+kkabya_0-v1S9gi94optH3VEwVR2	4
+D51480042CED43C0A000419842B9	3 */
 
 
 /* REVIEW ENGAGEMENT
