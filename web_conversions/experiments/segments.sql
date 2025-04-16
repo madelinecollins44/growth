@@ -102,7 +102,7 @@ D51480042CED43C0A000419842B9	3 */
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- REVIEW ENGAGEMENT
 ----- bucketing for segment: 
-------- 'engaged' : engaged w reviews, engaged w reviews + saw reviews (listing_page_reviews_pagination, appreciation_photo_overlay_opened, listing_page_reviews_content_toggle_opened, shop_home_reviews_pagination, inline_appreciation_photo_click_shop_page )
+------- 'engaged' : engaged w reviews, engaged w reviews + saw reviews (sort_reviews, listing_page_reviews_pagination, appreciation_photo_overlay_opened, listing_page_reviews_content_toggle_opened, shop_home_reviews_pagination, inline_appreciation_photo_click_shop_page )
 ------- 'saw reviews' : saw reviews without engagement 
 ------- 'none' : did not see or engage with reviews
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
