@@ -183,3 +183,6 @@ where 1=1
 group by all
 
 select segment_value, count(distinct bucketing_id) from etsy-bigquery-adhoc-prod._scriptc52539c2284ac4359b2932a9a528ef9065a91f38.review_engagement_segment group by all 
+-- segment_value	f0_
+-- saw_reviews	9532574
+-- engaged_with_reviews	10397555
