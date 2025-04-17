@@ -1,3 +1,5 @@
+/* link to segmentation checks in BQ: https://docs.google.com/spreadsheets/d/19KuDMYtx9ydrVQ0d6Bmv5Zo1z14_FEvcxxwEoCs7vLc/edit?gid=2031585801#gid=2031585801 */
+
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- VIEW LISTING MULTIPLE TIMES
 ----- Segmentation definition: a bucketed units repeat listing views (views of the same listing) in the last 14 days before bucketing
