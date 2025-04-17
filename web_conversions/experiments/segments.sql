@@ -141,7 +141,7 @@ select
   bucketing_id_type,
   case 
      when review_engagement_count > 0 then 'engaged_with_reviews'
-     when review_seen_count > 0 then 'saw_reviews'
+     when review_seen_count > 0 then 'only_saw_reviews'
      else 'undefined'
   end as segment_value,
 from review_engagements
