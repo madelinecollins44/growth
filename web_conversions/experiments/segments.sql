@@ -116,7 +116,7 @@ with review_engagements  as (
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
     from etsy-data-warehouse-prod.weblog.events 
     where _date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
-    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_seen' -- listing page events
+    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
                         'sort_reviews', -- event on both pages 
                         'shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')-- shop home events
     group by all
@@ -130,7 +130,7 @@ with review_engagements  as (
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
   from etsy-data-warehouse-prod.weblog.events 
     where _date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
-    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_seen' -- listing page events
+    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
                         'sort_reviews', -- event on both pages 
                         'shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')-- shop home events
     group by all
@@ -145,6 +145,4 @@ select
      else 'undefined'
   end as segment_value,
 from review_engagements
-group by all
-
------ TESTING: etsy-bigquery-adhoc-prod._script4d06011821075f45e0a17b6d800d8beedb4bab01.review_engagement_segment
+group by all 
