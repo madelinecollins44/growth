@@ -158,9 +158,24 @@ group by all
 2025-04-03	2Aemqa6r3beHPDvQuUbt2yr9DtRA	1	saw_reviews
 */
 
-select event_type, count(sequence_number) from etsy-data-warehouse-prod.weblog.events 
+/* bucketing ids with both -- these should be engaged with reviews 
+_date	bucketing_id
+2025-04-09	32147677
+2025-04-09	107608699
+2025-04-09	236775088
+2025-04-09	18688294
+2025-04-03	8bCI7N754tO6dgkMULimvi_kTGvW	
+2025-04-03	GPQ9ATGh7ewTvALMKzePjs49rjuN	
+2025-04-14	azTuIy6RGQ-JpemcpqQxZ2yT1TwE	
+2025-04-14	aQMzQBS6NCf8S5ra98tVMYIWHzH0	
+*/
+
+select * from etsy-bigquery-adhoc-prod._scriptc52539c2284ac4359b2932a9a528ef9065a91f38.review_engagement_segment where bucketing_id  in ('8bCI7N754tO6dgkMULimvi_kTGvW') and _date in ('2025-04-03') 
+
+select event_type, count(sequence_number),count(distinct concat(visit_id, sequence_number)) from etsy-data-warehouse-prod.weblog.events 
 where 1=1
-  and split(visit_id, ".")[0] in ('QUspz7Nlk8aICOmX1ztcLtbGV6fZ') 
+  -- and user_id = 32147677
+  and split(visit_id, ".")[0] in ('8bCI7N754tO6dgkMULimvi_kTGvW') 
   and _date in ('2025-04-03')
   and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
                       'sort_reviews', -- event on both pages 
