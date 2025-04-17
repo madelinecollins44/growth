@@ -109,13 +109,13 @@ D51480042CED43C0A000419842B9	3 */
 with review_engagements  as (
     -- browser bucketed tests
     select 
-       _date,
+      {{input_run_date}} as _date,
       split(visit_id, ".")[0] as bucketing_id, 
       1 as bucketing_id_type, 
       count(case when event_type in ('listing_page_reviews_container_top_seen','shop_home_reviews_section_top_seen') then sequence_number end) as review_seen_count,
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
     from etsy-data-warehouse-prod.weblog.events 
-    where _date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
+    where _date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
     and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
                         'sort_reviews', -- event on both pages 
                         'shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')-- shop home events
@@ -123,13 +123,13 @@ with review_engagements  as (
     union all 
     -- user bucketed_tests 
     select 
-       _date,
+      {{input_run_date}} as _date,
       cast(user_id as string) as bucketing_id, 
       2 as bucketing_id_type, 
       count(case when event_type in ('listing_page_reviews_container_top_seen','shop_home_reviews_section_top_seen') then sequence_number end) as review_seen_count,
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
   from etsy-data-warehouse-prod.weblog.events 
-    where _date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
+    where _date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
     and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
                         'sort_reviews', -- event on both pages 
                         'shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')-- shop home events
