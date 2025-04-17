@@ -185,3 +185,56 @@ select segment_value, count(distinct bucketing_id) from etsy-bigquery-adhoc-prod
 -- segment_value	f0_
 -- saw_reviews	9532574
 -- engaged_with_reviews	10397555
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+-- SELLER TIER
+----- Segmentation definition: the seller tier of the shop home page a unit is bucketed on
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+with shop_ids as (
+select
+  date(_partitiontime) as _date,
+  beacon.event_name,
+  beacon.browser_id as bucketing_id,
+  1 as bucketing_id_type, 
+  sequence_number,
+  visit_id, 
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+	date(_partitiontime) between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
+  and beacon.event_name in ('shop_home')
+group by all
+union all
+  date(_partitiontime) as _date,
+  beacon.event_name,
+  beacon.user_id as bucketing_id,
+  2 as bucketing_id_type, 
+  sequence_number,
+  visit_id, 
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+	date(_partitiontime) between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
+  and beacon.event_name in ('shop_home')
+group by all
+)
+, shop_tier as (
+select
+  si.*,
+  sb.seller_tier_new
+from 
+  shop_ids si
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb
+)
+select
+  _date,
+  bucketing_id,
+  bucketing_id_type,
+  visit_id,
+  sequence_number,
+  seller_tier_new
+from 
+  shop_tier
