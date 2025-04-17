@@ -106,7 +106,6 @@ D51480042CED43C0A000419842B9	3 */
 ------- 'saw reviews' : saw reviews without engagement 
 ------- 'none' : did not see or engage with reviews
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
--- segmentations 
 with review_engagements  as (
     -- browser bucketed tests
     select 
@@ -144,5 +143,6 @@ select
      when review_engagement_count > then 'engaged with reviews'
      when review_seen_count > 0 then 'saw reviews'
      else 'undefined'
+  end as segment_value,
   from unit_recent_listing_views
 group by all 
