@@ -117,9 +117,7 @@ with review_engagements  as (
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
     from etsy-data-warehouse-prod.weblog.events 
     where _date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
-    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
-                        'sort_reviews', -- event on both pages 
-                        'shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')-- shop home events
+    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' ,'sort_reviews','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')
     group by all
     union all 
     -- user bucketed_tests 
@@ -129,24 +127,22 @@ with review_engagements  as (
       2 as bucketing_id_type, 
       count(case when event_type in ('listing_page_reviews_container_top_seen','shop_home_reviews_section_top_seen') then sequence_number end) as review_seen_count,
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
-  from etsy-data-warehouse-prod.weblog.events 
+   from etsy-data-warehouse-prod.weblog.events 
     where _date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
-    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' -- listing page events
-                        'sort_reviews', -- event on both pages 
-                        'shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')-- shop home events
+    and event_type in ('listing_page_reviews_pagination', 'appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','listing_page_reviews_container_top_seen' ,'sort_reviews','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','shop_home_reviews_section_top_seen')
     group by all
 )
-select 
-  _date,            
-  bucketing_id, 
-  bucketing_id_type,
-  case 
-     when review_engagement_count > 0 then 'engaged_with_reviews'
-     when review_seen_count > 0 then 'only_saw_reviews'
-     else 'undefined'
-  end as segment_value,
-from review_engagements
-group by all 
+  select 
+   _date,            
+   bucketing_id, 
+   bucketing_id_type,
+    case 
+      when review_engagement_count > 0 then 'engaged_with_reviews'
+      when review_seen_count > 0 then 'only_saw_reviews'
+      else 'undefined'
+   end as segment_value,
+  from review_engagements
+  group by all
 
 ----- TESTING
 -- select * from etsy-bigquery-adhoc-prod._scriptc52539c2284ac4359b2932a9a528ef9065a91f38.review_engagement_segment QUALIFY ROW_NUMBER() OVER (PARTITION BY segment_value ORDER BY RAND()) = 1
