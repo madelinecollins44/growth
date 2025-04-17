@@ -3,6 +3,7 @@
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- VIEW LISTING MULTIPLE TIMES
 ----- Segmentation definition: a bucketed units repeat listing views (views of the same listing) in the last 14 days before bucketing
+----- etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_repeat_listing_views_1744910606 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- segmentations 
 with unit_recent_listing_views as (
@@ -108,6 +109,8 @@ D51480042CED43C0A000419842B9	3 */
 ------- 'engaged' : engaged w reviews, engaged w reviews + saw reviews (sort_reviews, listing_page_reviews_pagination, appreciation_photo_overlay_opened, listing_page_reviews_content_toggle_opened, shop_home_reviews_pagination, inline_appreciation_photo_click_shop_page )
 ------- 'saw reviews' : saw reviews without engagement 
 ------- 'none' : did not see or engage with reviews
+
+----- etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_review_engagement_last_14_days_1744913439
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 with review_engagements  as (
     -- browser bucketed tests
