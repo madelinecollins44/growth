@@ -124,7 +124,7 @@ with review_engagements  as (
     -- user bucketed_tests 
     select 
        _date,
-      cast(v.user_id as string) as bucketing_id, 
+      cast(user_id as string) as bucketing_id, 
       2 as bucketing_id_type, 
       count(case when event_type in ('listing_page_reviews_container_top_seen','shop_home_reviews_section_top_seen') then sequence_number end) as review_seen_count,
       count(case when event_type in ('listing_page_reviews_pagination','appreciation_photo_overlay_opened','listing_page_reviews_content_toggle_opened','shop_home_reviews_pagination','inline_appreciation_photo_click_shop_page','sort_reviews') then sequence_number end) as review_engagement_count,
@@ -140,9 +140,11 @@ select
   bucketing_id, 
   bucketing_id_type,
   case 
-     when review_engagement_count > 0 then 'engaged with reviews'
-     when review_seen_count > 0 then 'saw reviews'
+     when review_engagement_count > 0 then 'engaged_with_reviews'
+     when review_seen_count > 0 then 'saw_reviews'
      else 'undefined'
   end as segment_value,
 from review_engagements
-group by all 
+group by all
+
+----- TESTING: etsy-bigquery-adhoc-prod._script4d06011821075f45e0a17b6d800d8beedb4bab01.review_engagement_segment
