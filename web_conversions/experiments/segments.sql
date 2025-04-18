@@ -195,7 +195,7 @@ select segment_value, count(distinct bucketing_id) from etsy-bigquery-adhoc-prod
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 with shop_ids as (
 select
-  date(_partitiontime) as _date,
+  {{input_run_date}} as _date,
   beacon.event_name,
   beacon.browser_id as bucketing_id,
   1 as bucketing_id_type, 
@@ -209,7 +209,7 @@ where
   and beacon.event_name in ('shop_home')
 group by all
 union all
-  date(_partitiontime) as _date,
+  {{input_run_date}} as _date,
   beacon.event_name,
   beacon.user_id as bucketing_id,
   2 as bucketing_id_type, 
