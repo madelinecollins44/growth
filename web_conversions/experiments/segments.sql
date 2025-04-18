@@ -208,10 +208,11 @@ where
 	date(_partitiontime) between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
   and beacon.event_name in ('shop_home')
 group by all
+select
 union all
   {{input_run_date}} as _date,
   beacon.event_name,
-  beacon.user_id as bucketing_id,
+  cast(beacon.user_id as string) as bucketing_id,
   2 as bucketing_id_type, 
   sequence_number,
   visit_id, 
@@ -226,11 +227,12 @@ group by all
 , shop_tier as (
 select
   si.*,
-  sb.seller_tier_new
+  sb.seller_tier_new as segment_value
 from 
   shop_ids si
-inner join 
-  etsy-data-warehouse-prod.rollups.seller_basics sb
+left join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb 
+    on si.shop_id=cast(sb.shop_id as string)
 )
 select
   _date,
