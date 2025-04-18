@@ -243,3 +243,11 @@ select
   seller_tier_new
 from 
   shop_tier
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+-- MFTS MODULE TYPE
+----- Segmentation definition: the more from this shop module layout a a bucketed unit saw
+----- count(distinct listing_id), count(disitnct section_id), concat(listing_number, section_number) as type 
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+-- segmentations 
