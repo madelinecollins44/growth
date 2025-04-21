@@ -220,7 +220,7 @@ union all
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
-	date(_partitiontime) between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
+  date(_partitiontime) = {{ input_run_date }} 
   and beacon.event_name in ('shop_home')
 group by all
 )
