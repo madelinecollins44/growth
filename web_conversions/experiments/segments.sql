@@ -268,6 +268,71 @@ buckets	segment_value
 811	Closed Shop
 */
 
+-- select bucketing_id_type, count(distinct bucketing_id) from etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293 group by all
+-- bucketing_id_type	f0_
+-- 1	20841564
+-- 2	6047575
+
+-- SELECT  
+--   segment_value, 
+--   COUNT(*) AS total_bucketing_units,
+--   COUNT(*) / (SELECT COUNT(*) FROM `etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293`) AS perc_bucketing_units
+-- FROM `etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293` 
+-- GROUP BY 1
+-- ORDER BY 2 DESC
+-- segment_value	total_bucketing_units	perc_bucketing_units
+-- undefined	82100422	0.97641034464931609
+-- Top_Shop	688545	0.0081887820352076063
+-- Power_Shop	504530	0.00600031399577848
+-- Medium_Shop	395883	0.0047081884240595647
+-- Small_Shop	278752	0.0033151636710428375
+-- Listed_Shop	115221	0.0013703093550583559
+-- Closed_Shop	580	6.8978695370969382e-06
+
+
+WITH experiment_bucketing_units AS (
+  SELECT *
+  FROM `etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293`
+    INNER JOIN `etsy-data-warehouse-prod.catapult_unified.bucketing_period` USING(_date, bucketing_id, bucketing_id_type, bucketing_ts)
+  WHERE experiment_id = 'growth_regx.sh_search_bar_redesign_mweb'
+)
+
+SELECT  
+  segment_value, 
+  COUNT(*) AS total_bucketing_units,
+  COUNT(*) / (SELECT COUNT(*) FROM experiment_bucketing_units)
+FROM experiment_bucketing_units
+GROUP BY 1
+ORDER BY 2 DESC
+/* segment_value	total_bucketing_units	f0_
+Top_Shop	274703	0.3202719308677211
+Power_Shop	203081	0.2367689613602606
+Medium_Shop	169478	0.19759174926957346
+Small_Shop	121101	0.14118976166991948
+Listed_Shop	45032	0.052502104421266661
+undefined	44317	0.051668497105109137
+Closed_Shop	6	6.9953061495736361e-06
+*/
+
+WITH experiment_bucketing_units AS (
+  SELECT *
+  FROM `etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293`
+    INNER JOIN `etsy-data-warehouse-prod.catapult_unified.bucketing_period` USING(_date, bucketing_id, bucketing_id_type, bucketing_ts)
+  WHERE experiment_id = 'growth_regx.sh_search_bar_redesign_mweb'
+)
+
+SELECT  
+  segment_value, 
+  COUNT(*) AS total_bucketing_units,
+  COUNT(*) / (SELECT COUNT(*) FROM experiment_bucketing_units)
+FROM experiment_bucketing_units
+GROUP BY 1
+ORDER BY 2 DESC
+
+select _date, count(distinct bucketing_id) from etsy-data-warehouse-prod.catapult_unified.bucketing_period where experiment_id = 'growth_regx.sh_search_bar_redesign_mweb' and (_date = ('2025-04-20') or _date in ('2025-04-19')) group by all 
+-- _date	f0_
+-- 2025-04-19	2124754
+-- 2025-04-20	2982472
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MFTS MODULE TYPE
 ----- Segmentation definition: the more from this shop module layout a a bucketed unit saw
