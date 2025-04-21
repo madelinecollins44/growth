@@ -244,6 +244,28 @@ select
 from 
   shop_tier
 
+
+----- TESTING
+select 
+  count(distinct bucketing_id) as buckets,
+  segment_value
+from 
+  shop_tier
+group by all 
+order by 1 desc 
+/*
+buckets	segment_value
+771437	Top Shop
+630825	Power Shop
+416563	Medium Shop
+353022	
+238269	Small Shop
+90312	Listed Shop
+28526	Non Active Shop
+12648	Empty Shop
+1977	Closed Shop
+*/
+
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MFTS MODULE TYPE
 ----- Segmentation definition: the more from this shop module layout a a bucketed unit saw
