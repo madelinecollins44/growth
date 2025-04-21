@@ -227,7 +227,7 @@ group by all
 , shop_tier as (
 select
   si.*,
-  sb.seller_tier_new as segment_value
+  replace(sb.seller_tier_new, ' ', '_') as segment_value
 from 
   shop_ids si
 left join 
