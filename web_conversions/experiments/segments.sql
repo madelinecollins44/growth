@@ -208,8 +208,8 @@ where
   date(_partitiontime) = {{ input_run_date }} 
   and beacon.event_name in ('shop_home')
 group by all
-select
 union all
+select
   _date,
   beacon.event_name,
   cast(beacon.user_id as string) as bucketing_id,
