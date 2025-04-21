@@ -192,6 +192,7 @@ select segment_value, count(distinct bucketing_id) from etsy-bigquery-adhoc-prod
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- SELLER TIER
 ----- Segmentation definition: the seller tier of the shop home page a unit is bucketed on
+----- etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 with shop_ids as (
 select
