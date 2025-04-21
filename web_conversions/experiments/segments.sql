@@ -233,6 +233,10 @@ from
 left join 
   etsy-data-warehouse-prod.rollups.seller_basics sb 
     on si.shop_id=cast(sb.shop_id as string)
+where 1=1
+  and active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops with active listings
 )
 select
   _date,
@@ -255,15 +259,12 @@ group by all
 order by 1 desc 
 /*
 buckets	segment_value
-771437	Top Shop
-630825	Power Shop
-416563	Medium Shop
-353022	
-238269	Small Shop
-90312	Listed Shop
-28526	Non Active Shop
-12648	Empty Shop
-1977	Closed Shop
+816072	Top Shop
+671027	Power Shop
+437393	Medium Shop
+248061	Small Shop
+99797	Listed Shop
+811	Closed Shop
 */
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
