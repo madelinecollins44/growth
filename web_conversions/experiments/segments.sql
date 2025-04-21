@@ -240,10 +240,9 @@ select
   bucketing_id_type,
   visit_id,
   sequence_number,
-  seller_tier_new
+  segment_value
 from 
   shop_tier
-
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- MFTS MODULE TYPE
