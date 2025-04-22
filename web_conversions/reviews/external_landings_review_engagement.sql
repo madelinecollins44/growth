@@ -122,7 +122,9 @@ where
   and lv._date >= current_date-30
   and platform in ('mobile_web','desktop')
 group by all
-/*
+/*external_listing	lv	purchases
+0	1089720954	21960013
+1	54208698	501330
 	*/
 	
 select 
