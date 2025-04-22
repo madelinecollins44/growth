@@ -134,5 +134,6 @@ where
   lv._date >= current_date-30
   and platform in ('mobile_web','desktop')
 group by all
-/*
+/* lv	purchases
+1143929652	22461343
 	*/
