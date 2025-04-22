@@ -84,7 +84,28 @@ from
   lv_stats rv
 group by all
 
-
+	
+-- GRAB % OF EXTERNAL LISTING VIEWS FROM EACH PARAM
+select 
+  case 
+    when url like ('%external=1%')  then 'external=1'
+    when url like ('%gpla=1%') then 'gpla=1'
+    else 'internal'
+  end as listing_type,
+  count(lv.sequence_number) as lv, 
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views lv 
+    on e.visit_id=lv.visit_id
+    and e.sequence_number=lv.sequence_number
+    and e.listing_id= cast(lv.listing_id as string)
+where 
+  event_type in ('view_listing') 
+  and lv._date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all
 ------------------------------------------------------------
 -- TESTING
 ------------------------------------------------------------
