@@ -120,4 +120,5 @@ inner join
 where 
   event_type in ('view_listing') 
   and lv._date >= current_date-30
+  and platform in ('mobile_web','desktop')
 group by all
