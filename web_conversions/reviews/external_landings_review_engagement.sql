@@ -122,3 +122,17 @@ where
   and lv._date >= current_date-30
   and platform in ('mobile_web','desktop')
 group by all
+/*
+	*/
+	
+select 
+  count(lv.sequence_number) as lv, 
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv 
+where 
+  lv._date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all
+/*
+	*/
