@@ -100,3 +100,24 @@ select
 from
   lv_stats rv
 group by all
+
+
+------------------------------------------------------------
+-- TESTING
+------------------------------------------------------------
+-- TEST 1: make sure listing views match up from analytics 
+select 
+  case when url like ('%external=1%') then 1 else 0 end as external_listing,
+  count(lv.sequence_number) as lv, 
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views lv 
+    on e.visit_id=lv.visit_id
+    and e.sequence_number=lv.sequence_number
+    and e.listing_id= cast(lv.listing_id as string)
+where 
+  event_type in ('view_listing') 
+  and lv._date >= current_date-30
+group by all
