@@ -122,3 +122,38 @@ group by all
 /* lv	purchases
 1143929652	22461343
 	*/
+
+--- TEST 2: see what the external urls look like 
+with agg as (
+select 
+  case when url like ('%external=1%') then 1 else 0 end as external_listing,
+  url,
+  count(lv.sequence_number) as lv, 
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join 
+  etsy-data-warehouse-prod.analytics.listing_views lv 
+    on e.visit_id=lv.visit_id
+    and e.sequence_number=lv.sequence_number
+    and e.listing_id= cast(lv.listing_id as string)
+where 
+  event_type in ('view_listing') 
+  and lv._date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all
+)
+-- select distinct url from agg where external_listing > 0 limit 10 
+select distinct url from agg where external_listing = 0 limit 10 
+
+/*url
+http://www.etsy.com/de-en/listing/1830721073/authentic-haitian-chocolate-cocoa-balls?external=1&ref=landingpage_similar_listing_top-2&plkey=05d86ee97c02b0bee1bdba745a168b1c839b071f%3A1830721073
+http://www.etsy.com/es/listing/192544434/crackle-white-1006-frasco-de-esmalte?external=1&ref=landingpage_similar_listing_top-1&sts=1&logging_key=d1239cc07a5a1fcc96b2faa8e1c5556dae46ef56%3A192544434
+http://www.etsy.com/uk/listing/1778052489/50pcs-8x8x35cm-jewelry-box-custom-logo?external=1&ref=landingpage_similar_listing_top-1&frs=1&sts=1&plkey=ddeb62b714cb1396dfc222d892ffbd70982b2dbd%3A1778052489
+http://www.etsy.com/fr/listing/1651129584/art-mural-vintage-pour-chambre-denfant?ls=a&external=1&ref=pla_similar_listing_top-2&pro=1&sts=1&plkey=23133b783843756e1ea9459297b61c08bf4030e7%3A1651129584
+http://www.etsy.com/listing/1899773365/vintage-cor-alpha-late-1970s-five-piece?external=1&rec_type=cs&ref=landingpage_similar_listing_top-6&frs=1&logging_key=069769263a28cb0a4654a83f2b93f5415744e427%3A1899773365
+http://www.etsy.com/listing/1182143586/cho-iran-nabashad-persian-calligraphy?ls=r&external=1&rec_type=ss&ref=pla_similar_listing_top-1&pro=1&frs=1&content_source=8c46001be44b2d52519438a3f7a4b892d28b08a0%253A1182143586&logging_key=8c46001be44b2d52519438a3f7a4b892d28b08a0%3A1182143586
+http://www.etsy.com/ca/listing/1863693983/psalm-23-wall-art-christian-home-decor?external=1&ref=pla_similar_listing_top-1&pro=1&frs=1&plkey=26752735e9ba1fe62b68f05fbd8f86f8981d1fd7%3A1863693983
+http://www.etsy.com/listing/1406381645/7x11-anatolian-rughandmade-rugoushak?external=1&ref=landingpage_similar_listing_top-2&pro=1&frs=1&sts=1&plkey=ca4160cc1492f009aec4d8f51808cbf9f0999840%3A1406381645
+http://www.etsy.com/listing/910893586/traditional-japanese-hannya-mask-oni?external=1&rec_type=ss&ref=landingpage_similar_listing_top-1&pro=1&logging_key=2dafb1078a42f07e6f17e8fd2d580bfc94204378%3A910893586
+http://www.etsy.com/it/listing/1469218654/bordi-da-giardino-spessi-in-bambu?external=1&rec_type=ss&ref=pla_similar_listing_top-1&logging_key=e3dc258bd4c507ced8a31887b8f9cf4727fd3080%3A1469218654 */
