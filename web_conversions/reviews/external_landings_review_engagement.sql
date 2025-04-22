@@ -5,7 +5,7 @@ select
   platform,
   sequence_number,
 	beacon.event_name as event_name,
-  case when beacon.loc like ('%external=1%') then 1 else 0 end as external_view,
+  case when beacon.loc like ('%external=1%') or beacon.loc like ('%gpla=1%') then 1 else 0 end as external_view,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
