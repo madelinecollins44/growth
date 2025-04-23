@@ -2,7 +2,7 @@
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 /* VIEW LISTING MULTIPLE TIMES
------ Segmentation definition: a bucketed units repeat listing views (views of the same listing) in the last 14 days before bucketing
+Segmentation definition: a bucketed units repeat listing views (views of the same listing) in the last 14 days before bucketing
 
 etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_repeat_listing_views_1744910606 
 */
@@ -106,11 +106,11 @@ D51480042CED43C0A000419842B9	3 */
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 /* REVIEW ENGAGEMENT
---Segment definition: a bucketed units listing and shop home page review engagements in the last 14 days before bucketing. engagements include: paginating, sorting, opening a review photo, and expanding reviews. 
----- bucketing for segment: 
----- 'engaged' : engaged w reviews, engaged w reviews + saw reviews (sort_reviews, listing_page_reviews_pagination, appreciation_photo_overlay_opened, listing_page_reviews_content_toggle_opened, shop_home_reviews_pagination, inline_appreciation_photo_click_shop_page )
----- 'saw reviews' : saw reviews without engagement 
----- 'none' : did not see or engage with reviews
+Segment definition: a bucketed units listing and shop home page review engagements in the last 14 days before bucketing. engagements include: paginating, sorting, opening a review photo, and expanding reviews. 
+-- bucketing for segment: 
+-- 'engaged' : engaged w reviews, engaged w reviews + saw reviews (sort_reviews, listing_page_reviews_pagination, appreciation_photo_overlay_opened, listing_page_reviews_content_toggle_opened, shop_home_reviews_pagination, inline_appreciation_photo_click_shop_page )
+-- 'saw reviews' : saw reviews without engagement 
+-- 'none' : did not see or engage with reviews
 
 etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_review_engagement_last_14_days_1744913439
 */
@@ -194,7 +194,7 @@ select segment_value, count(distinct bucketing_id) from etsy-bigquery-adhoc-prod
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 /* SELLER TIER
------ Segmentation definition: the seller tier of the shop home page a unit is bucketed on
+Segmentation definition: the seller tier of the shop home page a unit is bucketed on
 
 etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_seller_tier_1745259293
 */
@@ -340,8 +340,17 @@ select _date, count(distinct bucketing_id) from etsy-data-warehouse-prod.catapul
 -- 2025-04-20	2982472
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 /* MFTS MODULE TYPE
--- Segmentation definition: the more from this shop module layout a a bucketed unit saw
--- shop segmentation: has 5+ listings (since thats the space allowed) and 2+ sections, has <5 listings and 2+ sections, has 6+ listings and no sections, has <6 listings and no sections
--- count(distinct listing_id), count(disitnct section_id), concat(listing_number, section_number) as type 
+Segmentation definition: the more from this shop module layout a a bucketed unit saw
+
+Shop segmentation: 
+	has 5+ listings (since thats the space allowed) and 2+ sections
+	has <5 listings and 2+ sections
+	has 6+ listings and no sections
+	has <6 listings and no sections
+
+Purpose: so basically we are redesigning the experience to only show listings - no sections. we're also adding in seller info so essentially the listings are a secondary priority in the module. 
+	because the treatment will be universal (seller info plus max 6 listings) we need a way to kind of see what that change means for different shops - 
+	so the impact may be different if a shop only had 2 listings vs a shop that has 5 listings and sections
+
 */
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
