@@ -515,13 +515,14 @@ select count(distinct seller_user_id) as sellers, count(sequence_number) as sequ
 -- 1070206	73034115
 
 -- TEST 5: confirm against listing_side module deliveries 
+-- TEST 5: confirm against listing_side module deliveries 
 with mfts_deliveries as (
 select
 	date(_partitiontime) as _date,
 	visit_id,
   sequence_number,
-  coalesce(count(distinct(select value from unnest(beacon.properties.key_value) where key = "section_ids")),0) as sections,
-  coalesce(count(distinct(select value from unnest(beacon.properties.key_value) where key = "listing_ids")),0) as listings,
+  -- (select value from unnest(beacon.properties.key_value) where key = "section_ids") as sections,
+  (select value from unnest(beacon.properties.key_value) where key = "listing_ids") as listings,
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 inner join 
@@ -532,15 +533,18 @@ where
   and (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side")) -- MFTS modules 
 group by all 
 )
-select
-  case 
-    -- everything with 2+ sections
-    when listings = 5 and sections = 2 then '5_plus_listings_2_plus_sections'
-    when listings = 6 and sections = 0 then '6_plus_listings_no_sections'
-    else 'other'
-  end as segment_value,
-  count(sequence_number) as views
-from 
-  mfts_deliveries
-group by all 
+select * from mfts_deliveries order by 4 desc 
+
+
+-- select
+--   case 
+--     -- everything with 2+ sections
+--     when listings = 5 and sections = 2 then '5_plus_listings_2_plus_sections'
+--     when listings = 6 and sections = 0 then '6_plus_listings_no_sections'
+--     else 'other'
+--   end as segment_value,
+--   count(sequence_number) as views
+-- from 
+--   mfts_deliveries
+-- group by all 
 
