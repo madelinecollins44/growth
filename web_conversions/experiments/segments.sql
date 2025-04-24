@@ -442,3 +442,16 @@ where
   and is_frozen = 0  -- not frozen accounts 
 group by all
 order by 1 asc
+
+-- TEST 3: what % of listing views are from null sellers? 
+select
+  count(distinct seller_user_id) as sellers,
+  sum(case when seller_user_id is null then 1 else 0 end) as null_sellers,
+  count(sequence_number) as listing_views,
+  count(case when seller_user_id is null then sequence_number end) as null_lv,
+from
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 
+  _date >= current_date - 1
+group by all
+order by 1 asc
