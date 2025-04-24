@@ -354,3 +354,91 @@ Purpose: so basically we are redesigning the experience to only show listings - 
 
 */
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
+with listing_views as (
+select
+  _date,
+  listing_id,
+  sequence_number,
+  visit_id,
+  seller_user_id
+from
+  etsy-data-warehouse-prod.analytics.listing_views
+where _date >= current_date - 1
+) 
+, seller_inventory as (
+select 
+  b.user_id as seller_user_id,
+  shop_name,
+  active_listings,
+  count(s.id) as sections,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops must have some listings 
+group by all
+)
+, agg as (
+select
+  _date,
+  visit_id,
+  sequence_number,
+  seller_user_id,
+  coalesce(active_listings,0) as active_listings,
+  coalesce(sections,0) as sections,
+  coalesce(concat(active_listings, '-', sections),'0') as value,
+  case 
+    when active_listings >= 5 and sections >= 2 then '5_plus_listings_2_plus_sections'
+    when active_listings < 5 and sections >= 2 then 'less_than_5_listings_2_plus_sections'
+    when active_listings >= 6 and sections = 0 then '6_plus_listings_no_sections'
+    when active_listings < 6 and sections = 0 then 'less_than_6_listings_no_sections'
+    when sections = 1 then '1_section'
+    else 'other'
+  end as segment_value
+from 
+  listing_views
+left join 
+  seller_inventory using (seller_user_id)
+)
+select segment_value, count(sequence_number) from agg  group by all order by 2 asc limit 10 
+
+
+
+------ TESTING
+-- TEST 1: what % of active sellers do not have any listings?
+with agg as (
+select 
+  b.user_id as seller_user_id,
+  active_listings,
+  -- count(s.id) as sections,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+-- left join 
+--   etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  -- and active_listings > 0 -- shops must have some listings 
+group by all
+)
+select active_listings, count(distinct seller_user_id) from agg group by all order by 1 asc 
+
+-- TEST 2: how many of the visited shops dont have any listings?
+select
+  active_listings,
+  count(distinct seller_user_id) as sellers,
+  count(sequence_number) as listing_views
+from
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+    etsy-data-warehouse-prod.rollups.seller_basics sb
+      on lv.seller_user_id=sb.user_id
+where 
+  _date >= current_date - 1
+  and active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+group by all
+order by 1 asc
