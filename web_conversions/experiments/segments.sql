@@ -521,7 +521,7 @@ select
 	date(_partitiontime) as _date,
 	visit_id,
   sequence_number,
-  -- (select value from unnest(beacon.properties.key_value) where key = "section_ids") as sections,
+  (select value from unnest(beacon.properties.key_value) where key = "section_ids") as sections,
   (select value from unnest(beacon.properties.key_value) where key = "listing_ids") as listings,
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
@@ -530,21 +530,34 @@ inner join
 where
 	date(_partitiontime) >= current_date-1
   and _date >= current_date-1
+  and platform in ('mobile_web','desktop')
   and (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side")) -- MFTS modules 
 group by all 
 )
-select * from mfts_deliveries order by 4 desc 
-
-
--- select
---   case 
---     -- everything with 2+ sections
---     when listings = 5 and sections = 2 then '5_plus_listings_2_plus_sections'
---     when listings = 6 and sections = 0 then '6_plus_listings_no_sections'
---     else 'other'
---   end as segment_value,
---   count(sequence_number) as views
--- from 
---   mfts_deliveries
--- group by all 
-
+, agg as (
+select *,  
+  if(sections is null or trim(sections) = '',0, array_length(array(
+      select 
+        distinct cast(x AS int64)
+      from 
+        unnest(split(regexp_replace(sections, r'[\[\]\s]', ''), ',')) as x
+      where 
+        safe_cast(x as int64) is not null
+    ))
+  ) as unique_section_count,
+  
+  array_length(array(
+    select distinct cast(y as int64)
+    from 
+      unnest(split(listings, ',')) as y
+    where
+      safe_cast(y as int64) is not null
+  )) as unique_listing_count
+from 
+  mfts_deliveries
+)
+select
+  concat(unique_listing_count, '-', unique_section_count) as delivery_layout,
+  count(sequence_number) as views
+from agg
+group by all 
