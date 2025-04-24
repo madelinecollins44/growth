@@ -455,3 +455,61 @@ where
   _date >= current_date - 1
 group by all
 order by 1 asc
+
+
+-- TEST 4: make sure totals add up across CTEs
+with listing_views as (
+select
+--  {{input_run_date}} as _date,
+  listing_id,
+  sequence_number,
+  visit_id,
+  seller_user_id
+from
+  etsy-data-warehouse-prod.analytics.listing_views
+where _date >= current_date - 1
+) 
+-- views	sellers
+-- 73034115	1070206
+, seller_inventory as (
+select 
+  b.user_id as seller_user_id,
+  shop_name,
+  active_listings,
+  count(s.id) as sections,
+  coalesce(concat(active_listings, '-', count(s.id)),'N/A') as listing_section_combo,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+-- where
+--   active_seller_status = 1 -- active sellers
+--   and is_frozen = 0  -- not frozen accounts 
+--   and active_listings > 0 -- shops must have some listings 
+group by all
+)
+, agg as (
+select
+  -- _date,
+  visit_id,
+  sequence_number,
+  seller_user_id,
+  listing_section_combo,
+  case 
+    -- everything with 2+ sections
+    when active_listings >= 5 and sections >= 2 then '5_plus_listings_2_plus_sections'
+    when active_listings < 5 and sections >= 2 then 'less_than_5_listings_2_plus_sections'
+    -- everything with no sections
+    when active_listings >= 6 and sections = 0 then '6_plus_listings_no_sections'
+    when active_listings < 6 and sections = 0 then 'less_than_6_listings_no_sections'
+    when sections = 1 then '1_section'
+    else 'other'
+  end as segment_value
+from 
+  listing_views
+left join 
+  seller_inventory using (seller_user_id)
+)
+select count(distinct seller_user_id) as sellers, count(sequence_number) as sequence_number from agg 
+-- sellers	sequence_number
+-- 1070206	73034115
