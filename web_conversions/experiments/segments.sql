@@ -365,14 +365,14 @@ Purpose: so basically we are redesigning the experience to only show listings - 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 with listing_views as (
 select
-  _date,
+  {{input_run_date}} as _date,
   listing_id,
   sequence_number,
   visit_id,
   seller_user_id
 from
   etsy-data-warehouse-prod.analytics.listing_views
-where _date >= current_date - 1
+where _date = {{ input_run_date }}
 ) 
 , seller_inventory as (
 select 
@@ -390,7 +390,6 @@ where
   and active_listings > 0 -- shops must have some listings 
 group by all
 )
-, agg as (
 select
   _date,
   visit_id,
@@ -411,10 +410,6 @@ from
   listing_views
 left join 
   seller_inventory using (seller_user_id)
-)
-select segment_value, count(sequence_number) from agg  group by all order by 2 asc limit 10 
-
-
 
 ------ TESTING
 -- TEST 1: what % of active sellers do not have any listings?
