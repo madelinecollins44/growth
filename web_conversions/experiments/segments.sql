@@ -372,7 +372,7 @@ select
   seller_user_id
 from
   etsy-data-warehouse-prod.analytics.listing_views
-where _date = {{ input_run_date }}
+where _date = {{input_run_date}}
 ) 
 , seller_inventory as (
 select 
@@ -394,16 +394,12 @@ select
   _date,
   visit_id,
   sequence_number,
-  seller_user_id,
-  coalesce(active_listings,0) as active_listings,
-  coalesce(sections,0) as sections,
-  coalesce(concat(active_listings, '-', sections),'0') as value,
   case 
     when active_listings >= 5 and sections >= 2 then '5_plus_listings_2_plus_sections'
     when active_listings < 5 and sections >= 2 then 'less_than_5_listings_2_plus_sections'
     when active_listings >= 6 and sections = 0 then '6_plus_listings_no_sections'
     when active_listings < 6 and sections = 0 then 'less_than_6_listings_no_sections'
-    else 'other'
+    else 'none'
   end as segment_value
 from 
   listing_views
