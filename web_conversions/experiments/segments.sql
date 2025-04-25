@@ -650,6 +650,25 @@ seller_user_id	shop_name	active_listings	sections
 1043573804	BundleofStitchesLLC	4	3
 266494004	chillybirdco	2	2 */
 
+-- TEST 8: testing with bq table 
+select segment_value, count(distinct bucketing_id) from etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_listing_section_combination_1745607022 group by all 
+
+-- select segment_value, count(distinct bucketing_id) from etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_listing_section_combination_1745607022 group by all 
+
+WITH experiment_bucketing_units AS (
+  SELECT *
+  FROM etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_listing_section_combination_1745607022
+    INNER JOIN `etsy-data-warehouse-prod.catapult_unified.bucketing_period` USING(_date, bucketing_id, bucketing_id_type, bucketing_ts)
+  WHERE experiment_id = 'growth_regx.lp_review_categorical_tags_desktop'
+)
+
+SELECT  
+  segment_value, 
+  COUNT(*) AS total_bucketing_units,
+  COUNT(*) / (SELECT COUNT(*) FROM experiment_bucketing_units)
+FROM experiment_bucketing_units
+GROUP BY 1
+ORDER BY 2 DESC
 
 
 
