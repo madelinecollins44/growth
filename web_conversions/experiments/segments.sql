@@ -379,7 +379,7 @@ select
   b.user_id as seller_user_id,
   shop_name,
   active_listings,
-  count(s.id) as sections,
+  count(case when s.active_listing_count > 0 then s.id end) as sections, -- sections with active listings
 from 
   etsy-data-warehouse-prod.rollups.seller_basics b
 left join 
@@ -403,7 +403,6 @@ select
     when active_listings < 5 and sections >= 2 then 'less_than_5_listings_2_plus_sections'
     when active_listings >= 6 and sections = 0 then '6_plus_listings_no_sections'
     when active_listings < 6 and sections = 0 then 'less_than_6_listings_no_sections'
-    when sections = 1 then '1_section'
     else 'other'
   end as segment_value
 from 
