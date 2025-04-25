@@ -7,46 +7,55 @@ Segmentation definition: a bucketed units repeat listing views (views of the sam
 etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_repeat_listing_views_1744910606 
 */
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
--- segmentations 
-with unit_recent_listing_views as (
-    -- browser bucketed tests
-    select 
-      {{input_run_date}} as _date,
-      split(lv.visit_id, ".")[0] as bucketing_id, 
-      1 as bucketing_id_type, 
-      listing_id,
-      count(distinct concat(lv.visit_id, lv.sequence_number)) as recent_listing_views
-    from `etsy-data-warehouse-prod.analytics.listing_views` lv
-    where lv._date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
-    group by all
-    union all 
-    -- user bucketed_tests 
-    select 
-      {{input_run_date}} as _date,
-      cast(v.user_id as string) as bucketing_id, 
-      2 as bucketing_id_type, 
-      listing_id,
-      count(distinct concat(lv.visit_id, lv.sequence_number)) as recent_listing_views
-    from `etsy-data-warehouse-prod.analytics.listing_views` lv
-    left join `etsy-data-warehouse-prod.weblog.visits` v 
-      on v.visit_id = lv.visit_id
-    where lv._date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
-    and v._date = {{input_run_date}}
-    group by all
-)
+with listing_views as (
+select
+ {{input_run_date}} as _date,
+  listing_id,
+  sequence_number,
+  visit_id,
+  seller_user_id
+from
+  etsy-data-warehouse-prod.analytics.listing_views
+where _date = {{input_run_date}}
+) 
+, seller_inventory as (
 select 
-  _date,            
-  bucketing_id, 
-  bucketing_id_type,
+  b.user_id as seller_user_id,
+  shop_name,
+  active_listings,
+  count(s.id) as sections,
+  coalesce(concat(active_listings, '-', count(s.id)),'N/A') as listing_section_combo,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops must have some listings 
+group by all
+)
+select
+  _date,
+  visit_id,
+  sequence_number,
+  seller_user_id,
+  listing_section_combo,
   case 
-    when max(recent_listing_views) = 1 then '1'
-    when max(recent_listing_views) = 2 then '2'
-    when max(recent_listing_views) = 3 then '3'
-    when max(recent_listing_views) = 4 then '4'
-    else '5+' end as segment_value
-  from unit_recent_listing_views
-group by all 
+    -- everything with 2+ sections
+    when active_listings >= 5 and sections >= 2 then '5_plus_listings_2_plus_sections'
+    when active_listings < 5 and sections >= 2 then 'less_than_5_listings_2_plus_sections'
+    -- everything with no sections
+    when active_listings >= 6 and sections = 0 then '6_plus_listings_no_sections'
+    when active_listings < 6 and sections = 0 then 'less_than_6_listings_no_sections'
+    else 'other'
+  end as segment_value
+from 
+  listing_views
+left join 
+  seller_inventory using (seller_user_id)
 
+	
 ------TESTING
 with unit_listing_views as (
     -- browser bucketed tests
