@@ -573,7 +573,6 @@ from agg
 group by all 
 
 -- TEST 6: see what distros look like across desktop only
--- TEST 5: confirm against listing_side module deliveries 
 with mfts_deliveries as (
 select
   platform,
