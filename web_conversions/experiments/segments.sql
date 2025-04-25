@@ -615,3 +615,45 @@ select
 from agg
 group by all 
 
+-- TEST 7: spot check shops
+select 
+  b.user_id as seller_user_id,
+  shop_name,
+  active_listings,
+  count(case when s.active_listing_count > 0 then s.id end) as sections, -- sections with active listings
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  user_id in (1043573804,266494004,21286711,707452635,522216353,343113188,737436853,891572165,196978998,573088373)
+group by all
+/* segment_value	seller_user_id
+less_than_5_listings_2_plus_sections	1043573804
+less_than_5_listings_2_plus_sections	266494004
+other	21286711
+other	707452635
+less_than_6_listings_no_sections	522216353
+less_than_6_listings_no_sections	343113188
+6_plus_listings_no_sections	737436853
+6_plus_listings_no_sections	891572165
+5_plus_listings_2_plus_sections	196978998
+5_plus_listings_2_plus_sections	573088373
+*/
+
+/* 
+seller_user_id	shop_name	active_listings	sections
+891572165	MrCoinCanada	533	0
+196978998	KibacraftBoutique	31	7
+343113188	PlantBar	1	0
+737436853	SunnahCureStore	33	0
+21286711	LaNyahMerparel	2	1
+573088373	Kamilware	116	13
+522216353	LilbitofthisFinds	2	0
+707452635	MarinasKreativwerkst	7	1
+1043573804	BundleofStitchesLLC	4	3
+266494004	chillybirdco	2	2 */
+
+
+
+
