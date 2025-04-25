@@ -670,5 +670,55 @@ FROM experiment_bucketing_units
 GROUP BY 1
 ORDER BY 2 DESC
 
+-- browser id distros
+with listing_views as (
+select
+  current_date- 1 as _date,
+  listing_id,
+  split(visit_id, ".")[0] as browser_id,
+  sequence_number,
+  visit_id,
+  seller_user_id
+from
+  etsy-data-warehouse-prod.analytics.listing_views
+where _date = current_date-1
+) 
+, seller_inventory as (
+select 
+  b.user_id as seller_user_id,
+  shop_name,
+  active_listings,
+  count(case when s.active_listing_count > 0 then s.id end) as sections, -- sections with active listings
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_sections s using (shop_id)
+where
+  active_seller_status = 1 -- active sellers
+  and is_frozen = 0  -- not frozen accounts 
+  and active_listings > 0 -- shops must have some listings 
+group by all
+)
+, agg as (
+select
+  _date,
+  visit_id,
+  browser_id,
+  sequence_number,
+  case 
+    when active_listings >= 5 and sections >= 2 then '5_plus_listings_2_plus_sections'
+    when active_listings < 5 and sections >= 2 then 'less_than_5_listings_2_plus_sections'
+    when active_listings >= 6 and sections = 0 then '6_plus_listings_no_sections'
+    when active_listings < 6 and sections = 0 then 'less_than_6_listings_no_sections'
+    else 'none'
+  end as segment_value
+from 
+  listing_views
+left join 
+  seller_inventory using (seller_user_id)
+)
+select segment_value, count(distinct browser_id) as bucketing_units, count(sequence_number) as views from agg group by all 
+
+
 
 
