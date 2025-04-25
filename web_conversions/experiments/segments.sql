@@ -515,9 +515,9 @@ select count(distinct seller_user_id) as sellers, count(sequence_number) as sequ
 -- 1070206	73034115
 
 -- TEST 5: confirm against listing_side module deliveries 
--- TEST 5: confirm against listing_side module deliveries 
 with mfts_deliveries as (
 select
+	platform,
 	date(_partitiontime) as _date,
 	visit_id,
   sequence_number,
@@ -557,7 +557,59 @@ from
   mfts_deliveries
 )
 select
+platform,
   concat(unique_listing_count, '-', unique_section_count) as delivery_layout,
   count(sequence_number) as views
 from agg
 group by all 
+
+-- TEST 6: see what distros look like across desktop only
+-- TEST 5: confirm against listing_side module deliveries 
+with mfts_deliveries as (
+select
+  platform,
+	date(_partitiontime) as _date,
+	visit_id,
+  sequence_number,
+  (select value from unnest(beacon.properties.key_value) where key = "section_ids") as sections,
+  (select value from unnest(beacon.properties.key_value) where key = "listing_ids") as listings,
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-1
+  and _date >= current_date-1
+  and platform in ('mobile_web','desktop')
+  and (beacon.event_name in ("recommendations_module_seen") and (select value from unnest(beacon.properties.key_value) where key = "module_placement") in ("listing_side")) -- MFTS modules 
+group by all 
+)
+, agg as (
+select *,  
+  if(sections is null or trim(sections) = '',0, array_length(array(
+      select 
+        distinct cast(x AS int64)
+      from 
+        unnest(split(regexp_replace(sections, r'[\[\]\s]', ''), ',')) as x
+      where 
+        safe_cast(x as int64) is not null
+    ))
+  ) as unique_section_count,
+  
+  array_length(array(
+    select distinct cast(y as int64)
+    from 
+      unnest(split(listings, ',')) as y
+    where
+      safe_cast(y as int64) is not null
+  )) as unique_listing_count
+from 
+  mfts_deliveries
+)
+select
+  platform,
+  concat(unique_listing_count, '-', unique_section_count) as delivery_layout,
+  count(sequence_number) as views
+from agg
+group by all 
+
