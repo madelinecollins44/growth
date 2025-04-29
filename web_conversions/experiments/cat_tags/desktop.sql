@@ -65,34 +65,34 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket
 -- -- into a variant is the FIRST filtering event to occur after that bucketed unit was
 -- -- bucketed into that variant of the experiment.
 -- -- IF is_event_filtered THEN
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
-        SELECT
-            a.bucketing_id,
-            a.bucketing_id_type,
-            a.variant_id,
-            MIN(timestamp_millis(c.epoch_ms)) AS bucketing_ts,
-            -- MIN(f.event_ts) AS bucketing_ts,
-        FROM
-            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
-       INNER JOIN 
-            etsy-data-warehouse-prod.weblog.visits b
-                on b.browser_id=a.bucketing_id
-        INNER JOIN 
-              etsy-data-warehouse-prod.weblog.events c
-                on b.visit_id=c.visit_id
-        -- JOIN
-        --     `etsy-data-warehouse-prod.catapult_unified.filtering_event` f
-        --     USING(bucketing_id)
-        WHERE
-            event_type in ('reviews_categorical_tag_clicked')
-            and b._date >= current_date-30
-            and timestamp_millis(epoch_ms) >= a.bucketing_ts-- only look at 
-            -- AND f.experiment_id = config_flag_param
-            -- AND f.event_ts >= f.boundary_start_ts
-            -- AND f.event_ts >= a.bucketing_ts 
-        GROUP BY
-            ALL
-    );
+    -- CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
+    --     SELECT
+    --         a.bucketing_id,
+    --         a.bucketing_id_type,
+    --         a.variant_id,
+    --         MIN(timestamp_millis(c.epoch_ms)) AS bucketing_ts,
+    --         -- MIN(f.event_ts) AS bucketing_ts,
+    --     FROM
+    --         `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
+    --    INNER JOIN 
+    --         etsy-data-warehouse-prod.weblog.visits b
+    --             on b.browser_id=a.bucketing_id
+    --     INNER JOIN 
+    --           etsy-data-warehouse-prod.weblog.events c
+    --             on b.visit_id=c.visit_id
+    --     -- JOIN
+    --     --     `etsy-data-warehouse-prod.catapult_unified.filtering_event` f
+    --     --     USING(bucketing_id)
+    --     WHERE
+    --         event_type in ('reviews_categorical_tag_clicked')
+    --         and b._date >= current_date-30
+    --         and timestamp_millis(epoch_ms) >= a.bucketing_ts-- only look at 
+    --         -- AND f.experiment_id = config_flag_param
+    --         -- AND f.event_ts >= f.boundary_start_ts
+    --         -- AND f.event_ts >= a.bucketing_ts 
+    --     GROUP BY
+    --         ALL
+    -- );
 -- -- END IF;
 
 -------------------------------------------------------------------------------------------
@@ -114,18 +114,12 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.first_bucket_se
     FROM
         `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
     JOIN
-        `etsy-data-warehouse-prod.catapult_unified.segment_event` s
+        `etsy-data-warehouse-prod.catapult_unified.segment_event_custom` s
         USING(bucketing_id, bucketing_ts)
     WHERE
         s._date BETWEEN start_date AND end_date
         AND s.experiment_id = config_flag_param
-        -- <SEGMENTATION> Here you can specify whatever segmentations you'd like to analyze.
-        -- !!! Please keep this in sync with the PIVOT statement below !!!
-        -- For all supported segmentations, see go/catapult-unified-docs.
-        AND s.event_id IN (
-            "new_visitor",
-            "buyer_segment"
-        )
+        AND s.event_id IN ("new_visitor","buyer_segment")
 );
 
 -- Pivot the above table to get one row per bucketing_id and variant_id. Each additional
@@ -161,13 +155,8 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events` AS (
         UNNEST([
             "backend_cart_payment", -- conversion rate
             "total_winsorized_gms", -- winsorized acbv
-            "prolist_total_spend",  -- prolist revenue
-            "gms",    -- note: gms data is in cents
             "bounce",
-            "backend_add_to_cart",
             "checkout_start",
-            "offsite_ads_one_day_attributed_revenue" ,
-            "total_winsorized_order_value",
             "visits"
         ]) AS event_id
 );
@@ -219,7 +208,7 @@ IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
             WHERE
                 v._date BETWEEN start_date AND end_date
                 AND v.event_timestamp >= a.bucketing_ts
-                and v.event_name in ('total_winsorized_gms','total_winsorized_order_value','prolist_total_spend','offsite_ads_one_day_attributed_revenue','visits')
+                and v.event_name in ('total_winsorized_gms','total_winsorized_order_value','visits')
         )
         SELECT
             bucketing_id,
@@ -388,9 +377,12 @@ GROUP BY
 ORDER BY
     event_id, variant_id;
 
+--new visitor vs repeat visitor
 SELECT
     event_id,
     variant_id,
+    new_visitor,
+    -- case when buyer_segment in ('signed_out') then 'signed_out' else 'signed_in' end as buyer_segment,
     count(distinct bucketing_id) as unique_browsers,
     COUNT(*) AS total_units_in_variant,
     AVG(IF(event_count = 0, 0, 1)) AS percent_units_with_event,
@@ -398,36 +390,52 @@ SELECT
     AVG(IF(event_count = 0, NULL, event_count)) AS avg_events_per_unit_with_event
 FROM
     `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments_included`
-GROUP BY
-    event_id, variant_id
+GROUP BY all
 ORDER BY
-    event_id, variant_id;
+    new_visitor, event_id, variant_id;
+
+--signed in vs signed out 
+    SELECT
+    event_id,
+    variant_id,
+    -- new_visitor,
+    case when buyer_segment in ('signed_out') then 'signed_out' else 'signed_in' end as buyer_segment,
+    count(distinct bucketing_id) as unique_browsers,
+    COUNT(*) AS total_units_in_variant,
+    AVG(IF(event_count = 0, 0, 1)) AS percent_units_with_event,
+    AVG(event_count) AS avg_events_per_unit,
+    AVG(IF(event_count = 0, NULL, event_count)) AS avg_events_per_unit_with_event
+FROM
+    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments_included`
+GROUP BY all
+ORDER BY
+    buyer_segment,event_id, variant_id;
 -------------------------------------------------------------------------------------------
 -- RECREATE CATAPULT RESULTS : browser level so can find stat sig of means 
 -------------------------------------------------------------------------------------------
--- Proportion and mean metrics by variant and event_name
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` AS (
-SELECT
-    event_id,
-    variant_id,
-    bucketing_id, 
-    event_count,
-FROM
-    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
-GROUP BY
-    all
-ORDER BY
-    event_id, variant_id
-);
+-- -- Proportion and mean metrics by variant and event_name
+-- CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` AS (
+-- SELECT
+--     event_id,
+--     variant_id,
+--     bucketing_id, 
+--     event_count,
+-- FROM
+--     `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
+-- GROUP BY
+--     all
+-- ORDER BY
+--     event_id, variant_id
+-- );
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_acbv` AS (
-  select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('total_winsorized_gms')
-);
+-- CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_acbv` AS (
+--   select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('total_winsorized_gms')
+-- );
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_order_value` AS (
-  select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('total_winsorized_order_value')
-);
+-- CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_order_value` AS (
+--   select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('total_winsorized_order_value')
+-- );
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_conversion` AS (
-  select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('backend_cart_payment')
-);
+-- CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_conversion` AS (
+--   select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('backend_cart_payment')
+-- );
