@@ -493,7 +493,6 @@ END IF;
 -------------------------------------------------------------------------------------------
 -- RECREATE CATAPULT RESULTS : browser level so can find stat sig of means 
 -------------------------------------------------------------------------------------------
--- -- Proportion and mean metrics by variant and event_name
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` AS (
 SELECT
     event_id,
@@ -501,7 +500,7 @@ SELECT
     bucketing_id, 
     event_count,
 FROM
-    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments_included`
+    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
 GROUP BY
     all
 ORDER BY
