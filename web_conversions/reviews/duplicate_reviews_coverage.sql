@@ -8,6 +8,7 @@ select
   where
   review <> ''
   and review is not null 
+  and DATE(TIMESTAMP_SECONDS(create_date)) > '2024-04-30'
   and is_deleted = 0 -- not deleted 
 group by all 
 having count(*) > 1
@@ -44,7 +45,7 @@ join
 on
 	tv.transaction_id = t.transaction_id
 where
-	tv.date >= current_date-365
+	tv.date >= current_date-30
 	and tv.platform_app in ('mobile_web','desktop')
 group by all 
 )
