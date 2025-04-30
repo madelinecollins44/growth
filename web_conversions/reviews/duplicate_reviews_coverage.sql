@@ -6,11 +6,11 @@ select
   from 
     `etsy-data-warehouse-prod.etsy_shard.shop_transaction_review`  
   where
-      date(timestamp_seconds(create_date)) 
-      and review <> ''
-      and review is not null 
-  group by all 
-  having count(*) > 1
+  review <> ''
+  and review is not null 
+  and is_deleted = 0 -- not deleted 
+group by all 
+having count(*) > 1
 ) 
 , duped_listings as (
 select distinct
@@ -28,6 +28,7 @@ from
 where 
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
+group by all 
 )
 select
   count(distinct lvs.listing_id) as viewed_listings,
