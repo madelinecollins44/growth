@@ -489,3 +489,33 @@ ELSE
             AND f.experiment_id = config_flag_param
     );
 END IF;
+
+-------------------------------------------------------------------------------------------
+-- RECREATE CATAPULT RESULTS : browser level so can find stat sig of means 
+-------------------------------------------------------------------------------------------
+-- -- Proportion and mean metrics by variant and event_name
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` AS (
+SELECT
+    event_id,
+    variant_id,
+    bucketing_id, 
+    event_count,
+FROM
+    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments_included`
+GROUP BY
+    all
+ORDER BY
+    event_id, variant_id
+);
+
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_acbv` AS (
+  select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('total_winsorized_gms')
+);
+
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_order_value` AS (
+  select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('total_winsorized_order_value')
+);
+
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level_conversion` AS (
+  select * from `etsy-data-warehouse-dev.madelinecollins.all_units_events_browser_level` where event_id in ('backend_cart_payment')
+);
