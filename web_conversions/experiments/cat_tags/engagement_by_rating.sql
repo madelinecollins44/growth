@@ -1,7 +1,7 @@
 
-DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_categorical_tags_desktop";
-DECLARE start_date DATE;
-DECLARE end_date DATE;
+-- DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_categorical_tags_desktop";
+-- DECLARE start_date DATE;
+-- DECLARE end_date DATE;
 
 with bucketing_moment as ( -- grabs the first visit_id from bucketing 
 select 
@@ -13,7 +13,7 @@ from
   `etsy-data-warehouse-prod.catapult_unified.bucketing`
 where 1=1
   -- and _date between start_date and end_date
-  and experiment_id = 'growth_regx.lp_review_categorical_tags_desktop'
+  and experiment_id = 'growth_regx.lp_review_categorical_tags_mweb'
 qualify row_number() over (partition by bucketing_id order by visit_id) = 1
 )
 , listing_view as ( -- gets listing_id associated with bucketing  
@@ -26,9 +26,12 @@ left join
   etsy-data-warehouse-prod.weblog.events
   using (visit_id, sequence_number)
 )
-, cat_tag_clicks as (
+, engagement as (
 select  
-  bucketing_id
+  bucketing_id,
+  case when countif(event_type in ('reviews_categorical_tag_clicked'))> 0 then 1 else 0 end as clicked_cat_tags,
+  case when countif(event_type in ('listing_page_reviews_container_top_seen'))> 0 then 1 else 0 end as saw_reviews,
+  case when countif(event_type in ('reviews_categorical_tags_seen'))> 0 then 1 else 0 end as saw_cat_tags,
 from 
   bucketing_moment bm
 inner join 
@@ -36,8 +39,9 @@ inner join
     on bm.visit_id=e.visit_id
     and e.sequence_number >= bm.sequence_number -- engaged with the tag after bucketing 
 where 
-  event_type in ('reviews_categorical_tag_clicked')
+  event_type in ('reviews_categorical_tag_clicked','listing_page_reviews_container_top_seen','reviews_categorical_tags_seen')
   and _date >= current_date-30
+group by all 
 )
 , listing_rating as (
 select
@@ -60,14 +64,17 @@ group by all
 select
   avg_rating,
   count(distinct lv.bucketing_id) as bucketed_units,
-  count(distinct ctc.bucketing_id) as bucketed_units_to_click,
+  count(distinct e.bucketing_id) as units_to_engage,
+  count(distinct case when saw_reviews > 0 then e.bucketing_id end) as units_to_see_reviews,
+  count(distinct case when saw_cat_tags > 0 then e.bucketing_id end) as units_to_see_cat_tags,
+  count(distinct case when clicked_cat_tags > 0 then e.bucketing_id end) as units_to_click_cat_tags,
 from 
   listing_view lv
 left join 
   listing_rating lr
     on cast(lv.listing_id as string) = cast(lr.listing_id as string)
 left join 
-  cat_tag_clicks ctc 
-    on lv.bucketing_id=ctc.bucketing_id
+  engagement e 
+    on lv.bucketing_id=e.bucketing_id
 group by all 
 order by 1 asc
