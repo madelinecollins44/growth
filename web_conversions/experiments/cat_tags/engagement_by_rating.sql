@@ -1,102 +1,73 @@
---------------------------------------------------------------------------------------------------------------------------------------------------------------------
--- DESKTOP
---------------------------------------------------------------------------------------------------------------------------------------------------------------------
--- Define variables
-DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_categorical_tags_mweb";
+
+DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_categorical_tags_desktop";
 DECLARE start_date DATE;
 DECLARE end_date DATE;
 
--- Get experiment's start date and end date
-SET (start_date, end_date) = (
-  SELECT AS STRUCT
-    MAX(DATE(boundary_start_ts)) AS start_date,
-    MAX(_date) AS end_date,
-  FROM
-    `etsy-data-warehouse-prod.catapult_unified.experiment`
-  WHERE
-    experiment_id = config_flag_param
-);
-
-CREATE OR REPLACE TEMPORARY TABLE xp_units_raw AS (
-  SELECT 
-    bucketing_id,
-    variant_id,
-    bucketing_ts
-  FROM
-    `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
-  WHERE
-    _date = end_date
-    AND experiment_id = config_flag_param
-);
-
--- Get experiment's bucketed units
-CREATE OR REPLACE TEMPORARY TABLE xp_units AS (
-  SELECT 
-    bucketing_id,
-    variant_id,
-    bucketing_ts,
-    v.visit_id,
-    listing_id,
-  FROM
-    `etsy-data-warehouse-prod.catapult_unified.bucketing_period` xp
-  INNER JOIN 
-    `etsy-data-warehouse-prod.weblog.visits` AS v
-   ON
-      xp.bucketing_id = v.browser_id
-      AND TIMESTAMP_TRUNC(xp.bucketing_ts, SECOND) <= v.end_datetime
-  INNER JOIN 
-    `etsy-data-warehouse-prod.weblog.events` AS e
-      on e.visit_id = v.visit_id
-      AND TIMESTAMP_TRUNC(xp.bucketing_ts, SECOND) = v.end_datetime
-  WHERE
-    xp._date = end_date
-    AND experiment_id = config_flag_param
-    AND  v._date BETWEEN start_date AND end_date
-);
-
-/* HERE, RECREATE METRICS IN CATAPULT USING EVENT FILTER */
--- Get browsers who saw the listing grid
-CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
-  SELECT DISTINCT
-    v.bucketing_id
-  FROM
-    `etsy-data-warehouse-prod.weblog.events` AS e
-  INNER JOIN 
-    xp_units AS v 
-        ON v.bucketing_id=split(e.visit_id,'.')[safe_offset(0)] -- this is how to get browser_id from visit
-  WHERE
-    e._date BETWEEN start_date AND end_date
-    AND e.event_type = "reviews_categorical_tag_clicked" -- event fires when a browser sees the listing grid 
-);
-
--- GET AVG RATING FOR LISTING
-CREATE OR REPLACE TEMPORARY TABLE listing_rating AS (
-SELECT
-    listing_id,
-    case 
-      when coalesce(avg(rating),0) = 0 then '0'
-      when coalesce(avg(rating),0) > 0 and coalesce(avg(rating),0) <= 1 then '1'
-      when coalesce(avg(rating),0) > 1 and coalesce(avg(rating),0)<= 2 then '2'
-      when coalesce(avg(rating),0) > 2 and coalesce(avg(rating),0)<= 3 then '3'
-      when coalesce(avg(rating),0) > 3 and coalesce(avg(rating),0) <= 4 then '4'
-      when coalesce(avg(rating),0) > 4 and coalesce(avg(rating),0)<= 5 then '5'
-      else 'error'
-      end as avg_rating
-  FROM
-    `etsy-data-warehouse-prod.rollups.transaction_reviews` 
-  group by all 
-);
-
+with bucketing_moment as ( -- grabs the first visit_id from bucketing 
+select 
+  bucketing_id,
+  variant_id,
+  (select id from unnest(associated_ids) where id_type = 3) AS visit_id,
+  (select cast(id as int) from unnest(associated_ids) where id_type = 4) AS sequence_number
+from 
+  `etsy-data-warehouse-prod.catapult_unified.bucketing`
+where 1=1
+  -- and _date between start_date and end_date
+  and experiment_id = 'growth_regx.lp_review_categorical_tags_desktop'
+qualify row_number() over (partition by bucketing_id order by visit_id) = 1
+)
+, listing_view as ( -- gets listing_id associated with bucketing  
+select  
+  bucketing_id,
+  listing_id 
+from 
+  bucketing_moment 
+left join 
+  etsy-data-warehouse-prod.weblog.events
+  using (visit_id, sequence_number)
+)
+, cat_tag_clicks as (
+select  
+  bucketing_id
+from 
+  bucketing_moment bm
+inner join 
+  etsy-data-warehouse-prod.weblog.events e
+    on bm.visit_id=e.visit_id
+    and e.sequence_number >= bm.sequence_number -- engaged with the tag after bucketing 
+where 
+  event_type in ('reviews_categorical_tag_clicked')
+  and _date >= current_date-30
+)
+, listing_rating as (
+select
+  listing_id,
+  case 
+    when coalesce(avg(rating),0) = 0 then '0'
+    when coalesce(avg(rating),0) > 0 and coalesce(avg(rating),0) <= 1 then '1'
+    when coalesce(avg(rating),0) > 1 and coalesce(avg(rating),0)<= 2 then '2'
+    when coalesce(avg(rating),0) > 2 and coalesce(avg(rating),0)<= 3 then '3'
+    when coalesce(avg(rating),0) > 3 and coalesce(avg(rating),0) <= 4 then '4'
+    when coalesce(avg(rating),0) > 4 and coalesce(avg(rating),0) <= 5 then '5'
+    else 'error'
+  end as avg_rating
+from
+  `etsy-data-warehouse-prod.rollups.transaction_reviews` 
+where 
+  transaction_date >= timestamp_sub(current_timestamp(), interval 365 DAY)
+group by all 
+)
 select
   avg_rating,
-  count(distinct u.bucketing_id) as bucketed_units,
-  count(distinct ke.bucketing_id) as bucketed_units_to_click,
+  count(distinct lv.bucketing_id) as bucketed_units,
+  count(distinct ctc.bucketing_id) as bucketed_units_to_click,
 from 
-  xp_units u
+  listing_view lv
 left join 
-  browsers_with_key_event ke
-    on u.bucketing_id=ke.bucketing_id
+  listing_rating lr
+    on cast(lv.listing_id as string) = cast(lr.listing_id as string)
 left join 
-  listing_rating lr 
-    on lr.listing_id=u.listing_id
+  cat_tag_clicks ctc 
+    on lv.bucketing_id=ctc.bucketing_id
 group by all 
+order by 1 asc
