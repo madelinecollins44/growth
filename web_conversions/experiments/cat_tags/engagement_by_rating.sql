@@ -14,10 +14,12 @@ from
 where 1=1
   -- and _date between start_date and end_date
   and experiment_id = 'growth_regx.lp_review_categorical_tags_mweb'
+  and variant_id = 'on'
 qualify row_number() over (partition by bucketing_id order by visit_id) = 1
 )
 , listing_view as ( -- gets listing_id associated with bucketing  
 select  
+  variant_id,
   bucketing_id,
   listing_id 
 from 
