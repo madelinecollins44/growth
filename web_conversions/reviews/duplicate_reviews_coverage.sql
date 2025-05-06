@@ -1,3 +1,4 @@
+-- LISTINGS W DUPED REVIEWS 
 with review_count as (
 select
     review, 
@@ -66,4 +67,61 @@ left join
 left join 
   duped_listings dl 
     on lvs.listing_id=dl.listing_id
-  
+
+
+-- LISTINGS W REVIEWS FOR COMPARISON 
+with reviews as (
+select
+  listing_id,
+  sum(has_review) as has_review,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews  
+group by all
+)
+, lv_stats as (
+select
+  listing_id,
+  count(sequence_number) as views,
+  sum(purchased_after_view) as purchases 
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+, listing_gms as ( 
+select
+	t.listing_id, 
+	sum(tg.trans_gms_net) as gms_net
+from
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_visits tv
+join
+	`etsy-data-warehouse-prod`.transaction_mart.transactions_gms_by_trans tg
+using(transaction_id)
+join
+	`etsy-data-warehouse-prod`.transaction_mart.all_transactions t
+on
+	tv.transaction_id = t.transaction_id
+where
+	tv.date >= current_date-30
+	and tv.platform_app in ('mobile_web','desktop')
+group by all 
+)
+select
+  count(distinct lvs.listing_id) as listings,
+  count(distinct case when has_review > 0 then dl.listing_id end) as listings_w_reviews,
+  sum(views) as total_lv,
+  sum(case when has_review > 0 then views end) as listings_w_reviews_views,
+  sum(purchases) as total_purchases,
+  sum(case when has_review > 0 then purchases end) as listings_w_reviews_purchases,
+  sum(gms_net) as gms,
+  sum(case when has_review > 0 then gms_net end) as listings_w_reviews_gms
+from 
+  lv_stats lvs
+left join 
+  listing_gms gms 
+    using (listing_id)
+left join 
+  reviews dl 
+    on lvs.listing_id=dl.listing_id
