@@ -125,3 +125,70 @@ left join
 left join 
   reviews dl 
     on lvs.listing_id=dl.listing_id
+
+
+-------------------------------------------------------------------------------------
+-- LOOKS AT % OF REVIEWS THAT ARE DUPED + ALSO FROM SAME BUYER
+-------------------------------------------------------------------------------------
+-- duplicate reviews from the same buyer: 1.2083875559246733%
+SELECT
+  SAFE_DIVIDE(a.duplicate_count, b.total_count) AS duplicate_ratio
+FROM (
+  SELECT COUNT(*) AS duplicate_count
+  FROM (
+    SELECT review, listing_id, buyer_user_id, COUNT(*) AS cnt
+    FROM `etsy-data-warehouse-prod.etsy_shard.shop_transaction_review`
+    WHERE
+      DATE(TIMESTAMP_SECONDS(create_date)) > '2023-04-22'
+      AND review <> ''
+      AND review IS NOT NULL
+    GROUP BY all
+    HAVING COUNT(*) > 1
+  )
+) a,
+(
+  SELECT COUNT(*) AS total_count
+  FROM (
+    SELECT review, buyer_user_id, listing_id
+    FROM `etsy-data-warehouse-prod.etsy_shard.shop_transaction_review`
+    WHERE
+      DATE(TIMESTAMP_SECONDS(create_date)) > '2023-04-22'
+      AND review <> ''
+      AND review IS NOT NULL
+    GROUP BY all
+  )
+) b;
+-- 0.012083875559246733
+
+
+-- duplicate reviews: 1.2274780762631521%
+SELECT
+  SAFE_DIVIDE(a.duplicate_count, b.total_count) AS duplicate_ratio
+FROM (
+  SELECT COUNT(*) AS duplicate_count
+  FROM (
+    SELECT review, listing_id, COUNT(*) AS cnt
+    FROM `etsy-data-warehouse-prod.etsy_shard.shop_transaction_review`
+    WHERE
+      DATE(TIMESTAMP_SECONDS(create_date)) > '2023-04-22'
+      AND review <> ''
+      AND review IS NOT NULL
+    GROUP BY all
+    HAVING COUNT(*) > 1
+  )
+) a,
+(
+  SELECT COUNT(*) AS total_count
+  FROM (
+    SELECT review, listing_id
+    FROM `etsy-data-warehouse-prod.etsy_shard.shop_transaction_review`
+    WHERE
+      DATE(TIMESTAMP_SECONDS(create_date)) > '2023-04-22'
+      AND review <> ''
+      AND review IS NOT NULL
+    GROUP BY all
+  )
+) b;
+
+--0.012274780762631521
+
