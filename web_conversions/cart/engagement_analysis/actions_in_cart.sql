@@ -67,16 +67,18 @@ end */
 select
   platform,
   -- buyer_segment,
-  -- new_visitor,
+  new_visitor,
   event_type,
   next_event,
   count(distinct browser_id) as browsers,
   count(distinct visit_id) as visits,
-  count(sequence_number) as events 
+  count(sequence_number) as events, 
+  count(distinct browser_id) / sum(count(distinct browser_id)) over () AS pct_of_browsers,
+  count(distinct visit_id) / sum(count(distinct visit_id)) over () AS pct_of_visits,
+  count(sequence_number) / sum(count(sequence_number)) over () AS pct_of_events
 from 
   etsy-bigquery-adhoc-prod._script8666634f6bde59747fe85ad0f79730c969cda3d6.all_events
 where event_type in ('cart_view')
 group by all 
 qualify rank () over (partition by platform order by count(distinct browser_id) desc) <= 10
-
 
