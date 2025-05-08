@@ -39,12 +39,12 @@ select
   platform,
   -- case when user_id is null or user_id = 0 then 0 else 1 end as buyer_segment,
   -- new_visitor,
-	visit_id,
+  visit_id,
   browser_id,
   sequence_number,
-	event_name,
-	lead(event_name) over (partition by visit_id, listing_id order by sequence_number) as next_event,
-	lead(sequence_number) over (partition by visit_id, listing_id order by sequence_number) as next_sequence_number
+  event_type,
+  lead(event_type) over (partition by visit_id order by sequence_number) as next_event, 
+  lead(event_type) over (partition by visit_id order by sequence_number) as next_sequence_number
 from 
     etsy-data-warehouse-prod.weblog.events e
 inner join 
@@ -58,12 +58,15 @@ select
   platform,
   -- buyer_segment,
   -- new_visitor,
-  event_name,
+  event_type,
   next_event,
   count(distinct browser_id) as browsers,
   count(distinct visit_id) as visits,
   count(seuquence_number) as events 
 from 
   all_events
+where event_type in ('cart_view)
 group by all 
+order by 4 desc 
+
 
