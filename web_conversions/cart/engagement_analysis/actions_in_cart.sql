@@ -35,11 +35,12 @@ order by 1,2 desc
 
 
 -- go to shop home / listing page from cart 
-with all_events as (
+begin
+create or replace temp table all_events as (
 select
   platform,
-  -- case when user_id is null or user_id = 0 then 0 else 1 end as buyer_segment,
-  -- new_visitor,
+  case when v.user_id is null or v.user_id = 0 then 0 else 1 end as buyer_segment,
+  new_visitor,
   visit_id,
   browser_id,
   sequence_number,
@@ -54,7 +55,9 @@ where
   e._date >= current_date-30
   and platform in ('mobile_web','desktop')
   and page_view = 1 -- only primary pages 
-)
+);
+end
+
 select
   platform,
   -- buyer_segment,
@@ -66,8 +69,6 @@ select
   count(seuquence_number) as events 
 from 
   all_events
-where event_type in ('cart_view)
+where event_type in ('cart_view')
 group by all 
-order by 4 desc 
-
-
+order by 4 desc
