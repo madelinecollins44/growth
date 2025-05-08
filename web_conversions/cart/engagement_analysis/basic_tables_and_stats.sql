@@ -18,3 +18,16 @@ where
   and event_type in ('cart_view')
 ); 
 
+-- how many visits to cart will a browser have over one month?
+select
+  platform,
+  -- buyer_segment,
+  -- new_visitor, 
+  count(visit_id) as cart_views,
+  count(distinct browser_id) as browsers 
+  avg(visit_id) as avg_cart_views 
+from 
+    etsy-data-warehouse-dev.madelinecollins.cart_engagement_browsers)
+
+
+
