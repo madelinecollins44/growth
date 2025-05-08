@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------------------------------------
 -- What do browsers do in cart?
 ----------------------------------------------------------------------------------------------------------------
--- save for later, remove from cart 
+-- SAVE FOR LATER/ REMOVE FROM CART
 select
   platform,
   -- buyer_segment,
@@ -23,7 +23,7 @@ group by all
 order by 1,2 desc
 
 
--- abandon cart 
+-- ABANDON CART 
 select
   platform,
   -- case when user_id is null or user_id = 0 then 0 else 1 end as buyer_segment,
@@ -40,8 +40,8 @@ group by all
 order by 1,2 desc 
 
 
--- go to shop home / listing page from cart 
-begin
+-- SHOP HOME/ LISTING PAGE FROM CART
+/* begin
 create or replace temp table all_events as (
 select
   platform,
@@ -58,11 +58,11 @@ from
 inner join 
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where
-  e._date >= current_date-30
+  v._date >= current_date-30
   and platform in ('mobile_web','desktop')
   and page_view = 1 -- only primary pages 
 );
-end
+end */
 
 select
   platform,
@@ -72,9 +72,9 @@ select
   next_event,
   count(distinct browser_id) as browsers,
   count(distinct visit_id) as visits,
-  count(seuquence_number) as events 
+  count(sequence_number) as events 
 from 
-  all_events
+  etsy-bigquery-adhoc-prod._script8666634f6bde59747fe85ad0f79730c969cda3d6.all_events
 where event_type in ('cart_view')
 group by all 
-order by 4 desc
+order by 4 desc 
