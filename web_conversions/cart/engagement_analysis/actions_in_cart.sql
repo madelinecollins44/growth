@@ -77,4 +77,6 @@ from
   etsy-bigquery-adhoc-prod._script8666634f6bde59747fe85ad0f79730c969cda3d6.all_events
 where event_type in ('cart_view')
 group by all 
-order by 4 desc 
+qualify rank () over (partition by platform order by count(distinct browser_id) desc) <= 10
+
+
