@@ -3,6 +3,9 @@
 ----------------------------------------------------------------------------------------------------------------
 -- save for later, remove from cart 
 select
+  platform,
+  -- buyer_segment,
+  new_visitor,
   --browser level metrics
   count(distinct case when event_type in ('cart_view') then browser_id end) as browsers_w_cart,
   count(distinct case when event_type in ('checkout_add_to_saved_for_later') then browser_id end) as browsers_w_save_for_later,
@@ -15,6 +18,9 @@ from
   etsy-data-warehouse-dev.madelinecollins.cart_engagement_browsers
 inner join 
   etsy-data-warehouse-prod.weblog.events using (visit_id)
+where event_type in ('cart_view','checkout_add_to_saved_for_later','cart_listing_removed')
+group by all 
+order by 1,2 desc
 
 
 -- abandon cart 
