@@ -14,9 +14,10 @@ inner join
   etsy-data-warehouse-prod.weblog.events e using (visit_id)
 where
   v._date >= current_date-30
-  and platform in ('desktop','mobile_web')
+  and platform in ('desktop','mobile_web','boe')
   and event_type in ('cart_view')
 ); 
+
 
 -- how many visits to cart will a browser have over one month?
 with agg as (
