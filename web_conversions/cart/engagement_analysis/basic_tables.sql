@@ -4,7 +4,9 @@ select
   platform,
   browser_id,
   visit_id,
-  case when v.user_id is null or v.user_id = 0 then 'signed_out' else 'signed_in' end as buyer_segment,
+  converted,
+  cart_adds,
+  case when v.user_id is null or v.user_id = 0 then 0 else 1 end as buyer_segment,
   new_visitor
 from
   etsy-data-warehouse-prod.weblog.visits v
@@ -15,3 +17,4 @@ where
   and platform in ('desktop','mobile_web')
   and event_type in ('cart_view')
 ); 
+
