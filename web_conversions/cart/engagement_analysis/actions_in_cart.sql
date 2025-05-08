@@ -21,16 +21,17 @@ inner join
 select
   platform,
   -- case when user_id is null or user_id = 0 then 0 else 1 end as buyer_segment,
-  -- new_visitor,
+  new_visitor,
   count(distinct case when cart_adds > 0 then browser_id end) as browser_atc,
   count(distinct case when cart_adds > 0 and converted = 0 then browser_id end) as browser_abandon_cart,
   count(distinct case when cart_adds > 0 and converted > 0 then browser_id end) as browser_converted_carts,
 from 
   etsy-data-warehouse-prod.weblog.visits 
 where
-  platform in ('desktop','mobile_web')
+  platform in ('desktop','mobile_web','boe')
   and _date >= current_date-30
 group by all 
+order by 1,2 desc 
 
 
 -- go to shop home / listing page from cart 
