@@ -1,3 +1,5 @@
+
+-- how many convos are started postpurchase?
 select 
   started_post_purchase,  
   convo_type,
@@ -8,6 +10,8 @@ select
   group by all 
   order by 1 desc
 
+
+  
 -- buyer intiiated convos
 select 
   buyer_segment,
@@ -22,3 +26,52 @@ where
   and convo_type in ('buyer initiated, seller received')
 group by all 
 order by 1 desc
+
+
+
+-- where do convos start from?
+with message_info as (
+select    
+  beacon.loc,
+  (select value from unnest(beacon.properties.key_value) where key = "conversation_id") as convo_id,
+  (select value from unnest(beacon.properties.key_value) where key = "conversation_message_id") as message_id,
+  (select value from unnest(beacon.properties.key_value) where key = "referring_type") as referring_type,
+  (select value from unnest(beacon.properties.key_value) where key = "first_message") as first_message,
+from `etsy-visit-pipe-prod.canonical.visit_id_beacons` a
+join `etsy-data-warehouse-prod.weblog.recent_visits` b
+on a.visit_id = b.visit_id
+where beacon.event_name = "chat_dialog_open"
+and date(_partitiontime) > current_date - 30
+and _date > current_date - 30
+and b.platform in ('desktop','mobile_web')
+)
+select
+referring_type,
+count(distinct message_id)
+from message_info
+group by all 
+order by 2 desc
+
+
+-- , extract_ref as (
+--   select
+-- ref,
+-- referring_type,
+-- message_id,
+-- first_message,
+-- regexp_substr(ref, "listing\\/([^\\/\?]+)", 1, 1) as listing_id,
+-- regexp_substr(ref, "shop\\/([^\\/\?]+)", 1, 1) as shop_name,
+-- regexp_substr(ref, "purchases\\/([^\\/\?]+)", 1, 1) as purchase_id,
+-- from message_info 
+-- )
+-- select
+-- first_message,
+-- case when listing_id is not null then "listing"
+--      when shop_name is not null then "shop"
+--      when purchase_id is not null then "purchase"
+--      when ref like "%cart%" then "cart"
+--      else referring_type end,
+-- count(distinct message_id)
+-- from extract_ref
+-- group by all 
+-- order by 1,2
