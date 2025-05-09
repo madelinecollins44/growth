@@ -2,6 +2,18 @@
 -- What do browsers do in cart?
 ----------------------------------------------------------------------------------------------------------------
 -- SAVE FOR LATER/ REMOVE FROM CART
+with actions as (
+select
+  visit_id,
+  event_type,
+  count(sequence_number) as views
+from
+  etsy-data-warehouse-prod.weblog.events 
+where   
+event_type in ('cart_view','checkout_add_to_saved_for_later','cart_listing_removed') 
+and _date >= current_date-30
+group by all
+)
 select
   platform,
   buyer_segment,
@@ -11,25 +23,19 @@ select
   count(distinct case when event_type in ('checkout_add_to_saved_for_later') then browser_id end) as browsers_w_save_for_later,
   count(distinct case when event_type in ('cart_listing_removed') then browser_id end) as browsers_w_listing_removed,
   -- event level metrics 
-  count(case when event_type in ('cart_view') then visit_id end) as cart_views,
-  count(case when event_type in ('checkout_add_to_saved_for_later') then visit_id end) as save_for_laters,
-  count(case when event_type in ('cart_listing_removed') then visit_id end) as remove_listings,
-  count(distinct case when event_type in ('cart_view') then visit_id end) as visits_w_cart_view,
-  count(distinct case when event_type in ('checkout_add_to_saved_for_later') then visit_id end) as visits_w_s4l,
-  count(distinct case when event_type in ('cart_listing_removed') then visit_id end) as visits_w_remove_listing,
-  -- count(case when event_type in ('cart_view') then visit_id end) as visits_w_cart_view,
-  -- count(case when event_type in ('checkout_add_to_saved_for_later') then visit_id end) as visits_w_s4l,
-  -- count(case when event_type in ('cart_listing_removed') then visit_id end) as visits_w_remove_listing,
+  sum(case when event_type in ('cart_view') then views end) as cart_views,
+  sum(case when event_type in ('checkout_add_to_saved_for_later') then views end) as save_for_laters,
+  sum(case when event_type in ('cart_listing_removed') then views end) as remove_listings,
+  -- visit level
+  count(distinct case when event_type in ('cart_view') then visit_id end) as visits_w_cart,
+  count(distinct case when event_type in ('checkout_add_to_saved_for_later') then visit_id end) as visits_w_save_for_later,
+  count(distinct case when event_type in ('cart_listing_removed') then browser_id end) as visits_w_remove_listing,
 from 
   etsy-data-warehouse-dev.madelinecollins.cart_engagement_browsers
 inner join 
-  etsy-data-warehouse-prod.weblog.events using (visit_id)
-where
-  event_type in ('cart_view','checkout_add_to_saved_for_later','cart_listing_removed') 
-  and _date >= current_date-30
+  actions using (visit_id)
 group by all 
 order by 1,2 desc
-
 
 -- ABANDON CART 
 select
