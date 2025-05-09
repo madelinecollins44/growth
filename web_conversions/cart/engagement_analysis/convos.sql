@@ -35,6 +35,7 @@ with message_info as (
 a.visit_id,
 b.user_id,
 b.platform,
+converted,
 beacon.loc,
 beacon.ref,
 (select value from unnest(beacon.properties.key_value) where key = "conversation_id") as convo_id,
@@ -51,6 +52,8 @@ and b.platform in ("desktop","mobile_web")
 )
 , extract_ref as (
   select
+  platform,
+  converted,
 ref,
 referring_type,
 message_id,
@@ -61,7 +64,8 @@ regexp_substr(ref, "purchases\\/([^\\/\?]+)", 1, 1) as purchase_id,
 from message_info 
 )
 select
-first_message,
+platform,
+converted,
 case when listing_id is not null then "listing"
      when shop_name is not null then "shop"
      when purchase_id is not null then "purchase"
@@ -70,8 +74,4 @@ case when listing_id is not null then "listing"
 count(distinct message_id)
 from extract_ref
 group by all 
-order by 1,2
--- count(distinct message_id)
--- from extract_ref
--- group by all 
--- order by 1,2
+order by 1,3 desc
