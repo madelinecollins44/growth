@@ -38,7 +38,6 @@ group by all
 order by 1,2 desc
 
 -- ABANDON CART 
-
 select
   platform,
   -- case when user_id is null or user_id = 0 then 0 else 1 end as buyer_segment,
@@ -58,8 +57,6 @@ where
   and _date >= current_date-30
 group by all 
 order by 1,2 desc 
-
-
 
 -- SHOP HOME/ LISTING PAGE FROM CART
 /*begin
@@ -102,3 +99,74 @@ from
 where event_type in ('cart_view') and buyer_segment=1
 group by all 
 qualify rank () over (partition by platform order by count(distinct browser_id) desc) <= 10
+
+
+
+
+------------------------------------------------------------
+-- TESTING
+------------------------------------------------------------
+-- TEST 1: make sure browsers make sense w actions im seeing
+with actions as (
+select
+  visit_id,
+  event_type,
+  count(sequence_number) as views
+from
+  etsy-data-warehouse-prod.weblog.events 
+where   
+event_type in ('cart_view','checkout_add_to_saved_for_later','cart_listing_removed') 
+and _date >= current_date-30
+group by all
+)
+select
+  browser_id,
+  event_type,
+  count(distinct visit_id) as total_visits
+from 
+  etsy-data-warehouse-dev.madelinecollins.cart_engagement_browsers
+inner join 
+  actions using (visit_id)
+where browser_id in ('45AEB87784B1414E8CAB89902298')
+group by all 
+order by 2 desc
+-- limit 5
+/*
+browser_id	total_visits
+U1noQBuNFhhPXJ4ZV7ac-yWFLKcu	454
+gZ8YLYq1TX-U639xR8Vn2A	431
+BifP-pYrRZOHvhWxnMGPpQ	413
+m-9o4mMJDCW0GpWRwv-P1OISAsv6	412
+FTWDseRnnMZyXwTMlsKPeLvdH_v2	403
+*/
+
+
+/*
+browser_id	event_type	total_visits
+U1noQBuNFhhPXJ4ZV7ac-yWFLKcu	cart_view	454
+U1noQBuNFhhPXJ4ZV7ac-yWFLKcu	cart_listing_removed	2
+
+browser_id	event_type	total_visits
+FTWDseRnnMZyXwTMlsKPeLvdH_v2	cart_view	403
+FTWDseRnnMZyXwTMlsKPeLvdH_v2	cart_listing_removed	3
+*/
+
+/* 
+browser_id	visits_w_cart	visits_w_save_for_later	visits_w_remove_listing
+HwteIRE6iw6FLWaDqWdUKOBIJIUm	279	198	1
+E58EFFFAB0074871BEC365FF6C66	230	159	1
+eLaAjK9zFVXa91weVTmVtTJ0nHjU	319	155	1
+7260EA7A4A25471EB4AFC45D5FFB	248	155	1
+45AEB87784B1414E8CAB89902298	285	127	1
+
+browser_id	event_type	total_visits
+45AEB87784B1414E8CAB89902298	checkout_add_to_saved_for_later	127
+45AEB87784B1414E8CAB89902298	cart_view	285
+45AEB87784B1414E8CAB89902298	cart_listing_removed	200
+*/
+
+select event_type, count(distinct visit_id) from etsy-data-warehouse-prod.weblog.events 
+where event_type in ('cart_view','checkout_add_to_saved_for_later','cart_listing_removed') 
+and _date >= current_date-30
+and REGEXP_EXTRACT(visit_id, r'^([^\.]+)') in ('U1noQBuNFhhPXJ4ZV7ac-yWFLKcu')
+group by all 
