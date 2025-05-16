@@ -115,9 +115,9 @@ regexp_substr(ref, "purchases\\/([^\\/\?]+)", 1, 1) as purchase_id,
 from message_info 
 )
 select
-platform,
-started_post_purchase,
-converted,
+-- platform,
+-- started_post_purchase,
+-- converted,
 case when listing_id is not null then "listing"
      when shop_name is not null then "shop"
      when purchase_id is not null then "purchase"
@@ -125,5 +125,6 @@ case when listing_id is not null then "listing"
      else referring_type end,
 count(distinct message_id)
 from extract_ref
+where started_post_purchase > 0
 group by all 
-order by 1,2,4 desc
+order by 1 desc
