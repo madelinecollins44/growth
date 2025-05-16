@@ -70,7 +70,7 @@ select
   sequence_number,
   event_type,
   lead(event_type) over (partition by visit_id order by sequence_number) as next_event, 
-  lead(event_type) over (partition by visit_id order by sequence_number) as next_sequence_number
+  lead(sequence_number) over (partition by visit_id order by sequence_number) as next_sequence_number
 from 
     etsy-data-warehouse-prod.weblog.events e
 inner join 
@@ -80,7 +80,7 @@ where
   and platform in ('mobile_web','desktop')
   and page_view = 1 -- only primary pages 
 );
-end */
+end  */
 
 select
   platform,
