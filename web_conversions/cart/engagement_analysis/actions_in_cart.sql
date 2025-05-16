@@ -59,7 +59,7 @@ group by all
 order by 1,2 desc 
 
 -- SHOP HOME/ LISTING PAGE FROM CART
-/*begin
+/* begin
 create or replace temp table all_events as (
 select
   platform,
@@ -80,11 +80,11 @@ where
   and platform in ('mobile_web','desktop')
   and page_view = 1 -- only primary pages 
 );
-end  */
+end */
 
 select
   platform,
-  buyer_segment,
+  -- buyer_segment,
   -- new_visitor,
   event_type,
   next_event,
@@ -95,13 +95,10 @@ select
   count(distinct visit_id) / sum(count(distinct visit_id)) over () AS pct_of_visits,
   count(sequence_number) / sum(count(sequence_number)) over () AS pct_of_events
 from 
-  etsy-bigquery-adhoc-prod._script866f860a6b2175616d04ef2e05e6e9b664317020.all_events
-where event_type in ('cart_view') and buyer_segment=1
+  etsy-bigquery-adhoc-prod._script44fdc4e00c86c436735e8a34b292f6b7b72deee6.all_events
+where event_type in ('cart_view') --and new_visitor=1
 group by all 
 qualify rank () over (partition by platform order by count(distinct browser_id) desc) <= 10
-
-
-
 
 ------------------------------------------------------------
 -- TESTING
