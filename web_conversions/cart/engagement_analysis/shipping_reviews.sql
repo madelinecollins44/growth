@@ -20,3 +20,21 @@ order by 1,2 desc
 
 -- SELECT *,
   -- REGEXP_CONTAINS(LOWER(your_column), r'\b((slow|late|delay(ed)?|never arrived|long wait|terrible|bad|poor|awful|missing|lost|didn[’'\']?t (arrive|come|ship|receive))\b.*\b(ship(ping)?|deliver(ed|y)?|arriv(e|al|ing)?|transit|dispatch|receive(d)?)\b|\b(ship(ping)?|deliver(ed|y)?|arriv(e|al|ing)?|transit|dispatch|receive(d)?)\b.*\b(slow|late|delay(ed)?|never arrived|long wait|terrible|bad|poor
+
+
+-- testing 
+select
+  review,
+  case 
+    when regexp_contains(lower(review), r'\b(fast|speedy|prompt)\b') then 1
+    else 0
+  end as mentions_shipping,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+where 
+  has_review > 0 
+  and date(transaction_date) >= current_date-365
+ and language in ('en')
+group by all 
+-- order by 1,2 desc
+qualify row_number() over (partition by mentions_shipping order by rand()) <= 15
