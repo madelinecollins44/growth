@@ -1,7 +1,7 @@
 
 select
   case 
-    when regexp_contains(lower(review), r'\b(ship(ping)?|delivery|arrive|arrival|transit|dispatch|estimated time|ETA|receive)\b') then 1
+    when regexp_contains(lower(review), r'\b(ship(ping)?|delivery|arrive|arrival|fast|transit|dispatch|speedy|estimated time|prompt|ETA|receive)\b') then 1
     else 0
   end as mentions_shipping,
   top_category,
