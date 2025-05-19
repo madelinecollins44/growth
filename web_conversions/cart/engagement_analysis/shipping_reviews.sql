@@ -11,7 +11,8 @@ from
   etsy-data-warehouse-prod.rollups.transaction_reviews
 where 
   has_review > 0 
-and DATE(transaction_date) >= current_date-365
+  and language in ('en')
+  and date(transaction_date) >= current_date-365
 group by all 
 order by 1,2 desc
 
