@@ -28,7 +28,7 @@ from
 inner join 
   etsy-data-warehouse-prod.weblog.events e using (visit_id)
 where 
-  v._date >= current_date-5
+  v._date >= current_date-5 -- change this depending on experiment dates 
   and platform in ('mobile_web','desktop')
-  and event_type in ('listing_page_review_engagement_frontend','listing_page_reviews_pagination','appreciation_photo_overlay_opened','sort_reviews','reviews_categorical_tag_clicked','listing_page_reviews_content_toggle_opened')
+  and event_type in ('listing_page_review_engagement_frontend','listing_page_reviews_pagination','appreciation_photo_overlay_opened','sort_reviews','reviews_categorical_tag_clicked','listing_page_reviews_content_toggle_opened','reviews_categorical_tag_clicked')
 group by all 
