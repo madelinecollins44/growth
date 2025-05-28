@@ -26,6 +26,7 @@ with agg as (
 SELECT 
   current_date-5 AS _date,
   v.visit_id,
+  v.browser_id,
   lv.sequence_number,
   l.listing_id,
   COALESCE(cast(l.is_digital as string), "undefined") AS segment_value
@@ -42,11 +43,67 @@ WHERE
 select
   segment_value,
   count(sequence_number) as listing_views,
-  count(distinct visit_id) as visits
+  count(distinct visit_id) as visits,
+  count(distinct browser_id) as browser_id
 from 
   agg 
 group by all 
-/* segment_value	listing_views	visits
-0	57865516	15915635
-undefined	271	222
-1	10948471	4469891 */
+/*
+segment_value	listing_views	visits	browser_id
+1	10948471	4469891	3741097
+undefined	271	222	216
+0	57865516	15915635	12649048 */
+
+
+/* link to segmentation checks in BQ: https://docs.google.com/spreadsheets/d/19KuDMYtx9ydrVQ0d6Bmv5Zo1z14_FEvcxxwEoCs7vLc/edit?gid=2031585801#gid=2031585801 */
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+/* RECENT SHOP HOME VISITS 
+Segmentation definition:
+
+*/
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+-- segmentations 
+with unit_shop_home_views as (
+    -- browser bucketed tests
+    select 
+      {{input_run_date}} as _date,
+      split(lv.visit_id, ".")[0] as bucketing_id, 
+      1 as bucketing_id_type, 
+      count(distinct concat(lv.visit_id, lv.sequence_number)) as shop_home_views
+    from 
+      etsy-data-warehouse-prod.weblog.events e
+    where 
+      lv._date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
+        and event_type in ('shop_home')
+    group by all
+    union all 
+    -- user bucketed_tests 
+    select 
+      {{input_run_date}} as _date,
+      cast(v.user_id as string) as bucketing_id, 
+      2 as bucketing_id_type, 
+      count(distinct concat(lv.visit_id, lv.sequence_number)) as shop_home_views
+    from etsy-data-warehouse-prod.weblog.events e
+    left join `etsy-data-warehouse-prod.weblog.visits` v 
+      on v.visit_id = lv.visit_id
+    where 
+      lv._date between DATE_SUB({{input_run_date}}, INTERVAL 14 DAY) and {{input_run_date}} 
+      and event_type in ('shop_home')
+      and v._date = {{input_run_date}}
+    group by all
+)
+select 
+  _date,            
+  bucketing_id, 
+  bucketing_id_type,
+  case 
+      when shop_home_views between 1 and 10 then '1-10'
+      when shop_home_views between 11 and 20 then '11-20'
+      when shop_home_views between 21 and 30 then '21-30'
+      when shop_home_views between 31 and 40 then '31-40'
+      when shop_home_views between 41 and 50 then '41-50'
+     else '50_or_more' end as segment_value
+  from unit_shop_home_views
+	
+------TESTING
