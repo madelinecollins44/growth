@@ -3,7 +3,7 @@
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 /* LISTING_
 Segmentation definition: Whether or not the first listing viewed during the experiment (i.e., the bucketing listing) is a physical or digital item 
-
+sample table in BQ: etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_is_digital_listing_1748447113
 */
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 SELECT 
@@ -24,7 +24,7 @@ WHERE
 ------TESTING
 with agg as (
 SELECT 
-  current_date-5 AS _date,
+  current_date-1 AS _date,
   v.visit_id,
   v.browser_id,
   lv.sequence_number,
@@ -37,8 +37,8 @@ LEFT JOIN
 LEFT JOIN
   `etsy-data-warehouse-prod.listing_mart.listing_attributes` AS l USING (listing_id)
 WHERE
-  v._date = current_date-5
-  AND lv._date = current_date-5
+  v._date = current_date-1
+  AND lv._date = current_date-1
 )
 select
   segment_value,
@@ -54,9 +54,37 @@ segment_value	listing_views	visits	browser_id
 undefined	271	222	216
 0	57865516	15915635	12649048 */
 
+	
+select
+  segment_value,
+  count(sequence_number) as listing_views,
+  count(distinct visit_id) as visits,
+  count(distinct bucketing_id) as bucketing_id
+from 
+  etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_is_digital_listing_1748447113 
+group by all 
+order by 1 desc 
+/* segment_value	listing_views	visits	bucketing_id
+undefined	91953312	25626016	28605735
+1	3243382	3071000	3194487
+0	10429304	9728092	10056744
+*/
 
-/* link to segmentation checks in BQ: https://docs.google.com/spreadsheets/d/19KuDMYtx9ydrVQ0d6Bmv5Zo1z14_FEvcxxwEoCs7vLc/edit?gid=2031585801#gid=2031585801 */
-
+-- check again listing page experiment 
+WITH experiment_bucketing_units AS (
+  SELECT *
+  FROM `etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_is_digital_listing_1748447113`
+    INNER JOIN `etsy-data-warehouse-prod.catapult_unified.bucketing_period` USING(_date, bucketing_id, bucketing_id_type, bucketing_ts)
+  WHERE experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
+)
+SELECT  
+  segment_value, 
+  COUNT(*) AS total_bucketing_units,
+  COUNT(*) / (SELECT COUNT(*) FROM experiment_bucketing_units)
+FROM experiment_bucketing_units
+GROUP BY 1
+ORDER BY 1 DESC
+	
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 /* RECENT SHOP HOME VISITS 
 Segmentation definition:
