@@ -135,3 +135,46 @@ select
   from unit_shop_home_views
 	
 ------TESTING
+with unit_shop_home_views as (
+    -- browser bucketed tests
+    select 
+      current_date as _date,
+      split(e.visit_id, ".")[0] as bucketing_id, 
+      1 as bucketing_id_type, 
+      count(distinct concat(e.visit_id, e.sequence_number)) as shop_home_views
+    from 
+      etsy-data-warehouse-prod.weblog.events e
+    where 
+      e._date between (DATE_SUB(current_date, INTERVAL 14 DAY)) and current_date
+      and event_type in ('shop_home')
+    group by all
+    union all 
+    -- user bucketed_tests 
+    select 
+      current_date as _date,
+      cast(v.user_id as string) as bucketing_id, 
+      2 as bucketing_id_type, 
+      count(distinct concat(e.visit_id, e.sequence_number)) as shop_home_views
+    from etsy-data-warehouse-prod.weblog.events e
+    left join `etsy-data-warehouse-prod.weblog.visits` v 
+      on v.visit_id = e.visit_id
+    where 
+      e._date between (DATE_SUB(current_date, INTERVAL 14 DAY)) and current_date
+      and event_type in ('shop_home')
+      and v._date = current_date
+    group by all
+)
+select 
+  _date,            
+  bucketing_id, 
+  bucketing_id_type,
+  case 
+      when shop_home_views = 0 then '0'
+      when shop_home_views = 1 then '1'
+      when shop_home_views between 2 and 5 then '2-5'
+      when shop_home_views between 6 and 5 then '6-10'
+      when shop_home_views between 11 and 20 then '11-20'
+     else '20_or_more' end as segment_value
+  from unit_shop_home_views
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY bucketing_id_type, segment_value ORDER BY RAND()) = 5
+
