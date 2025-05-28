@@ -126,13 +126,17 @@ select
   bucketing_id, 
   bucketing_id_type,
   case 
-      when shop_home_views between 1 and 10 then '1-10'
+      when shop_home_views = 0 then '0'
+      when shop_home_views = 1 then '1'
+      when shop_home_views = 2 then '2'
+      when shop_home_views = 3 then '3'
+      when shop_home_views = 4 then '4'
+      when shop_home_views = 5 then '5'
+      when shop_home_views between 6 and 10 then '6-10'
       when shop_home_views between 11 and 20 then '11-20'
-      when shop_home_views between 21 and 30 then '21-30'
-      when shop_home_views between 31 and 40 then '31-40'
-      when shop_home_views between 41 and 50 then '41-50'
-     else '50_or_more' end as segment_value
-  from unit_shop_home_views
+     else '20_or_more' 
+end as segment_value,
+from unit_shop_home_views
 	
 ------TESTING
 with unit_shop_home_views as (
