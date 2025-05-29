@@ -1,3 +1,23 @@
+----------------------------------------------------------------------------------------
+-- OVERALL REVIEWS DISTROS
+----------------------------------------------------------------------------------------
+select
+  -- listing_id,
+  -- case when date(transaction_date) >= current_date-365 then 1 else 0 end as reviews_in_last_year,
+  -- case when date(transaction_date) < current_date-365 then 1 else 0 end as reviews_before_last_year,
+  count(distinct transaction_id) as total_reviews,
+  count(distinct case when date(transaction_date) >= current_date-365 then transaction_id end) reviews_in_last_year,
+  count(distinct case when date(transaction_date) < current_date-365 then transaction_id end) reviews_in_before_last_year
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews  
+where 
+  has_review > 0 -- only listings 
+group by all
+
+  
+----------------------------------------------------------------------------------------
+-- LISTING VIEWS + ACTIVE LISTINGS BY REVIEW TIME
+----------------------------------------------------------------------------------------
 with listing_reviews as (
 select
   listing_id,
