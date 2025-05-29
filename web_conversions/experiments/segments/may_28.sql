@@ -89,7 +89,7 @@ ORDER BY 1 DESC
 /* RECENT SHOP HOME VISITS 
 Segmentation definition:
 
-etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_views_last_14d_1748466803
+etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_views_last_14d_1748526318
 */
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 -- segmentations 
