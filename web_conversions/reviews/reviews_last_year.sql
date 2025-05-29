@@ -14,6 +14,15 @@ where
   has_review > 0 -- only listings 
 group by all
 
+select
+  extract(year from date(transaction_date)) as year,
+  count(distinct transaction_id) as total_reviews,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews  
+where 
+  has_review > 0 -- only listings 
+group by all
+order by 1 desc
   
 ----------------------------------------------------------------------------------------
 -- LISTING VIEWS + ACTIVE LISTINGS BY REVIEW TIME
