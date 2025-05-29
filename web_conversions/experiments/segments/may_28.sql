@@ -182,3 +182,27 @@ select
   from unit_shop_home_views
   QUALIFY ROW_NUMBER() OVER (PARTITION BY bucketing_id_type, segment_value ORDER BY RAND()) = 5
 
+select
+  segment_value,
+  count(distinct bucketing_id) as visits,
+from 
+  etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_views_last_14d_1748466803
+group by all 
+order by 1 desc 
+
+
+WITH experiment_bucketing_units AS (
+  SELECT *
+  FROM etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_views_last_14d_1748466803
+    INNER JOIN `etsy-data-warehouse-prod.catapult_unified.bucketing_period` USING(_date, bucketing_id, bucketing_id_type, bucketing_ts)
+  WHERE experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
+)
+SELECT  
+  segment_value, 
+  COUNT(*) AS total_bucketing_units,
+  COUNT(*) / (SELECT COUNT(*) FROM experiment_bucketing_units)
+FROM experiment_bucketing_units
+GROUP BY 1
+ORDER BY 1 DESC
+	
+
