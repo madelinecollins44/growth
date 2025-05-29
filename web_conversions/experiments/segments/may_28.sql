@@ -289,4 +289,29 @@ FROM experiment_bucketing_units
 GROUP BY 1
 ORDER BY 1 DESC
 	
+select
+  listing_id,
+  -- case when date(transaction_date) >= current_date-365 then 1 else 0 end as reviews_in_last_year,
+  -- case when date(transaction_date) < current_date-365 then 1 else 0 end as reviews_before_last_year,
+  count(distinct transaction_id) as total_reviews,
+  count(distinct case when date(transaction_date) >= current_date-365 then transaction_id end) reviews_in_last_year,
+  count(distinct case when date(transaction_date) < current_date-365 then transaction_id end) reviews_in_before_last_year
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews  
+where 
+  has_review > 0 -- only listings 
+  and listing_id in (1754016743,1072647233,1189903880,1688231193,1608295487,219594986,1588594570,1900447531)
+group by all
+
+select
+  platform,
+  listing_id,
+  count(sequence_number) as total_views
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  and platform in ('desktop','mobile_web','boe')
+  and listing_id in (1754016743,1072647233,1189903880,1688231193,1608295487,219594986,1588594570,1900447531)
+group by all
 
