@@ -140,6 +140,19 @@ end as segment_value,
 from unit_shop_home_views
 	
 ------TESTING
+select
+  case when event_type in ('shop_home') then 1 else 0 end as shop_home_traffic,
+  count(distinct visit_id) as visits, 
+  -- count(distinct (split(visit_id, "."))) as browsers
+from 
+  etsy-data-warehouse-prod.weblog.events
+where _date >= current_date-14
+group by all 
+/*	shop_home_traffic	visits
+1	60627567
+0	493282546 */
+
+-- TESTING ON BROWSER LEVEL 
 with unit_shop_home_views as (
     -- browser bucketed tests
     select 
@@ -150,8 +163,8 @@ with unit_shop_home_views as (
     from 
       etsy-data-warehouse-prod.weblog.events e
     where 
-      e._date between (DATE_SUB(current_date, INTERVAL 14 DAY)) and current_date
-      and event_type in ('shop_home')
+      e._date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
+        and event_type in ('shop_home')
     group by all
     union all 
     -- user bucketed_tests 
@@ -164,7 +177,7 @@ with unit_shop_home_views as (
     left join `etsy-data-warehouse-prod.weblog.visits` v 
       on v.visit_id = e.visit_id
     where 
-      e._date between (DATE_SUB(current_date, INTERVAL 14 DAY)) and current_date
+      e._date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
       and event_type in ('shop_home')
       and v._date = current_date
     group by all
@@ -176,13 +189,66 @@ select
   case 
       when shop_home_views = 0 then '0'
       when shop_home_views = 1 then '1'
-      when shop_home_views between 2 and 5 then '2-5'
-      when shop_home_views between 6 and 5 then '6-10'
+      when shop_home_views = 2 then '2'
+      when shop_home_views = 3 then '3'
+      when shop_home_views = 4 then '4'
+      when shop_home_views = 5 then '5'
+      when shop_home_views between 6 and 10 then '6-10'
       when shop_home_views between 11 and 20 then '11-20'
-     else '20_or_more' end as segment_value
-  from unit_shop_home_views
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY bucketing_id_type, segment_value ORDER BY RAND()) = 5
+     else '20_or_more' 
+end as segment_value,
+from unit_shop_home_views
+QUALIFY ROW_NUMBER() OVER (PARTITION BY segment_value ORDER BY RAND()) = 5
+/* _date	bucketing_id	bucketing_id_type	segment_value
+2025-05-29	zhysWAX2pX7wDMeidcFZ6FPUAL1n	1	5
+2025-05-29	4B664D0A53934B3D8D05F0BD4C15	1	20_or_more
+2025-05-29	85916368B4AF489C8F2C8200440C	1	11-20
+2025-05-29	5AD69991D1334B32ABEFAD93F36C	1	4
+2025-05-29	lLF3XyIBOa11yubDBv6o5jBiWVyO	1	6-10
+2025-05-29	gBrruBNI22IWf7aNaLZ0AOVvDH3J	1	3
+2025-05-29	hd7zXHDPL7VbK5JXX1ejvBBNv6OL	1	2
+2025-05-29	jZUJ_6JvZwinhaWWOSsrKJPtuXUT	1	1
+2025-05-29	319635185	2	5
+2025-05-29	11004342	2	4
+2025-05-29	782914317	2	11-20
+2025-05-29	10487214	2	20_or_more
+2025-05-29	289727567	2	3
+2025-05-29	52009954	2	6-10
+2025-05-29	1024977062	2	1
+2025-05-29	1093259138	2	2 */ 
 
+select 
+	event_type, 
+	split(visit_id, ".")[0] as browser_id, 
+	count(sequence_number) 
+from 
+	etsy-data-warehouse-prod.weblog.events 
+where split(visit_id, ".")[0] in 
+	('zhysWAX2pX7wDMeidcFZ6FPUAL1n','4B664D0A53934B3D8D05F0BD4C15','85916368B4AF489C8F2C8200440C','5AD69991D1334B32ABEFAD93F36C','lLF3XyIBOa11yubDBv6o5jBiWVyO','gBrruBNI22IWf7aNaLZ0AOVvDH3J','hd7zXHDPL7VbK5JXX1ejvBBNv6OL','jZUJ_6JvZwinhaWWOSsrKJPtuXUT') 
+and _date between DATE_SUB(current_date, INTERVAL 14 DAY) and current_date 
+and event_type in ('shop_home') group by all 
+/* event_type	browser_id	f0_
+shop_home	zhysWAX2pX7wDMeidcFZ6FPUAL1n	5
+shop_home	hd7zXHDPL7VbK5JXX1ejvBBNv6OL	2
+shop_home	5AD69991D1334B32ABEFAD93F36C	4
+shop_home	jZUJ_6JvZwinhaWWOSsrKJPtuXUT	1
+shop_home	lLF3XyIBOa11yubDBv6o5jBiWVyO	10
+shop_home	gBrruBNI22IWf7aNaLZ0AOVvDH3J	3
+shop_home	85916368B4AF489C8F2C8200440C	12
+shop_home	4B664D0A53934B3D8D05F0BD4C15	50
+shop_home	10487214	26
+shop_home	289727567	3
+shop_home	782914317	12
+shop_home	319635185	5
+shop_home	52009954	6
+shop_home	1093259138	2
+shop_home	11004342	4
+shop_home	1024977062	1	
+	*/
+
+
+	
+-- testing overall traffic counts	
 select
   segment_value,
   count(distinct bucketing_id) as visits,
@@ -191,7 +257,7 @@ from
 group by all 
 order by 1 desc 
 
-
+-- testing against specific experiment 
 WITH experiment_bucketing_units AS (
   SELECT *
   FROM etsy-data-warehouse-dev.catapult_temp.segmentation_sample_run_shop_home_views_last_14d_1748466803
