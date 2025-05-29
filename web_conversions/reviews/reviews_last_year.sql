@@ -27,8 +27,7 @@ order by 1 desc
 ----------------------------------------------------------------------------------------
 -- LISTING VIEWS + ACTIVE LISTINGS BY REVIEW TIME
 ----------------------------------------------------------------------------------------
-begin 
-create or replace temporary table listing_reviews as (
+with listing_reviews as (
 select
   listing_id,
   -- case when date(transaction_date) >= current_date-365 then 1 else 0 end as reviews_in_last_year,
@@ -41,9 +40,8 @@ from
 where 
   has_review > 0 -- only listings 
 group by all
-);
-
-create or replace temporary table listing_views as (
+)
+, listing_views as (
 select
   platform,
   listing_id,
@@ -54,9 +52,7 @@ where
   _date >= current_date-30
   and platform in ('desktop','mobile_web','boe')
 group by all
-) ;
-
--- create or replace temporary table agg as (
+)
 select
   case 
     when reviews_in_last_year > 0 and reviews_in_before_last_year = 0 then 'only_reviews_this_year'
@@ -64,7 +60,7 @@ select
     when reviews_in_last_year > 0 and reviews_in_before_last_year > 0 then 'reviews_in_both'
     else 'error'
   end as reviews_type,
-  -- count(distinct a.listing_id) as active_listings,
+  count(distinct a.listing_id) as active_listings,
   count(distinct v.listing_id) as viewed_listings,
   count(distinct case when platform in ('desktop') then v.listing_id end) as desktop_listings,
   count(distinct case when platform in ('mobile_web') then v.listing_id end) as mweb_listing,
@@ -75,16 +71,17 @@ select
   sum(case when platform in ('mobile_web') then total_views end) as mweb_views,
   sum(case when platform in ('boe') then total_views end) as boe_views
 from
-  listing_reviews r 
--- left join  
---   etsy-data-warehouse-prod.rollups.active_listing_basics a using (listing_id)
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
 left join 
-  listing_views v
-    on v.listing_id=r.listing_id
-group by all ;
+  listing_views v using (listing_id)
+left join 
+  listing_reviews r
+    on a.listing_id=r.listing_id
+group by all 
+
 -- );
 
-end
+-- end
   
 --------------------------------------------------------------------------------------------------------
 -- TESTING
