@@ -1057,41 +1057,25 @@ select
     -- LP Review Engagement
   , ma.control_lp_review_engagement
   , ma.variant1_lp_review_engagement
-  , case 
-      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
-      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
-      else ma.variant1_pct_change_lp_review_engagement
-      end as variant1_pct_change_lp_review_engagement
+  , ma.variant1_pct_change_lp_review_engagement
   , ma.variant1_pval_lp_review_engagement
   , case when ma.variant1_pval_lp_review_engagement < 0.05 then 1 else 0 end as lp_review_engagement_is_significant
     --  LP Review Pagination 
   , ma.control_lp_review_pagination
   , ma.variant1_lp_review_pagination
-  , case 
-      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
-      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
-      else ma.variant1_pct_change_lp_review_pagination
-      end as variant1_pct_change_lp_review_pagination
+  , ma.variant1_pct_change_lp_review_pagination
   , ma.variant1_pval_lp_review_pagination
   , case when ma.variant1_pval_lp_review_pagination < 0.05 then 1 else 0 end as lp_review_pagination_is_significant
     --  LP Review Photo Opened 
   , ma.control_lp_review_photo_opened
   , ma.variant1_lp_review_photo_opened
-  , case 
-      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
-      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
-      else ma.variant1_pct_change_lp_review_photo_opened
-      end as variant1_pct_change_lp_review_photo_opened
+  , ma.variant1_pct_change_lp_review_photo_opened
   , ma.variant1_pval_lp_review_photo_opened
   , case when ma.variant1_pval_lp_review_photo_opened < 0.05 then 1 else 0 end as lp_review_photo_opened_is_significant
     --  LP Review Sort
   , ma.control_lp_review_sort
   , ma.variant1_lp_review_sort
-  , case 
-      when LOWER(cgms.kr_metric_name) = 'conversion rate' then cgms.kr_metric_value
-      when LOWER(cgms.kr_metric_name_2) = 'conversion rate' then cgms.kr_metric_value_2
-      else ma.variant1_pct_change_lp_review_sort
-      end as variant1_pct_change_lp_review_sort
+  , ma.variant1_pct_change_lp_review_sort
   , ma.variant1_pval_lp_review_sort
   , case when ma.variant1_pval_lp_review_sort < 0.05 then 1 else 0 end as lp_review_sort_is_significant
   -- Variant 2 Conversion rate
