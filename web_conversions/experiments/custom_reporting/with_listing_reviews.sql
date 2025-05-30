@@ -933,7 +933,7 @@ select
       else ma.variant1_pct_change_pct_atc
       end as variant1_pct_change_pct_atc
   , ma.variant1_pval_pct_atc
-  -- , case when ma.variant1_pval_pct_atc < 0.05 then 1 else 0 end as atc_is_significant
+  , case when ma.variant1_pval_pct_atc < 0.05 then 1 else 0 end as atc_is_significant
   -- Listing view
   , ma.control_pct_listing_view
   , ma.variant1_pct_listing_view
