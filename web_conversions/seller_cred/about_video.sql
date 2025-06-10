@@ -13,14 +13,15 @@ where
 )
 , shop_home_traffic as (
 -- total traffic to page 
--- about section seen
--- about video played 
+'shop_home_about_section_seen' -- about section seen
+'shop_about_new_video_play' -- about video played 
 )
 , listing_views as (
 select
   shop_id,
   count(distinct listing_id) as listings_viewed,
   count(sequence_number) as listing_views, 
+  sum(purchased_after_view) as purchases
 from 
   etsy-data-warehouse-prod.analytics.listing_views v 
 inner join 
