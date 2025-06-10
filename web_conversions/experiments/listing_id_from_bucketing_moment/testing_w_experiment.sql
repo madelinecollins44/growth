@@ -1,4 +1,3 @@
-
 begin
 create or replace temp table bucketing_listing_ids as (
 with bucketing as ( -- pulls out bucketing moment 
@@ -117,6 +116,7 @@ From
 WHERE
   time_diff BETWEEN  -86400000 AND 200  
 GROUP BY ALL 
+ORDER BY ABS(time_diff) ASC LIMIT 1
 )
 select
   -- _date as _date, 
