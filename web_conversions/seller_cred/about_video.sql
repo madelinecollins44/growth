@@ -12,9 +12,23 @@ where
   and is_frozen = 0 
 )
 , shop_home_traffic as (
--- total traffic to page 
-'shop_home_about_section_seen' -- about section seen
-'shop_about_new_video_play' -- about video played 
+select
+  (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
+  -- visits
+  count(distinct case when beacon.event_name in ('shop_home') then visit_id end) as shop_home_visits, 
+  count(distinct case when beacon.event_name in ('shop_home_about_section_seen') then visit_id end) as section_seen_visits, 
+  count(distinct case when beacon.event_name in ('shop_about_new_video_play') then visit_id end) as video_play_visits, 
+  -- pageviews
+  count(case when beacon.event_name in ('shop_home') then visit_id end) as shop_home_views, 
+  count(case when beacon.event_name in ('shop_home_about_section_seen') then visit_id end) as section_seen_views, 
+  count(case when beacon.event_name in ('shop_about_new_video_play') then visit_id end) as video_play_views, 
+from
+		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+where
+	date(_partitiontime) >= current_date-14
+  and (beacon.event_name in ('shop_home','shop_home_about_section_seen','shop_about_new_video_play'))
+  and (beacon.event_source in ('web'))
+group by all
 )
 , listing_views as (
 select
@@ -26,6 +40,9 @@ from
   etsy-data-warehouse-prod.analytics.listing_views v 
 inner join 
   etsy-data-warehouse-prod.rollups.active_listing_basics b using (listing_id)
+where
+  _date >= current_date-30
+  and platform in ('mobile_web','desktop')
 )
 , purchases as (
 
