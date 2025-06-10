@@ -1,8 +1,12 @@
-with shop_vids as (
+with shop_stats as (
 select 
   sb.shop_id,
   shop_name,
-  case when state=0 then 1 else 0 end as has_video
+  seller_tier_new, 
+  case when state=0 then 1 else 0 end as has_video,
+  sum(total_gms) as total_gms,
+  sum(total_orders) as total_orders,
+  sum(total_quantity_sold) as total_quantity_sold
 from 
   etsy-data-warehouse-prod.rollups.seller_basics sb
 left join 
@@ -10,6 +14,7 @@ left join
 where 
   sb.active_seller_status > 0 
   and is_frozen = 0 
+group by all 
 )
 , shop_home_traffic as (
 select
@@ -43,7 +48,38 @@ inner join
 where
   _date >= current_date-30
   and platform in ('mobile_web','desktop')
+group by all 
 )
-, purchases as (
-
+, reviews as (
+select
+  shop_id,
+  sum(has_review) as total_reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
 )
+select
+  seller_tier_new, 
+  has_video,
+  case when r.shop_id is not null then 1 else 0 end as has_reviews,
+  count(distinct s.shop_id) as active_shops,
+  sum(total_gms) as total_gms,
+  sum(total_orders) as total_orders,
+  sum(total_quantity_sold) as total_quantity_sold,
+-- traffic
+  sum(shop_home_views) as shop_home_views, 
+  sum(section_seen_views)as section_seen_views, 
+  sum(video_play_views) as video_play_views, 
+-- lv
+  sum(listings_viewed) as listings_viewed,
+  sum(listing_views) as listing_views, 
+  sum(purchases) as purchases
+from 
+  shop_stats s
+left join 
+  shop_home_traffic t on cast(s.shop_id as string)=t.shop_id
+left join  
+  listing_views lv on s.shop_id=lv.shop_id
+left join 
+  reviews r on s.shop_id=r.shop_id
+group by all 
