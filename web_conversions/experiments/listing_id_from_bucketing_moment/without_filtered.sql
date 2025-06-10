@@ -7,15 +7,15 @@ SELECT
   bucketing_id,
   experiment_id,
   associated_ids
-from
-  `etsy-data-warehouse-prod.catapult_unified.bucketing`
-inner join 
-  (SELECT distinct bucketing_id
-  FROM
-    `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
-  WHERE _date is not null --AND experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
+-- from
+--   `etsy-data-warehouse-prod.catapult_unified.bucketing`
+-- inner join 
+--   (SELECT distinct bucketing_id
+--   FROM
+--     `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
+--   WHERE _date is not null AND experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
   )
-  using (bucketing_id)
+  -- using (bucketing_id)
 ) 
 , indexesOfInterest as (
   select b.*,
