@@ -66,7 +66,7 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket
         bucketing_id,
         bucketing_id_type,
         variant_id,
-        date(bucketing_ts) as bucketing_date
+        date(bucketing_ts) as bucketing_date,
         IF(is_event_filtered, filtered_bucketing_ts, bucketing_ts) AS bucketing_ts,
     FROM
         `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
@@ -240,8 +240,8 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_event
 -------------------------------------------------------------------------------------------
 -- Proportion and mean metrics by variant and event_name
 SELECT
-    -- bucketing_date,
-    variant_id,
+        bucketing_date,
+    -- variant_id,
     COUNT(distinct bucketing_id) AS total_units_in_variant,
     avg(case when event_id in ('backend_cart_payment') then IF(event_count = 0, 0, 1) end) AS conversion_rate,
     (sum(case when event_id in ('gms') then event_count end)/100) AS total_gms,
@@ -249,5 +249,7 @@ SELECT
     avg(case when event_id in ('total_winsorized_gms') then IF(event_count = 0, NULL, event_count) end) AS acbv
 FROM
     `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
-GROUP BY
-    variant_id
+  where variant_id in ('on')
+GROUP BY ALL
+order by 1 asc
+  
