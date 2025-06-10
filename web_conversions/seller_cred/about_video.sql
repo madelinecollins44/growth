@@ -6,7 +6,10 @@ select
   case when state=0 then 1 else 0 end as has_video,
   sum(total_gms) as total_gms,
   sum(total_orders) as total_orders,
-  sum(total_quantity_sold) as total_quantity_sold
+  sum(total_quantity_sold) as total_quantity_sold,
+  sum(past_year_gms) as py_gms,
+  sum(past_year_orders) as py_orders,
+  sum(past_year_quantity_sold) as py_quantity_sold
 from 
   etsy-data-warehouse-prod.rollups.seller_basics sb
 left join 
@@ -21,17 +24,17 @@ select
   (select value from unnest(beacon.properties.key_value) where key = "shop_shop_id") as shop_id,
   -- visits
   count(distinct case when beacon.event_name in ('shop_home') then visit_id end) as shop_home_visits, 
-  count(distinct case when beacon.event_name in ('shop_home_about_section_seen') then visit_id end) as section_seen_visits, 
-  count(distinct case when beacon.event_name in ('shop_about_new_video_play') then visit_id end) as video_play_visits, 
+  -- count(distinct case when beacon.event_name in ('shop_home_about_section_seen') then visit_id end) as section_seen_visits, 
+  -- count(distinct case when beacon.event_name in ('shop_about_new_video_play') then visit_id end) as video_play_visits, 
   -- pageviews
   count(case when beacon.event_name in ('shop_home') then visit_id end) as shop_home_views, 
-  count(case when beacon.event_name in ('shop_home_about_section_seen') then visit_id end) as section_seen_views, 
-  count(case when beacon.event_name in ('shop_about_new_video_play') then visit_id end) as video_play_views, 
+  -- count(case when beacon.event_name in ('shop_home_about_section_seen') then visit_id end) as section_seen_views, 
+  -- count(case when beacon.event_name in ('shop_about_new_video_play') then visit_id end) as video_play_views, 
 from
-		`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
 where
 	date(_partitiontime) >= current_date-14
-  and (beacon.event_name in ('shop_home','shop_home_about_section_seen','shop_about_new_video_play'))
+  and (beacon.event_name in ('shop_home','shop_home_about_section_seen'))
   and (beacon.event_source in ('web'))
 group by all
 )
@@ -66,10 +69,13 @@ select
   sum(total_gms) as total_gms,
   sum(total_orders) as total_orders,
   sum(total_quantity_sold) as total_quantity_sold,
+  sum(py_gms) as py_gms,
+  sum(py_orders) as py_orders,
+  sum(py_quantity_sold) as py_quantity_sold,
 -- traffic
   sum(shop_home_views) as shop_home_views, 
-  sum(section_seen_views)as section_seen_views, 
-  sum(video_play_views) as video_play_views, 
+  -- sum(section_seen_views)as section_seen_views, 
+  -- sum(video_play_views) as video_play_views, 
 -- lv
   sum(listings_viewed) as listings_viewed,
   sum(listing_views) as listing_views, 
