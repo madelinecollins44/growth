@@ -1,20 +1,29 @@
 select
-  -- variant_id,
-  date(bucketing_ts) as bucketing_date,
-  count(distinct bucketing_id) as units,
-  (sum(case when event_id in ('gms') then event_value end)/100) as total_gms, -- total gms, in cents originally 
-
-  count(distinct case when event_id in ('backend_cart_payment') and event_value > 0 then bucketing_id end) as units_that_convert, -- Conversions 
-  count(distinct case when event_id in ('backend_cart_payment') and event_value > 0 then bucketing_id end) / count(distinct bucketing_id) as conversion_rate, -- CR 
-
-  (sum(case when event_id in ('gms') then event_value end)/100)/count(distinct bucketing_id) as total_gms_per_unit, -- gms per unit  
-
-  sum(case when event_id in ('total_winsorized_gms') then event_value end)/ count(case when event_id in ('total_winsorized_gms') and event_value != 0 then event_id end) as winsorized_acbv, -- ACBV 
+  case 
+    when reviews = 0 then '0'  
+    when reviews = 1 then '1'  
+    when reviews = 2 then '2'  
+    when reviews = 3 then '3'  
+    when reviews = 4 then '4' 
+    else '5+'
+  end as photo_count,
+  count(distinct bl.bucketing_id) as bucketed_units,
+  count(distinct bl.segment_value) as listings,
+  count(lv.sequence_number) as listing_views,
+  sum(purchased_after_view) as purchases, 
 from 
-  etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily
-where 
-  experiment_id = "local_pe.q2_2025.buyer_trust_accelerator.browser"
-  and variant_id in ('off') -- with all the 
-group by all
-order by 1 asc
-
+  etsy-bigquery-adhoc-prod._script719e520a9cef39b06b88b49724324a3998ec5543.bucketing_listing_ids bl -- listing_ids of bucketed units 
+left join 
+  (select 
+    listing_id, 
+    coalesce(sum(has_review),0) as reviews 
+  from etsy-data-warehouse-prod.rollups.transaction_reviews 
+  group by all) tr
+    on bl.segment_value = cast(tr.listing_id as string)
+left join 
+  etsy-data-warehouse-prod.analytics.listing_views lv 
+    on bl.segment_value = cast(lv.listing_id as string)
+    and bl.bucketing_id = split(lv.visit_id, ".")[0] -- browser_id
+    and bl.sequence_number= lv.sequence_number 
+    and _date is not null 
+group by all 
