@@ -240,17 +240,14 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_event
 -------------------------------------------------------------------------------------------
 -- Proportion and mean metrics by variant and event_name
 SELECT
-    event_id,
-    bucketing_date,
+    -- bucketing_date,
     variant_id,
-    COUNT(*) AS total_units_in_variant,
-    AVG(IF(event_count = 0, 0, 1)) AS percent_units_with_event,
-    AVG(event_count) AS avg_events_per_unit,
-    (SUM(event_count)/100) AS total_events,
-    AVG(IF(event_count = 0, NULL, event_count)) AS avg_events_per_unit_with_event
+    COUNT(distinct bucketing_id) AS total_units_in_variant,
+    avg(case when event_id in ('backend_cart_payment') then IF(event_count = 0, 0, 1) end) AS conversion_rate,
+    (sum(case when event_id in ('gms') then event_count end)/100) AS total_gms,
+    (sum(case when event_id in ('gms') then event_count end)/100)/ COUNT(distinct bucketing_id) AS gms_per_unit,
+    avg(case when event_id in ('total_winsorized_gms') then IF(event_count = 0, NULL, event_count) end) AS acbv
 FROM
     `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
 GROUP BY
-    event_id, variant_id
-ORDER BY
-    event_id, variant_id;
+    variant_id
