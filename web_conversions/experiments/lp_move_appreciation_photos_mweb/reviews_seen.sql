@@ -42,25 +42,21 @@ qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff
 );
 end
 
-
-
-
--- adding in platform
 with listing_events as (
 select
 	date(_partitiontime) as _date,
-	visit_id,
+	bl.visit_id,
   v.sequence_number,
   case 
-    when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 
-    when b.visit_id > bl.visit_id then 1 
+    when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 -- if within the same visit AND on bucketing sequence number or after 
+    when v.visit_id > bl.visit_id then 1 -- after the bucketing visit_id
   end as after_bucketing_flag,
 	beacon.event_name as event_name,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
 inner join 
-  etsy-bigquery-adhoc-prod._script7472bfed173f9e1e2d8ad0bb22386768877334ae.bucketing_listing bl -- only looking at browsers in the experiment 
+  etsy-bigquery-adhoc-prod._script121af3b287967ee2dce92c95b8bae9023a3b3105.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
     and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after 
 where
