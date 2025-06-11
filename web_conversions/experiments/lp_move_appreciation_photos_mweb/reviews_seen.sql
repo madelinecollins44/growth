@@ -1,9 +1,60 @@
+begin
+create or replace temp table bucketing_listing as (
+with listing_views as (
+select
+  _date,
+  visit_id,
+  split(visit_id, ".")[0] as bucketing_id, -- browser_id
+  listing_id,
+  sequence_number,
+  timestamp_millis(epoch_ms) as listing_ts
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30 -- this will be within time of experiment 
+)
+, bucketing_moment as ( -- pulls out bucketing moment 
+select 
+  min(_date) as _date,
+  min(bucketing_ts) as bucketing_ts,  -- first bucketing moment, this is what will be used to join time 
+  bucketing_id,
+  experiment_id,
+from
+  `etsy-data-warehouse-prod.catapult_unified.bucketing`
+where
+  experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
+group by all 
+) 
+select
+  bm.bucketing_id,
+  bm.bucketing_ts,
+  lv.listing_id,
+  visit_id,
+  lv.sequence_number,
+  lv.listing_ts,
+  abs(timestamp_diff(bm.bucketing_ts,lv.listing_ts,second)) as abs_time_between
+from 
+  bucketing_moment bm
+left join  
+  listing_views lv 
+    using (bucketing_id, _date)
+qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff(bm.bucketing_ts,lv.listing_ts,second)) asc) = 1  -- takes listing id closest to bucketing moment
+);
+end
+
+
+
+
 -- adding in platform
 with listing_events as (
 select
 	date(_partitiontime) as _date,
 	visit_id,
   v.sequence_number,
+  case 
+    when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 
+    when b.visit_id > bl.visit_id then 1 
+  end as after_bucketing_flag,
 	beacon.event_name as event_name,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
 from
@@ -11,7 +62,7 @@ from
 inner join 
   etsy-bigquery-adhoc-prod._script7472bfed173f9e1e2d8ad0bb22386768877334ae.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
-    and v.sequence_number >= bl.sequence_number -- everything that happens on bucketing moment and after 
+    and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after 
 where
 	date(_partitiontime) between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
 	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
@@ -28,6 +79,7 @@ select
 	lead(sequence_number) over (partition by visit_id, listing_id order by sequence_number) as next_sequence_number
 from 
   listing_events
+where after_bucketing_flag = 1
 )
 , listing_views as (
 select
