@@ -1,0 +1,11 @@
+SELECT 
+  _date,
+  bucketing_ts, 
+  bucketing_id,
+  experiment_id,
+  associated_ids
+from
+  `etsy-data-warehouse-prod.catapult_unified.bucketing`
+where
+  experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
+  and bucketing_id in ('---GbjIvXd18W7fOW-P-bzTP2bSt','--0_lw25FZTreF0NUWWXjPmF9Rxz','--1C3l9hM574xb2nIHr9H8etAh6A','--3iUkTNv7FvvQ9n01NbsmzbXgmJ','--3wLRtyvMoVzTgy2b4BxdKM8nAs','--3x4n8a5Rl7VQKmVSKw8cMUIt4z','--4SP7noKfPCoHr5Z4jFrSdmF130','--54SOdYFGCTb7Fw93zPqkz5NM_2','--5HgGutKllI_cDMFWZ3CiQ_fmNU','--6YuOi7oUmHOVyVImYLGKtY9lSB')
