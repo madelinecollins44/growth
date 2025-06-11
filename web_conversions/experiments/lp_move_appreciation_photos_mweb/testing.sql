@@ -1,4 +1,51 @@
 ------------------------------------------------------------------------------------------------
+-- CHECK TO MAKE SURE LISTING VIEW COUNTS ARE THE SAME IN REVIEWS SEEN QUERY VS REGULAR QUERY 
+------------------------------------------------------------------------------------------------
+select 
+  -- lv.listing_id,
+  -- count(distinct bl.bucketing_id) as browsers_that_viewed,
+  count(lv.sequence_number) as listing_views,
+  -- sum(purchased_after_view) as purchases
+from
+  etsy-bigquery-adhoc-prod._script7472bfed173f9e1e2d8ad0bb22386768877334ae.bucketing_listing bl -- all info from first listing unit was bucketed on 
+left join
+  etsy-data-warehouse-prod.analytics.listing_views lv
+    on bl.bucketing_id=split(lv.visit_id, ".")[0] -- browser ids
+    and bl.sequence_number <= lv.sequence_number -- all listing views bucketing moment and after 
+where lv._date between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
+and bucketing_id in ('-xIhPmyyJj89g7__D2oK7BINGdMr')
+group by all 
+-- 5704
+
+
+
+
+  -- begin
+-- create or replace temp table test as (
+-- select
+-- 	date(_partitiontime) as _date,
+-- 	split(v.visit_id, ".")[0] as bucketing_id,
+-- 	-- visit_id,
+--   v.sequence_number,
+-- 	beacon.event_name as event_name,
+--   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+-- from
+-- 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
+-- inner join 
+--   etsy-bigquery-adhoc-prod._script7472bfed173f9e1e2d8ad0bb22386768877334ae.bucketing_listing bl -- only looking at browsers in the experiment 
+--     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
+--     and v.sequence_number >= bl.sequence_number -- everything that happens on bucketing moment and after 
+-- where
+-- 	date(_partitiontime) between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
+-- 	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
+-- group by all 
+-- ) ;
+-- end
+
+select count(case when event_name in ('view_listing') then sequence_number end) as listing_views from etsy-bigquery-adhoc-prod._scriptbce07e692e965f0cb97952a825d655dea77516e2.test where bucketing_id in ('-xIhPmyyJj89g7__D2oK7BINGdMr')
+--5704 listing views post bucketing 
+select * from etsy-bigquery-adhoc-prod._script7472bfed173f9e1e2d8ad0bb22386768877334ae.bucketing_listing where  bucketing_id in ('-xIhPmyyJj89g7__D2oK7BINGdMr')
+------------------------------------------------------------------------------------------------
 -- GRAB BROWSERS TO CHECK
 ------------------------------------------------------------------------------------------------
 SELECT 
