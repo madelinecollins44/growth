@@ -23,6 +23,7 @@ from
   `etsy-data-warehouse-prod.catapult_unified.bucketing`
 where
   experiment_id = 'growth_regx.lp_move_appreciation_photos_mweb'
+  and variant_id in ('on')
 group by all 
 ) 
 select
@@ -41,6 +42,7 @@ left join
 qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff(bm.bucketing_ts,lv.listing_ts,second)) asc) = 1  -- takes listing id closest to bucketing moment
 );
 end
+-- select count(distinct bucketing_id) from etsy-bigquery-adhoc-prod._scriptdee81035175fba82e21a15db89d2ad31b2dc12b4.bucketing_listing
 
 with listing_events as (
 select
@@ -56,7 +58,7 @@ select
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
 inner join 
-  etsy-bigquery-adhoc-prod._script121af3b287967ee2dce92c95b8bae9023a3b3105.bucketing_listing bl -- only looking at browsers in the experiment 
+  etsy-bigquery-adhoc-prod._scriptdee81035175fba82e21a15db89d2ad31b2dc12b4.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
     and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where
