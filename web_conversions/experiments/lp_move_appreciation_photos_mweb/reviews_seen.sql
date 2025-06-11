@@ -58,7 +58,7 @@ from
 inner join 
   etsy-bigquery-adhoc-prod._script121af3b287967ee2dce92c95b8bae9023a3b3105.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
-    and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after 
+    and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where
 	date(_partitiontime) between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
 	and beacon.event_name in ("listing_page_reviews_seen","view_listing")
@@ -75,7 +75,7 @@ select
 	lead(sequence_number) over (partition by visit_id, listing_id order by sequence_number) as next_sequence_number
 from 
   listing_events
-where after_bucketing_flag = 1
+where after_bucketing_flag = 1 -- only looking at post bucketing 
 )
 , listing_views as (
 select
