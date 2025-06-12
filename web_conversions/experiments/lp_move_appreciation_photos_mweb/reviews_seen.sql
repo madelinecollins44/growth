@@ -47,7 +47,7 @@ end
 with listing_events as (
 select
 	date(_partitiontime) as _date,
-	bl.visit_id,
+	v.visit_id,
   v.sequence_number,
   case 
     when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 -- if within the same visit AND on bucketing sequence number or after 
