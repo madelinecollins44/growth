@@ -33,6 +33,8 @@ where
 	date(_partitiontime) between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
 	and beacon.event_name in ("view_listing")
   and split(v.visit_id, ".")[0] in ('yRvFwecOKGCFqanAVq5-eWE5fxUx')
+group by all 
+order by 1,3 asc
     /* 
  _date	after_bucketing_flag	f0_
 2025-05-23	0	2
@@ -43,5 +45,3 @@ where
 2025-05-27	1	43
   */
 
-group by all 
-order by 1,3 asc
