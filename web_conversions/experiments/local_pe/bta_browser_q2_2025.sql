@@ -43,18 +43,11 @@ ELSE
     );
 END IF;
 
--- TIPS:
---   - Replace 'ldap' in the table names below with your own username or personal dataset name.
---   - Additionally, there are a few TODO items in this script depending on:
---       - Whether you would like to look at certain segmentations  (marked with <SEGMENTATION>)
---       - Whether you would like to look at certain events         (marked with <EVENT>)
---     Before running, please review the script and adjust the marked sections accordingly!
-
 -------------------------------------------------------------------------------------------
 -- BUCKETING DATA
 -------------------------------------------------------------------------------------------
 -- Get the first bucketing moment for each experimental unit (e.g. browser or user).
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.ab_first_bucket` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
     SELECT
         bucketing_id,
         bucketing_id_type AS bucketing_id_type,
@@ -73,14 +66,14 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.ab_first_bucket` AS (
 -- into a variant is the FIRST filtering event to occur after that bucketed unit was
 -- bucketed into that variant of the experiment.
 IF is_event_filtered THEN
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.ab_first_bucket` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
         SELECT
             a.bucketing_id,
             a.bucketing_id_type,
             a.variant_id,
             MIN(f.event_ts) AS bucketing_ts,
         FROM
-            `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
         JOIN
             `etsy-data-warehouse-prod.catapult_unified.filtering_event` f
             USING(bucketing_id)
@@ -104,14 +97,14 @@ END IF;
 -- 123          | off        | canonical_region | FR
 -- 456          | on         | buyer_segment    | Habitual
 -- 456          | on         | canonical_region | US
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.first_bucket_segments_unpivoted` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.first_bucket_segments_unpivoted` AS (
     SELECT
         a.bucketing_id,
         a.variant_id,
         s.event_id,
         s.event_value,
     FROM
-        `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+        `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
     JOIN
         `etsy-data-warehouse-prod.catapult_unified.segment_event` s
         USING(bucketing_id, bucketing_ts)
@@ -122,8 +115,8 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.first_bucket_segments_unpi
         -- !!! Please keep this in sync with the PIVOT statement below !!!
         -- For all supported segmentations, see go/catapult-unified-docs.
         AND s.event_id IN (
-            "buyer_segment",
-            "canonical_region"
+            "buyer_segment"
+            -- "new_visitor"
         )
 );
 
@@ -135,16 +128,16 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.first_bucket_segments_unpi
 -- bucketing_id | variant_id | buyer_segment | canonical_region
 -- 123          | off        | New           | FR
 -- 456          | on         | Habitual      | US
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.first_bucket_segments` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.first_bucket_segments` AS (
     SELECT
         *
     FROM
-        `etsy-data-warehouse-dev.ldap.first_bucket_segments_unpivoted`
+        `etsy-data-warehouse-dev.madelinecollins.first_bucket_segments_unpivoted`
     PIVOT(
         MAX(event_value)
         FOR event_id IN (
-            "buyer_segment",
-            "canonical_region"
+            "buyer_segment"
+            -- "new_visitor"
         )
     )
 );
@@ -153,12 +146,14 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.first_bucket_segments` AS 
 -- EVENT AND GMS DATA
 -------------------------------------------------------------------------------------------
 -- <EVENT> Specify the events you want to analyze here.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.events` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events` AS (
     SELECT
         *
     FROM
         UNNEST([
             "backend_cart_payment", -- conversion rate
+            "completed_checkouts", -- orders per unit
+            "total_winsorized_order_value", -- aov
             "total_winsorized_gms", -- winsorized acbv
             "prolist_total_spend",  -- prolist revenue
             "gms"                   -- note: gms data is in cents
@@ -166,7 +161,7 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.events` AS (
 );
 
 -- Get all the bucketed units with the events of interest.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.events_per_unit` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events_per_unit` AS (
     SELECT
         a.bucketing_id,
         a.variant_id,
@@ -177,10 +172,10 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.events_per_unit` AS (
     CROSS JOIN
         UNNEST(e.associated_ids) ids
     JOIN
-        `etsy-data-warehouse-dev.ldap.events`
+        `etsy-data-warehouse-dev.madelinecollins.events`
         USING(event_id)
     JOIN
-        `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+        `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
         ON a.bucketing_id = ids.id
         AND a.bucketing_id_type = ids.id_type
     WHERE
@@ -191,9 +186,10 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.events_per_unit` AS (
         bucketing_id, variant_id, event_id
 );
 
+/*
 -- Insert custom events separately, as custom event data does not exist in the event table (as of Q4 2023).
 IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.post_bucketing_custom_events` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.post_bucketing_custom_events` AS (
         WITH custom_events AS (
             SELECT
                 a.bucketing_id,
@@ -205,7 +201,7 @@ IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
                 v.event_data AS event_value,
                 v.event_timestamp,
             FROM
-                `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+                `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
             JOIN
                 `etsy-data-warehouse-prod.catapult.visit_segment_custom_metrics` v
                 ON a.bucketing_id = SPLIT(v.visit_id, '.')[OFFSET(0)]
@@ -229,14 +225,14 @@ IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
             custom_events
     );
 
-    INSERT INTO `etsy-data-warehouse-dev.ldap.events_per_unit` (
+    INSERT INTO `etsy-data-warehouse-dev.madelinecollins.events_per_unit` (
         SELECT
             bucketing_id,
             variant_id,
             event_id,
             SUM(event_value) AS event_value,
         FROM
-            `etsy-data-warehouse-dev.ldap.post_bucketing_custom_events`
+            `etsy-data-warehouse-dev.madelinecollins.post_bucketing_custom_events`
         WHERE
             row_number = 1
             OR (row_number > 1 AND sequence_number = 0)
@@ -244,7 +240,7 @@ IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
             bucketing_id, variant_id, event_id
     );
 ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.post_bucketing_custom_events` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.post_bucketing_custom_events` AS (
         WITH custom_events AS (
             SELECT
                 a.bucketing_id,
@@ -256,7 +252,7 @@ ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
                 c.event_data AS event_value,
                 c.event_timestamp,
             FROM
-                `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+                `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
             JOIN
                 `etsy-data-warehouse-prod.catapult.custom_events_by_user_slice` c
                 ON a.bucketing_id = c.user_id
@@ -284,14 +280,14 @@ ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
             custom_events
     );
 
-    INSERT INTO `etsy-data-warehouse-dev.ldap.events_per_unit` (
+    INSERT INTO `etsy-data-warehouse-dev.madelinecollins.events_per_unit` (
         SELECT
             bucketing_id,
             variant_id,
             event_id,
             SUM(event_value) AS event_value,
         FROM
-            `etsy-data-warehouse-dev.ldap.post_bucketing_custom_events`
+            `etsy-data-warehouse-dev.madelinecollins.post_bucketing_custom_events`
         WHERE
             row_number = 1
             OR (row_number > 1 AND row_number_in_visit = 1)
@@ -299,6 +295,7 @@ ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
             bucketing_id, variant_id, event_id
     );
 END IF;
+*/
 
 -------------------------------------------------------------------------------------------
 -- VISIT COUNT
@@ -306,13 +303,13 @@ END IF;
 
 -- Get all post-bucketing visits for each experimental unit
 IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.subsequent_visits` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.subsequent_visits` AS (
         SELECT
             b.bucketing_id,
             b.variant_id,
             v.visit_id,
         FROM
-            `etsy-data-warehouse-dev.ldap.ab_first_bucket` b
+            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` b
         JOIN
             `etsy-data-warehouse-prod.weblog.visits` v
             ON b.bucketing_id = v.browser_id
@@ -321,13 +318,13 @@ IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
             v._date BETWEEN start_date AND end_date
     );
 ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.subsequent_visits` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.subsequent_visits` AS (
         SELECT
             b.bucketing_id,
             b.variant_id,
             v.visit_id,
         FROM
-            `etsy-data-warehouse-dev.ldap.ab_first_bucket` b
+            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` b
         JOIN
             `etsy-data-warehouse-prod.weblog.visits` v
             -- Note that for user experiments, you may miss out on some visits in cases where multiple
@@ -345,13 +342,13 @@ ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
 END IF;
 
 -- Get visit count per experimental unit
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.visits_per_unit` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.visits_per_unit` AS (
     SELECT
         bucketing_id,
         variant_id,
         COUNT(*) AS visit_count,
     FROM
-        `etsy-data-warehouse-dev.ldap.subsequent_visits`
+        `etsy-data-warehouse-dev.madelinecollins.subsequent_visits`
     GROUP BY
         bucketing_id, variant_id
 );
@@ -360,23 +357,23 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.visits_per_unit` AS (
 -- COMBINE BUCKETING, EVENT & SEGMENT DATA
 -------------------------------------------------------------------------------------------
 -- All events for all bucketed units, with segment values.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.all_units_events_segments` AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments` AS (
     SELECT
         bucketing_id,
         variant_id,
         event_id,
         COALESCE(event_value, 0) AS event_count,
         buyer_segment,
-        canonical_region,
+        -- new_visitor,
     FROM
-        `etsy-data-warehouse-dev.ldap.ab_first_bucket`
+        `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket`
     CROSS JOIN
-        `etsy-data-warehouse-dev.ldap.events`
+        `etsy-data-warehouse-dev.madelinecollins.events`
     LEFT JOIN
-        `etsy-data-warehouse-dev.ldap.events_per_unit`
+        `etsy-data-warehouse-dev.madelinecollins.events_per_unit`
         USING(bucketing_id, variant_id, event_id)
     JOIN
-        `etsy-data-warehouse-dev.ldap.first_bucket_segments`
+        `etsy-data-warehouse-dev.madelinecollins.first_bucket_segments`
         USING(bucketing_id, variant_id)
 );
 
@@ -392,21 +389,20 @@ SELECT
     AVG(event_count) AS avg_events_per_unit,
     AVG(IF(event_count = 0, NULL, event_count)) AS avg_events_per_unit_with_event
 FROM
-    `etsy-data-warehouse-dev.ldap.all_units_events_segments`
+    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
 GROUP BY
     event_id, variant_id
 ORDER BY
     event_id, variant_id;
 
+/*
 -------------------------------------------------------------------------------------------
 -- VISIT IDS TO JOIN WITH EXTERNAL TABLES
 -------------------------------------------------------------------------------------------
--- Need visit ids to join with non-Catapult tables?
--- No problem! Here are some examples for how to get the visit ids for each experimental unit.
 
 -- All associated IDs in the bucketing visit
 IF NOT is_event_filtered THEN
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.ab_first_bucket` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
         SELECT
             a.bucketing_id,
             a.bucketing_id_type,
@@ -417,7 +413,7 @@ IF NOT is_event_filtered THEN
             (SELECT id FROM UNNEST(b.associated_ids) WHERE id_type = 2) AS user_id,
             (SELECT id FROM UNNEST(b.associated_ids) WHERE id_type = 3) AS visit_id,
         FROM
-            `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
         JOIN
             `etsy-data-warehouse-prod.catapult_unified.bucketing` b
             USING(bucketing_id, variant_id, bucketing_ts)
@@ -426,7 +422,7 @@ IF NOT is_event_filtered THEN
             AND b.experiment_id = config_flag_param
     );
 ELSE
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ldap.ab_first_bucket` AS (
+    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
         SELECT
             a.bucketing_id,
             a.bucketing_id_type,
@@ -437,7 +433,7 @@ ELSE
             (SELECT id FROM UNNEST(f.associated_ids) WHERE id_type = 2) AS user_id,
             (SELECT id FROM UNNEST(f.associated_ids) WHERE id_type = 3) AS visit_id,
         FROM
-            `etsy-data-warehouse-dev.ldap.ab_first_bucket` a
+            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
         JOIN
             `etsy-data-warehouse-prod.catapult_unified.filtering_event` f
             ON a.bucketing_id = f.bucketing_id
@@ -447,12 +443,4 @@ ELSE
             AND f.experiment_id = config_flag_param
     );
 END IF;
-FooterEtsy
-Etsy avatar
-Etsy
-© 2025 GitHub, Inc.
-Footer navigation
-Help
-Support
-GitHub Enterprise Server 3.12.4
-
+*/
