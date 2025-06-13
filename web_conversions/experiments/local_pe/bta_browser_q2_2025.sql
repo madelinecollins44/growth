@@ -1,3 +1,4 @@
+/* link to original script: https://github.etsycorp.com/Engineering/AnalystWork/blob/master/ExperimentResources/catapult_unified_event_level_data.sql */ 
 -------------------------------------------------------------------------------------------
 -- INPUT
 -------------------------------------------------------------------------------------------
@@ -149,11 +150,12 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events` AS (
     FROM
         UNNEST([
             "backend_cart_payment", -- conversion rate
+            "total_winsorized_gms", -- winsorized acbv
+            "bounce",
             "completed_checkouts", -- orders per unit
             "total_winsorized_order_value", -- aov
-            "total_winsorized_gms", -- winsorized acbv
-            "prolist_total_spend",  -- prolist revenue
-            "gms"                   -- note: gms data is in cents
+            "checkout_start",
+            "backend_add_to_cart"
         ]) AS event_id
 );
 
@@ -183,7 +185,6 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events_per_unit
         bucketing_id, variant_id, event_id
 );
 
-/*
 -- Insert custom events separately, as custom event data does not exist in the event table (as of Q4 2023).
 IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
     CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.post_bucketing_custom_events` AS (
@@ -205,6 +206,7 @@ IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
             WHERE
                 v._date BETWEEN start_date AND end_date
                 AND v.event_timestamp >= a.bucketing_ts
+                and v.event_name in ('total_winsorized_gms','total_winsorized_order_value','visits','completed_checkouts')
         )
         SELECT
             bucketing_id,
@@ -292,7 +294,6 @@ ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
             bucketing_id, variant_id, event_id
     );
 END IF;
-*/
 
 -------------------------------------------------------------------------------------------
 -- VISIT COUNT
@@ -389,8 +390,7 @@ SELECT
 FROM
     `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
 GROUP BY ALL
-ORDER BY
-    event_id, variant_id;
+ORDER BY 1,2,3;
 /*
 -------------------------------------------------------------------------------------------
 -- VISIT IDS TO JOIN WITH EXTERNAL TABLES
