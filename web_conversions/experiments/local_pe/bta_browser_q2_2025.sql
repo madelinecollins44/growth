@@ -1,4 +1,3 @@
-/* link to original script: https://github.etsycorp.com/Engineering/AnalystWork/blob/master/ExperimentResources/catapult_unified_event_level_data.sql */ 
 -------------------------------------------------------------------------------------------
 -- INPUT
 -------------------------------------------------------------------------------------------
@@ -106,19 +105,16 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.first_bucket_se
     FROM
         `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` a
     JOIN
-        `etsy-data-warehouse-prod.catapult_unified.segment_event` s
+        `etsy-data-warehouse-prod.catapult_unified.segment_event_custom` s
         USING(bucketing_id, bucketing_ts)
     WHERE
         s._date BETWEEN start_date AND end_date
         AND s.experiment_id = config_flag_param
-        -- <SEGMENTATION> Here you can specify whatever segmentations you'd like to analyze.
-        -- !!! Please keep this in sync with the PIVOT statement below !!!
-        -- For all supported segmentations, see go/catapult-unified-docs.
         AND s.event_id IN (
-            "buyer_segment"
-            -- "new_visitor"
-        )
+           -- "new_visitor",
+            "buyer_segment")
 );
+
 
 -- Pivot the above table to get one row per bucketing_id and variant_id. Each additional
 -- column will be a different segmentation, and the value will be the segment for each
@@ -137,7 +133,8 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.first_bucket_se
         MAX(event_value)
         FOR event_id IN (
             "buyer_segment"
-            -- "new_visitor"
+            -- , "new_visitor",
+            -- , "canonical_region"
         )
     )
 );
@@ -384,17 +381,16 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_event
 SELECT
     event_id,
     variant_id,
+    case when lower(buyer_segment) in ('signed_out') then 'signed out' else 'signed in' end as buyer_segment,
     COUNT(*) AS total_units_in_variant,
     AVG(IF(event_count = 0, 0, 1)) AS percent_units_with_event,
     AVG(event_count) AS avg_events_per_unit,
     AVG(IF(event_count = 0, NULL, event_count)) AS avg_events_per_unit_with_event
 FROM
     `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
-GROUP BY
-    event_id, variant_id
+GROUP BY ALL
 ORDER BY
     event_id, variant_id;
-
 /*
 -------------------------------------------------------------------------------------------
 -- VISIT IDS TO JOIN WITH EXTERNAL TABLES
