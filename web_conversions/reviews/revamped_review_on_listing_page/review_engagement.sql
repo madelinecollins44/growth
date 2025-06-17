@@ -1,7 +1,8 @@
+with listing_engagements as (
 select
 	date(_partitiontime) as _date,
 	v.visit_id,
-  v.sequence_number,
+	v.sequence_number,
 	beacon.event_name as event_name,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
 from
