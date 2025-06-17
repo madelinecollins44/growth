@@ -23,4 +23,4 @@ where 1=1
   and v._date between date('2025-03-01') and date('2025-03-15') -- two weeks before first reviews experiment was ramped 
   --and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
   and platform in ('mobile_web','desktop')
-
+group by all 
