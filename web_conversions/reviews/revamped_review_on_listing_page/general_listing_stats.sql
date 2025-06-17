@@ -3,6 +3,7 @@ select
   is_digital,
   top_category,
   is_personalizable, 
+  case when va.listing_id is not null then 1 else 0 end as has_variation,
   case 
     when (l.price_usd/100) > 100 then 'high' 
     when (l.price_usd/100) > 30 then 'mid' 
@@ -19,6 +20,9 @@ left join
 left join
   etsy-data-warehouse-prod.listing_mart.listing_attributes a
     on a.listing_id=l.listing_id
+left join 
+  (select listing_id from etsy-data-warehouse-prod.listing_mart.listing_variations where variation_count > 0) va 
+    on va.listing_id=l.listing_id
 where 1=1
   and v._date between date('2025-03-01') and date('2025-03-15') -- two weeks before first reviews experiment was ramped 
   --and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
