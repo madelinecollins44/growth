@@ -38,3 +38,44 @@ left join
     on va.listing_id=l.listing_id
 group by all 
 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+, lv_stats as (
+select
+  lv.platform,
+	lv.listing_id,
+	case
+  	when coalesce((p.price_usd/100), a.price_usd) > 100 then 'high stakes'
+  	else 'low stakes'
+  end as listing_type,
+	case when a.listing_id is null then 1 else 0 end as missing_in_analytics,
+	count(lv.visit_id) as listing_views,
+	count(a.visit_id) as a_listing_views,
+	count(case when saw_reviews = 1 then lv.visit_id end) as views_and_reviews_seen,
+	sum(case when saw_reviews = 1 then purchased_after_view end) as saw_reviews_and_purchased,
+	sum(purchased_after_view) as purchases
+from 
+	listing_views lv
+left join 
+	etsy-data-warehouse-prod.analytics.listing_views a
+		on lv.listing_id=cast(a.listing_id as string)
+		and lv.visit_id=a.visit_id
+		and lv.sequence_number=a.sequence_number	
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings p 
+    on cast(p.listing_id as string)=lv.listing_id
+where a._date >=current_date-30
+group by all
+)
