@@ -14,8 +14,8 @@ inner join
   etsy-data-warehouse-prod.weblog.visits v -- only looking at browsers in the experiment 
     on v.visit_id = vb.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where 1=1
-  and v._date >= current_date-5 -- two weeks after last reviews experiment was ramped 
-  and date(_partitiontime) >= current_date-5 -- two weeks after last reviews experiment was ramped
+  and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
+  and date(_partitiontime) between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped
   and platform in ('desktop')
   and beacon.event_name in 
     ('view_listing', 
@@ -113,12 +113,16 @@ left join
     and c.event_name in ('reviews_categorical_tag_clicked')
 where
     v.event_name = 'view_listing'
+group by all
 )
 select
   case when cat_tag_clicks > 0 then 1 else 0 end as clicked_on_cattag,
-  sum(views) as listing_views,
+  sum(s.views) as listing_views,
   sum(purchases)
 from 
-  lv_stats
+  lv_stats s
 left join 
-  lv_engagement using (listing_id, visit_id)
+  lv_engagement e
+    on e.listing_id=cast(s.listing_id as string)
+    and s.visit_id=e.visit_id
+group by all
