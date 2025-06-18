@@ -1,4 +1,4 @@
-begin
+/* begin
 create or replace temp table tag_info as (
 select
 	date(_partitiontime) as _date,
@@ -27,6 +27,7 @@ where 1=1
   group by all 
 );
 end
+*/
 
 -- clicks by tag name
 select
