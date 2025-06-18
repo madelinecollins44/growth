@@ -39,3 +39,47 @@ from
   tag_info
 where 
   event_type in ('reviews_categorical_tag_clicked')
+
+
+-- clicks by tag name / listing attribute 
+with listing_attributes as ( -- attributes from listings viewed on desktop 
+select
+  is_digital,
+  top_category,
+  is_personalizable, 
+  case when va.listing_id is not null then 1 else 0 end as has_variation,
+  case 
+    when (l.price_usd/100) > 100 then 'high' 
+    when (l.price_usd/100) > 30 then 'mid' 
+    when (l.price_usd/100) <= 30 then 'low' 
+  end as listing_price, -- uses same logic as segment
+  case when r.listing_id is not null then 1 else 0 end as has_review,
+  v.listing_id,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views v
+left join 
+  etsy-data-warehouse-prod.listing_mart.listings l using (listing_id)
+left join
+  etsy-data-warehouse-prod.listing_mart.listing_attributes a
+    on a.listing_id=l.listing_id
+left join 
+  (select listing_id from etsy-data-warehouse-prod.listing_mart.listing_variations where variation_count > 0) va 
+    on va.listing_id=l.listing_id
+left join 
+  (select listing_id, count(distinct transaction_id) from etsy-data-warehouse-prod.rollups.transaction_reviews where has_review > 0) r
+        on r.listing_id=l.listing_id
+where 1=1
+  and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
+  and v.platform in ('desktop')
+group by all 
+)
+select 
+  tag_name,
+  tag_type,
+  count(sequence_number) as clicks,
+  count(distinct listing_id) as listings_w_clicks,
+from 
+  listing_attributes a
+left join 
+  (select * from tag_info where event_type in ('reviews_categorical_tag_clicked')) c   
+    using (listing_id)
