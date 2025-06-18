@@ -118,7 +118,8 @@ group by all
 select
   case when cat_tag_clicks > 0 then 1 else 0 end as clicked_on_cattag,
   sum(s.views) as listing_views,
-  sum(purchases)
+  sum(cat_tag_clicks) as clicks,
+  sum(purchases) as purchases,
 from 
   lv_stats s
 left join 
