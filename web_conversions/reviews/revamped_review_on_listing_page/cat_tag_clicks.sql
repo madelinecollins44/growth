@@ -103,7 +103,7 @@ select
   v.visit_id,
   v.listing_id,
   count(distinct concat(v.visit_id,v.sequence_number)) as views,
-  count(case when c.visit_id is not null then c.sequence_number end) as cat_tag_clicks,
+  count(distinct case when c.visit_id is not null then concat(c.visit_id,c.sequence_number) end) as cat_tag_clicks,
 from
     etsy-data-warehouse-dev.madelinecollins.tag_info  v
 left join 
