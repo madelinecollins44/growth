@@ -1,5 +1,5 @@
 /* 
-create or replace table etsy-data-warehouse-dev.madelinecollins.tag_info as (
+create or replace table `etsy-data-warehouse-dev.madelinecollins.tag_info` as (
 select
 	date(_partitiontime) as _date,
 	v.visit_id,
