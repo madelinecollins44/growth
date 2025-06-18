@@ -85,7 +85,7 @@ left join
 
 
 -- conversion among visits that clicked on a tag
-with lv_stats (
+with lv_stats as (
 select
   listing_id,
   visit_id,
@@ -103,7 +103,7 @@ select
   v.visit_id,
   v.listing_id,
   count(distinct concat(v.visit_id,v.sequence_number)) as views,
-  count(case when c.visit_id is not null then c.sequence_number) as cat_tag_clicks,
+  count(case when c.visit_id is not null then c.sequence_number end) as cat_tag_clicks,
 from
     etsy-data-warehouse-dev.madelinecollins.tag_info  v
 left join 
@@ -114,3 +114,11 @@ left join
 where
     v.event_name = 'view_listing'
 )
+select
+  case when cat_tag_clicks > 0 then 1 else 0 end as clicked_on_cattag,
+  sum(views) as listing_views,
+  sum(purchases)
+from 
+  lv_stats
+left join 
+  lv_engagement using (listing_id, visit_id)
