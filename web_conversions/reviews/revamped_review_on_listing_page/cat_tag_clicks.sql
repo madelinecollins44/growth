@@ -1,5 +1,5 @@
-/* begin
-create or replace temp table tag_info as (
+/* 
+create or replace table etsy-data-warehouse-dev.madelinecollins.tag_info as (
 select
 	date(_partitiontime) as _date,
 	v.visit_id,
@@ -14,8 +14,8 @@ inner join
   etsy-data-warehouse-prod.weblog.visits v -- only looking at browsers in the experiment 
     on v.visit_id = vb.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where 1=1
-  and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
-  and date(_partitiontime) between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
+  and v._date >= current_date-5 -- two weeks after last reviews experiment was ramped 
+  and date(_partitiontime) >= current_date-5 -- two weeks after last reviews experiment was ramped
   and platform in ('desktop')
   and beacon.event_name in 
     ('view_listing', 
@@ -26,7 +26,6 @@ where 1=1
     )
   group by all 
 );
-end
 */
 
 -- clicks by tag name
@@ -36,7 +35,7 @@ select
   count(sequence_number) as clicks,
   count(distinct listing_id) as listings_w_clicks
 from 
-  tag_info
+  etsy-data-warehouse-dev.madelinecollins.tag_info 
 where 
   event_type in ('reviews_categorical_tag_clicked')
 
@@ -81,7 +80,7 @@ select
 from 
   listing_attributes a
 left join 
-  (select * from tag_info where event_type in ('reviews_categorical_tag_clicked')) c   
+  (select * from etsy-data-warehouse-dev.madelinecollins.tag_info  where event_type in ('reviews_categorical_tag_clicked')) c   
     using (listing_id)
 
 
@@ -106,9 +105,9 @@ select
   count(v.sequence_number) as views,
   count(case when c.visit_id is not null then c.sequence_number) as cat_tag_clicks,
 from
-    tag_info v
+    etsy-data-warehouse-dev.madelinecollins.tag_info  v
 left join 
-    tag_info c
+    etsy-data-warehouse-dev.madelinecollins.tag_info  c
     on v.visit_id = c.visit_id
     and v.listing_id = c.listing_id
     and c.event_name in ('reviews_categorical_tag_clicked')
