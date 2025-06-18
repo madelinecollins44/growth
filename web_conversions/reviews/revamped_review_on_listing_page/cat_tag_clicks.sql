@@ -3,7 +3,7 @@ create or replace temp table tag_info as (
 select
 	date(_partitiontime) as _date,
 	v.visit_id,
-	v.sequence_number,
+	vb.sequence_number,
 	beacon.event_name as event_name,
   (select value from unnest(beacon.properties.key_value) where key = "tag_name") as tag_name, 
   (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type, 
