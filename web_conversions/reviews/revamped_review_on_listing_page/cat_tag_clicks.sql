@@ -28,6 +28,18 @@ where 1=1
 );
 */
 
+
+
+-- funnel view
+select
+  event_type,
+  count(sequence_number) as clicks,
+  count(distinct listing_id) as listings_w_clicks
+from 
+  etsy-data-warehouse-dev.madelinecollins.tag_info 
+group by all 
+
+	
 -- clicks by tag name
 select
   tag_name,
