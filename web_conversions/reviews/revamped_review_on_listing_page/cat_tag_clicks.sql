@@ -102,7 +102,7 @@ group by all
 select
   v.visit_id,
   v.listing_id,
-  count(v.sequence_number) as views,
+  count(distinct concat(v.visit_id,v.sequence_number)) as views,
   count(case when c.visit_id is not null then c.sequence_number) as cat_tag_clicks,
 from
     etsy-data-warehouse-dev.madelinecollins.tag_info  v
