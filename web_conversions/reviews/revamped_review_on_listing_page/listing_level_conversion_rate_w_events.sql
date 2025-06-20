@@ -26,7 +26,7 @@ end */
 	
 with engagements as (
 select
-visit_id,
+	visit_id,
   listing_id,
   -- event counts 
   coalesce(count(case when event_name in ('view_listing') then sequence_number end),0) as listing_views,
@@ -68,9 +68,9 @@ select -- listing view level
   -- e.visit_id,
   -- e.listing_id,
   case when s.purchases > 0 then 1 else 0 end as purchased,
-  coalesce(count(s.purchases),0) as total_purchases,
+  coalesce(sum(s.purchases),0) as total_purchases,
   count(distinct e.visit_id) as visits,
-  coalesce(count(s.views),0) as lv,
+  coalesce(sum(s.views),0) as lv,
   -- event counts 
   coalesce(sum(listing_views),0) as listing_views, 
   coalesce(sum(top_container_seen_events),0) as top_container_seen_events,
@@ -87,6 +87,7 @@ left join
     on e.visit_id=s.visit_id
     and e.listing_id=cast(s.listing_id as string)  
 group by all 
+
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------
