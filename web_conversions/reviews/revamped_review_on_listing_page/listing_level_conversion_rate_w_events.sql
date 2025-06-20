@@ -55,7 +55,7 @@ select
   listing_id,
   visit_id,
   count(sequence_number) as views,
-  count(purchased_after_view) as purchases,
+  sum(purchased_after_view) as purchases,
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 1=1
@@ -87,8 +87,6 @@ left join
     on e.visit_id=s.visit_id
     and e.listing_id=cast(s.listing_id as string)  
 group by all 
-
-
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 -- TESTING
