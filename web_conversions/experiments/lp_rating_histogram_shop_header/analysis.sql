@@ -110,7 +110,6 @@ inner join
   listing_events e
     on e.visit_id= v.visit_id
     and e.listing_id= cast(v.listing_id as string)
-    and after_bucketing_flag = 1 -- only looking at everything after bucketing 
 where 
   _date between date('2025-06-13') and date('2025-06-22')  -- this will be within time of experiment
 group by all  
