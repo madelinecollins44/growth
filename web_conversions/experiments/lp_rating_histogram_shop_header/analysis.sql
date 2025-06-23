@@ -63,7 +63,7 @@ select
     when v.visit_id > bl.visit_id then 1 -- after the bucketing visit_id
   end,0) as after_bucketing_flag,
   beacon.event_name,
-  sequence_number,
+  v.sequence_number,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), -- view_listing
             (regexp_extract(beacon.loc, r'listing/(\d+)')), -- reviews_anchor_click
             (split((select value from unnest(beacon.properties.key_value) where key = "listing_ids"), ',')[offset(0)])) -- checkout_start 
