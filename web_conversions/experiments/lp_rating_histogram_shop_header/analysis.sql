@@ -84,31 +84,21 @@ select
 	v.visit_id,
   split(v.visit_id, ".")[0] as bucketing_id,
   variant_id,
-  coalesce(case 
-    when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 -- if within the same visit AND on bucketing sequence number or after 
-    when v.visit_id > bl.visit_id then 1 -- after the bucketing visit_id
-  end,0) as after_bucketing_flag,
-  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  listing_id,
   count(case when beacon.event_name in ('view_listing') then v.sequence_number end) as listing_views, 
-  count(case when beacon.event_name in ('reviews_anchor_click') then v.sequence_number end) as review_clicks, 
+  count(case when beacon.event_name in ('reviews_anchor_click') then v.sequence_number end) as review_clicks,   
+  count(case when beacon.event_name in ('checkout_start') then v.sequence_number end) as checkout_starts, 
 from
-	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
-inner join 
-  etsy-bigquery-adhoc-prod._script86ce39d58ceb88a6390884e984d0894d903bf470.bucketing_listing bl -- only looking at browsers in the experiment 
-    on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
-    and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
-where
-	date(_partitiontime) >= current_date-14
-  --between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
-	and beacon.event_name in ('reviews_anchor_click','view_listing')
-group by all  
+	etsy-data-warehouse-dev.madelinecollins.beacons_events 
+where 
+  after_bucketing_flag > 0 -- only looks at things after bucketing moment 
 )
 -- , listing_stats as (
 select
   variant_id,
-  -- visit_id,
-  -- bucketing_id,
-  -- listing_id,
+  visit_id,
+  bucketing_id,
+  listing_id,
   count(v.sequence_number) as views,
   sum(listing_views) as listing_views,
   sum(review_clicks) as review_anchor_clicks,
@@ -122,6 +112,6 @@ inner join
     and e.listing_id= cast(v.listing_id as string)
     and after_bucketing_flag = 1 -- only looking at everything after bucketing 
 where 
-  _date >= current_date-14 -- this will be within time of experiment
+  _date between date('2025-06-13') and date('2025-06-22')  -- this will be within time of experiment
 group by all  
 -- )
