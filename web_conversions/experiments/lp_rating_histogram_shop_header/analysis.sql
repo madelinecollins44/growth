@@ -26,7 +26,6 @@ from
   `etsy-data-warehouse-prod.catapult_unified.bucketing`
 where
   experiment_id = 'growth_regx.lp_rating_histogram_shop_header_desktop'
-  -- and variant_id in ('on')
 group by all 
 ) 
 select
@@ -63,9 +62,6 @@ select
             (regexp_extract(beacon.loc, r'listing/(\d+)')), -- reviews_anchor_click
             (split((select value from unnest(beacon.properties.key_value) where key = "listing_ids"), ',')[offset(0)])) -- checkout_start 
   as listing_id,
-  -- count(case when beacon.event_name in ('view_listing') then v.sequence_number end) as listing_views, 
-  -- count(case when beacon.event_name in ('reviews_anchor_click') then v.sequence_number end) as review_clicks,   
-  -- count(case when beacon.event_name in ('checkout_start') then v.sequence_number end) as checkout_starts, 
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
 inner join 
@@ -77,11 +73,11 @@ where
 	and beacon.event_name in ('reviews_anchor_click','view_listing','checkout_start')
 group by all 
 );
-*/
+
 
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
-  visit_id,
+	visit_id,
   split(visit_id, ".")[0] as bucketing_id,
   variant_id,
   listing_id,
@@ -94,25 +90,26 @@ where
   after_bucketing_flag > 0 -- only looks at things after bucketing moment 
 group by all 
 )
-)
 -- , listing_stats as (
-select
+select 
   variant_id,
-  visit_id,
+  e.visit_id,
   bucketing_id,
-  listing_id,
+  v.listing_id,
   count(v.sequence_number) as views,
-  sum(listing_views) as listing_views,
-  sum(review_clicks) as review_anchor_clicks,
+  count(case when event_name in ('view_listing') then e.sequence_number end) as listing_views, 
+  -- sum(listing_views) as listing_views,
+  -- sum(review_clicks) as review_anchor_clicks,
   sum(added_to_cart) as atc,
   sum(purchased_after_view) as purchase,
 from 
   etsy-data-warehouse-prod.analytics.listing_views  v
 inner join
-  listing_events e
-    on e.visit_id= v.visit_id
+  etsy-data-warehouse-dev.madelinecollins.beacons_events  e
+    on e.visit_id =  v.visit_id
+    and e.sequence_number =  v.sequence_number
     and e.listing_id= cast(v.listing_id as string)
+    and event_name in ('view_listing')
 where 
   _date between date('2025-06-13') and date('2025-06-22')  -- this will be within time of experiment
 group by all  
--- )
