@@ -1,4 +1,3 @@
-/* 
 -- CREATE TEMP TABLE TO GET ALL BROWSERS, VARIANTS BUCKETED IN EXPERIMENT
 create or replace table etsy-data-warehouse-dev.madelinecollins.bucketing_listing as (
 with listing_views as ( -- get all listing views that happened during time of experiment 
@@ -14,7 +13,7 @@ select
 from 
   etsy-data-warehouse-prod.analytics.listing_views
 where 
-  _date >= current_date-14 -- this will be within time of experiment 
+  _date between date('2025-06-13') and date('2025-06-22')  -- this will be within time of experiment 
 )
 , bucketing_moment as ( -- pulls out bucketing moment of each browser 
 select 
@@ -46,9 +45,8 @@ left join
     using (bucketing_id, _date)
 qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff(bm.bucketing_ts,lv.listing_ts,second)) asc) = 1  -- takes listing id closest to bucketing moment
 );
-*/ 
 
-/*
+
 -- CREATE TEMP TABLE TO GET ALL BEACONS EVENTS 
 create or replace table etsy-data-warehouse-dev.madelinecollins.beacons_events as (
 select
