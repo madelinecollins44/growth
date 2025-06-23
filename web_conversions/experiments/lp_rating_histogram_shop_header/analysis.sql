@@ -1,4 +1,5 @@
-/* begin
+/* 
+begin
 create or replace temp table bucketing_listing as (
 with listing_views as ( -- get all listing views that happened during time of experiment 
 select
@@ -7,6 +8,8 @@ select
   split(visit_id, ".")[0] as bucketing_id, -- browser_id
   listing_id,
   sequence_number,
+  added_to_cart,
+  purchased_after_view,
   timestamp_millis(epoch_ms) as listing_ts
 from 
   etsy-data-warehouse-prod.analytics.listing_views
@@ -32,6 +35,7 @@ select
   bm.bucketing_ts,
   lv.listing_id,
   visit_id,
+  variant_id,
   lv.sequence_number,
   lv.listing_ts,
   abs(timestamp_diff(bm.bucketing_ts,lv.listing_ts,second)) as abs_time_between
@@ -50,6 +54,7 @@ select
 	date(_partitiontime) as _date,
 	v.visit_id,
   split(visit_id, ".")[0] as bucketing_id,
+  variant_id,
   -- v.sequence_number,
   case 
     when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 -- if within the same visit AND on bucketing sequence number or after 
