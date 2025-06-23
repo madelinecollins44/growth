@@ -81,17 +81,19 @@ group by all
 
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
-	v.visit_id,
-  split(v.visit_id, ".")[0] as bucketing_id,
+  visit_id,
+  split(visit_id, ".")[0] as bucketing_id,
   variant_id,
   listing_id,
-  count(case when beacon.event_name in ('view_listing') then v.sequence_number end) as listing_views, 
-  count(case when beacon.event_name in ('reviews_anchor_click') then v.sequence_number end) as review_clicks,   
-  count(case when beacon.event_name in ('checkout_start') then v.sequence_number end) as checkout_starts, 
+  count(case when event_name in ('view_listing') then sequence_number end) as listing_views, 
+  count(case when event_name in ('reviews_anchor_click') then sequence_number end) as review_clicks,   
+  count(case when event_name in ('checkout_start') then sequence_number end) as checkout_starts, 
 from
 	etsy-data-warehouse-dev.madelinecollins.beacons_events 
 where 
   after_bucketing_flag > 0 -- only looks at things after bucketing moment 
+group by all 
+)
 )
 -- , listing_stats as (
 select
