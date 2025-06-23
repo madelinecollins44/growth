@@ -1,4 +1,5 @@
 /* 
+-- CREATE TEMP TABLE TO GET ALL BROWSERS, VARIANTS BUCKETED IN EXPERIMENT
 begin
 create or replace temp table bucketing_listing as (
 with listing_views as ( -- get all listing views that happened during time of experiment 
@@ -48,6 +49,42 @@ qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff
 );
 end
 */ 
+
+/*
+-- CREATE TEMP TABLE TO GET ALL BEACONS EVENTS 
+begin
+create or replace temp table beacons_events as (
+select
+	v.visit_id,
+  split(v.visit_id, ".")[0] as bucketing_id,
+  variant_id,
+  coalesce(case 
+    when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 -- if within the same visit AND on bucketing sequence number or after 
+    when v.visit_id > bl.visit_id then 1 -- after the bucketing visit_id
+  end,0) as after_bucketing_flag,
+  beacon.event_name,
+  sequence_number,
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), -- view_listing
+            (regexp_extract(beacon.loc, r'listing/(\d+)')), -- reviews_anchor_click
+            (split((select value from unnest(beacon.properties.key_value) where key = "listing_ids"), ',')[offset(0)])) -- checkout_start 
+  as listing_id,
+  -- count(case when beacon.event_name in ('view_listing') then v.sequence_number end) as listing_views, 
+  -- count(case when beacon.event_name in ('reviews_anchor_click') then v.sequence_number end) as review_clicks,   
+  -- count(case when beacon.event_name in ('checkout_start') then v.sequence_number end) as checkout_starts, 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
+inner join 
+  etsy-bigquery-adhoc-prod._script86ce39d58ceb88a6390884e984d0894d903bf470.bucketing_listing bl -- only looking at browsers in the experiment 
+    on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
+    and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
+where
+	date(_partitiontime) >= current_date-14
+  --between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
+	and beacon.event_name in ('reviews_anchor_click','view_listing','checkout_start')
+group by all 
+);
+end
+*/
 
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
