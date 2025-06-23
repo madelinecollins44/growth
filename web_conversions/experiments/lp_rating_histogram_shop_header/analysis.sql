@@ -1,7 +1,6 @@
 /* 
 -- CREATE TEMP TABLE TO GET ALL BROWSERS, VARIANTS BUCKETED IN EXPERIMENT
-begin
-create or replace temp table bucketing_listing as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.bucketing_listing as (
 with listing_views as ( -- get all listing views that happened during time of experiment 
 select
   _date,
@@ -47,13 +46,11 @@ left join
     using (bucketing_id, _date)
 qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff(bm.bucketing_ts,lv.listing_ts,second)) asc) = 1  -- takes listing id closest to bucketing moment
 );
-end
 */ 
 
 /*
 -- CREATE TEMP TABLE TO GET ALL BEACONS EVENTS 
-begin
-create or replace temp table beacons_events as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.beacons_events as (
 select
 	v.visit_id,
   split(v.visit_id, ".")[0] as bucketing_id,
@@ -82,7 +79,6 @@ where
 	and beacon.event_name in ('reviews_anchor_click','view_listing','checkout_start')
 group by all 
 );
-end
 */
 
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
