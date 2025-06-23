@@ -78,8 +78,7 @@ inner join
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
     and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where
-	date(_partitiontime) >= current_date-14
-  --between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
+	date(_partitiontime) between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
 	and beacon.event_name in ('reviews_anchor_click','view_listing','checkout_start')
 group by all 
 );
