@@ -49,48 +49,49 @@ qualify row_number() over (partition by bucketing_id order by abs(timestamp_diff
 end
 */ 
 
-with listing_events as ( -- gets listing_id for all clicks on review signals in buy box + listing views 
+with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
-	date(_partitiontime) as _date,
 	v.visit_id,
-  split(visit_id, ".")[0] as bucketing_id,
+  split(v.visit_id, ".")[0] as bucketing_id,
   variant_id,
-  -- v.sequence_number,
-  case 
+  coalesce(case 
     when v.visit_id = bl.visit_id and v.sequence_number >= bl.sequence_number then 1 -- if within the same visit AND on bucketing sequence number or after 
     when v.visit_id > bl.visit_id then 1 -- after the bucketing visit_id
-  end as after_bucketing_flag,
-	beacon.event_name as event_name,
+  end,0) as after_bucketing_flag,
   coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
-  count(sequence_number) as actions, 
+  count(case when beacon.event_name in ('view_listing') then v.sequence_number end) as listing_views, 
+  count(case when beacon.event_name in ('reviews_anchor_click') then v.sequence_number end) as review_clicks, 
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
 inner join 
-  etsy-bigquery-adhoc-prod._scriptdee81035175fba82e21a15db89d2ad31b2dc12b4.bucketing_listing bl -- only looking at browsers in the experiment 
+  etsy-bigquery-adhoc-prod._script86ce39d58ceb88a6390884e984d0894d903bf470.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
     and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where
-	date(_partitiontime) between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
+	date(_partitiontime) >= current_date-14
+  --between date('2025-05-20') and date('2025-05-27') -- dates of the experiment 
 	and beacon.event_name in ('reviews_anchor_click','view_listing')
-group by all 
+group by all  
 )
-, listing_stats as (
+-- , listing_stats as (
 select
-  _date,
-  visit_id,
-  bucketing_id,
-  listing_id,
+  variant_id,
+  -- visit_id,
+  -- bucketing_id,
+  -- listing_id,
   count(v.sequence_number) as views,
-  sum(case when event_type in ('view_listing') then actions end) as listing_views,
-  sum(case when event_type in ('reviews_anchor_click') then actions end) as review_anchor_clicks,
+  sum(listing_views) as listing_views,
+  sum(review_clicks) as review_anchor_clicks,
   sum(added_to_cart) as atc,
   sum(purchased_after_view) as purchase,
 from 
-  listing_events e
+  etsy-data-warehouse-prod.analytics.listing_views  v
 inner join
-  etsy-data-warehouse-prod.analytics.listing_views v
+  listing_events e
     on e.visit_id= v.visit_id
-    and e.listing_id= v.listing_id
+    and e.listing_id= cast(v.listing_id as string)
+    and after_bucketing_flag = 1 -- only looking at everything after bucketing 
 where 
-  _date >= current_date-14 -- this will be within time of experiment 
-)
+  _date >= current_date-14 -- this will be within time of experiment
+group by all  
+-- )
