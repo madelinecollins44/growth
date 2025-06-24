@@ -1,3 +1,36 @@
+-- CREATE TABLE TO GET RATINGS ACROSS ALL LISTINGS
+create or replace table etsy-data-warehouse-dev.madelinecollins.listings_by_ratings as (
+with listings_agg as (
+select
+  listing_id,
+  coalesce(count(distinct case when has_review > 0 then transaction_id end),0) as reviews,
+  coalesce(count(distinct case when date(transaction_date) >= current_date-365 and has_review > 0 then transaction_id end),0) as reviews_in_last_year,
+  coalesce(count(distinct case when date(transaction_date) < current_date-365 and has_review > 0 then transaction_id end),0) as  reviews_in_before_last_year,
+  coalesce(round(avg(case when date(transaction_date) >= current_date-365 then rating end),1),0) as avg_rating_in_last_year,
+  coalesce(round(avg(case when date(transaction_date) < current_date-365  then rating end),1),0) as avg_rating_in_before_last_year,
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+)
+select
+  case
+    when reviews = 0 then '0 reviews'
+    when reviews_in_last_year = 0 and reviews_in_before_last_year > 0 then '0 rating in past year but has reviews'
+    when round(avg_rating_in_last_year) = 5 then 'avg 5 stars rating'
+    when round(avg_rating_in_last_year) = 4 then 'avg 4 stars rating'
+    when round(avg_rating_in_last_year) = 3 then 'avg 3 stars rating'
+    when round(avg_rating_in_last_year) = 2 then 'avg 2 stars rating'
+    when round(avg_rating_in_last_year) = 1 then 'avg 1 stars rating'
+    else 'error'
+  end as rating_status,
+ listing_id
+from 
+ listings_agg
+group by all 
+);
+
+
+	
 -- CREATE TEMP TABLE TO GET ALL BROWSERS, VARIANTS BUCKETED IN EXPERIMENT
 create or replace table etsy-data-warehouse-dev.madelinecollins.bucketing_listing as (
 with listing_views as ( -- get all listing views that happened during time of experiment 
