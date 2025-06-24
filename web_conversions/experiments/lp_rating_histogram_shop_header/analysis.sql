@@ -74,7 +74,7 @@ where
 group by all 
 );
 
-
+-- PUT IT ALL TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
 	visit_id,
@@ -90,7 +90,7 @@ where
   after_bucketing_flag > 0 -- only looks at things after bucketing moment 
 group by all 
 )
--- , listing_stats as (
+, listing_stats as (
 select 
   variant_id,
   e.visit_id,
@@ -98,8 +98,6 @@ select
   v.listing_id,
   count(v.sequence_number) as views,
   count(case when event_name in ('view_listing') then e.sequence_number end) as listing_views, 
-  -- sum(listing_views) as listing_views,
-  -- sum(review_clicks) as review_anchor_clicks,
   sum(added_to_cart) as atc,
   sum(purchased_after_view) as purchase,
 from 
@@ -113,3 +111,24 @@ inner join
 where 
   _date between date('2025-06-13') and date('2025-06-22')  -- this will be within time of experiment
 group by all  
+)
+, agg_listing_stats as (
+select 
+  e.variant_id,
+  e.listing_id,
+  sum(e.listing_views) as listing_views, 
+  sum(review_clicks) as review_clicks,   
+  sum(checkout_starts) as checkout_starts,
+  sum(views) as views,
+  sum(atc) as atc,
+  sum(purchase) as purchase
+from 
+  listing_events e
+inner join 
+  listing_stats s 
+    on e.variant_id=s.variant_id
+    and e.visit_id=s.visit_id
+    and e.bucketing_id=s.bucketing_id 
+    and e.listing_id=cast(s.listing_id as string)
+group by all
+)
