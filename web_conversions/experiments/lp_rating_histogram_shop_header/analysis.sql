@@ -1,5 +1,5 @@
 -- CREATE TABLE TO GET RATINGS ACROSS ALL LISTINGS
-create or replace table etsy-data-warehouse-dev.madelinecollins.listings_by_ratings as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.listings_by_ratings as ( -- looks across all purchased listings, not just viewed listings
 with listings_agg as (
 select
   listing_id,
