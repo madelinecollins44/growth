@@ -98,7 +98,7 @@ select
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` v
 inner join 
-  etsy-bigquery-adhoc-prod._script86ce39d58ceb88a6390884e984d0894d903bf470.bucketing_listing bl -- only looking at browsers in the experiment 
+  etsy-data-warehouse-dev.madelinecollins.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= split(v.visit_id, ".")[0] -- joining on browser_id
     and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where
