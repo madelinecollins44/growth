@@ -108,7 +108,6 @@ group by all
 );
 
 -- PUT IT ALL TOGETHER
--- PUT IT ALL TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
 	visit_id,
@@ -175,10 +174,10 @@ select
   sum(listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
   sum(checkout_starts) as checkout_starts,
-  sum(reviews_seen) as reviews_seen,
   sum(views) as views,
   sum(atc) as atc,
-  sum(purchase) as purchase
+  sum(purchase) as purchase,
+  sum(reviews_seen) as reviews_seen,
 from 
   agg_listing_stats s
 left join 
