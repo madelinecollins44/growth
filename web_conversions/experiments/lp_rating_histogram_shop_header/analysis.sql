@@ -149,6 +149,7 @@ group by all
 select 
   e.variant_id,
   e.listing_id,
+  -- count(distinct bucketing_id) as browsers, 
   sum(e.listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
   sum(checkout_starts) as checkout_starts,
@@ -165,3 +166,18 @@ inner join
     and e.listing_id=cast(s.listing_id as string)
 group by all
 )
+select
+  variant_id,
+  coalesce(rating_status, 'no transaction') as rating_status,
+  sum(listing_views) as listing_views, 
+  sum(review_clicks) as review_clicks,   
+  sum(checkout_starts) as checkout_starts,
+  sum(views) as views,
+  sum(atc) as atc,
+  sum(purchase) as purchase
+from 
+  agg_listing_stats s
+left join 
+  etsy-data-warehouse-dev.madelinecollins.listings_by_ratings r
+    on s.listing_id=cast(r.listing_id as string) 
+group by all 
