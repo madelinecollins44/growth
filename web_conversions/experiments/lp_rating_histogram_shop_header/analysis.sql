@@ -108,6 +108,7 @@ group by all
 );
 
 -- PUT IT ALL TOGETHER
+-- PUT IT ALL TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
 	visit_id,
@@ -117,6 +118,7 @@ select
   count(case when event_name in ('view_listing') then sequence_number end) as listing_views, 
   count(case when event_name in ('reviews_anchor_click') then sequence_number end) as review_clicks,   
   count(case when event_name in ('checkout_start') then sequence_number end) as checkout_starts, 
+  count(case when event_name in ('listing_page_reviews_seen') then sequence_number end) as reviews_seen, 
 from
 	etsy-data-warehouse-dev.madelinecollins.beacons_events 
 where 
@@ -153,6 +155,7 @@ select
   sum(e.listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
   sum(checkout_starts) as checkout_starts,
+  sum(reviews_seen) as reviews_seen,
   sum(views) as views,
   sum(atc) as atc,
   sum(purchase) as purchase
@@ -172,6 +175,7 @@ select
   sum(listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
   sum(checkout_starts) as checkout_starts,
+  sum(reviews_seen) as reviews_seen,
   sum(views) as views,
   sum(atc) as atc,
   sum(purchase) as purchase
@@ -181,3 +185,4 @@ left join
   etsy-data-warehouse-dev.madelinecollins.listings_by_ratings r
     on s.listing_id=cast(r.listing_id as string) 
 group by all 
+order by 1,2 desc
