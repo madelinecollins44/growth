@@ -134,6 +134,7 @@ select
   count(case when event_name in ('view_listing') then e.sequence_number end) as listing_views, 
   sum(added_to_cart) as atc,
   sum(purchased_after_view) as purchase,
+  avg(coalesce(v.price_usd, l.price_usd/100)) as avg_price_usd
 from 
   etsy-data-warehouse-prod.analytics.listing_views  v
 inner join
@@ -142,6 +143,9 @@ inner join
     and e.sequence_number =  v.sequence_number
     and e.listing_id= cast(v.listing_id as string)
     and event_name in ('view_listing')
+inner join 
+  etsy-data-warehouse-prod.listing_mart.listings l    
+    on v.listing_id=l.listing_id
 where 
   _date between date('2025-06-13') and date('2025-06-22')  -- this will be within time of experiment
 group by all  
@@ -157,7 +161,8 @@ select
   sum(reviews_seen) as reviews_seen,
   sum(views) as views,
   sum(atc) as atc,
-  sum(purchase) as purchase
+  sum(purchase) as purchase,
+  avg(avg_price_usd) as avg_price_usd
 from 
   listing_events e
 inner join 
@@ -178,6 +183,7 @@ select
   sum(atc) as atc,
   sum(purchase) as purchase,
   sum(reviews_seen) as reviews_seen,
+  avg(avg_price_usd) as avg_price_usd
 from 
   agg_listing_stats s
 left join 
