@@ -58,7 +58,7 @@ select
 from
   `etsy-data-warehouse-prod.catapult_unified.bucketing`
 where
-  experiment_id = 'growth_regx.lp_rating_histogram_shop_header_desktop'
+  experiment_id = 'growth_regx.lp_rating_histogram_shop_header_mweb'
 group by all 
 ) 
 select
@@ -103,7 +103,7 @@ inner join
     and v.visit_id >= bl.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
 where
 	date(_partitiontime) between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
-	and beacon.event_name in ('reviews_anchor_click','view_listing','checkout_start')
+	and beacon.event_name in ('reviews_anchor_click','view_listing','checkout_start','listing_page_reviews_seen')
 group by all 
 );
 
