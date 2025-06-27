@@ -146,7 +146,7 @@ create or replace table etsy-data-warehouse-dev.madelinecollins.pe_dig_w_price_f
 SELECT
   xp.bucketing_date,
   xp.variant_id,
-  case when b.bucketing_id is not null then 1 else 0 end as visited_shop_home,
+  case when b.bucketing_id is not null then 1 else 0 end as opened_price_filter,
   COUNT(xp.bucketing_id) AS browsers,
   -- metrics
   SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
