@@ -1,248 +1,392 @@
+---------------------------------------------------------------------------------------------------
+-- CREATE TABLE FOR BUCKETING + VISIT ID IN LOCAL PE
+---------------------------------------------------------------------------------------------------
+
+-- Define variables
 DECLARE config_flag_param STRING DEFAULT "local_pe.q2_2025.buyer_trust_accelerator.browser";
-DECLARE start_date DATE; -- DEFAULT "2023-08-22";
-DECLARE end_date DATE; -- DEFAULT "2023-09-04";
-DECLARE bucketing_id_type INT64;
-DECLARE is_event_filtered BOOL; -- DEFAULT FALSE;
+DECLARE start_date DATE;
+DECLARE end_date DATE;
 
-
-IF start_date IS NULL OR end_date IS NULL THEN
-    SET (start_date, end_date) = (
-        SELECT AS STRUCT
-            MAX(DATE(boundary_start_ts)) AS start_date,
-            MAX(_date) AS end_date,
-        FROM
-            `etsy-data-warehouse-prod.catapult_unified.experiment`
-        WHERE
-            experiment_id = config_flag_param
-    );
-END IF;
-
-IF is_event_filtered IS NULL THEN
-    SET (is_event_filtered, bucketing_id_type) = (
-        SELECT AS STRUCT
-            is_filtered,
-            bucketing_id_type,
-        FROM
-            `etsy-data-warehouse-prod.catapult_unified.experiment`
-        WHERE
-            _date = end_date
-            AND experiment_id = config_flag_param
-    );
-ELSE
-    SET bucketing_id_type = (
-        SELECT
-            bucketing_id_type,
-        FROM
-            `etsy-data-warehouse-prod.catapult_unified.experiment`
-        WHERE
-            _date = end_date
-            AND experiment_id = config_flag_param
-    );
-END IF;
-
--- TIPS:
---   - Replace 'madelinecollins' in the table names below with your own username or personal dataset name.
---   - Additionally, there are a few TODO items in this script depending on:
---       - Whether you would like to look at certain segmentations  (marked with <SEGMENTATION>)
---       - Whether you would like to look at certain events         (marked with <EVENT>)
---     Before running, please review the script and adjust the marked sections accordingly!
-
--------------------------------------------------------------------------------------------
--- BUCKETING DATA
--------------------------------------------------------------------------------------------
--- Get the first bucketing moment for each experimental unit (e.g. browser or user).
--- If is_event_filtered is true, then only select experimental unit whose `filtered_bucketing_ts` is defined.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS (
-    SELECT
-        bucketing_id,
-        bucketing_id_type,
-        variant_id,
-        date(bucketing_ts) as bucketing_date,
-        IF(is_event_filtered, filtered_bucketing_ts, bucketing_ts) AS bucketing_ts,
-    FROM
-        `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
-    WHERE
-        _date = end_date
-        AND experiment_id = config_flag_param
-        AND ((NOT is_event_filtered) OR (filtered_bucketing_ts IS NOT NULL))
+-- Get experiment's start date and end date
+SET (start_date, end_date) = (
+  SELECT AS STRUCT
+    MAX(DATE(boundary_start_ts)) AS start_date,
+    MAX(_date) AS end_date,
+  FROM
+    `etsy-data-warehouse-prod.catapult_unified.experiment`
+  WHERE
+    experiment_id = config_flag_param
 );
 
--------------------------------------------------------------------------------------------
--- SEGMENT DATA
--------------------------------------------------------------------------------------------
--- For each bucketing_id and variant_id, output one row with their segment assignments.
--- Each additional column will be a different segmentation, and the value will be the segment for each
--- bucketing_id at the time they were first bucketed into the experiment date range being
--- analyzed.
--- Example output (using the same example data above):
--- bucketing_id | variant_id | buyer_segment | canonical_region
--- 123          | off        | New           | FR
--- 456          | on         | Habitual      | US
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.first_bucket_segments` AS (
-    WITH first_bucket_segments_unpivoted AS (
-        SELECT
-            bucketing_id,
-            variant_id,
-            event_id,
-            IF(is_event_filtered, filtered_event_value, event_value) AS event_value
-        FROM
-            `etsy-data-warehouse-prod.catapult_unified.aggregated_segment_event`
-        WHERE
-            _date = end_date
-            AND experiment_id = config_flag_param
-            -- <SEGMENTATION> Here you can specify whatever segmentations you'd like to analyze.
-            -- !!! Please keep this in sync with the PIVOT statement below !!!
-            -- For all supported segmentations, see go/catapult-unified-docs.
-            AND event_id IN (
-                "buyer_segment",
-                "canonical_region"
-            )
-            AND ((NOT is_event_filtered) OR (filtered_bucketing_ts IS NOT NULL))
-    )
-    SELECT
-        *
-    FROM
-        first_bucket_segments_unpivoted
-    PIVOT(
-        MAX(event_value)
-        FOR event_id IN (
-            "buyer_segment",
-            "canonical_region"
-        )
-    )
-);
-
--------------------------------------------------------------------------------------------
--- EVENT AND GMS DATA
--------------------------------------------------------------------------------------------
--- <EVENT> Specify the events you want to analyze here.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events` AS (
-    SELECT
-        *
-    FROM
-        UNNEST([
-            "backend_cart_payment", -- conversion rate
-            "total_winsorized_gms", -- winsorized acbv
-            "prolist_total_spend",  -- prolist revenue
-            "gms",              -- note: gms data is in cents
-            "total_winsorized_order_value", -- aov
-            "completed_checkouts"
-        ]) AS event_id
-);
-
--- Get all the bucketed units with the events of interest.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.events_per_unit` AS (
-    SELECT
-        bucketing_id,
-        variant_id,
-        event_id,
-        IF(is_event_filtered, filtered_event_value, event_value) AS event_value
-    FROM
-        `etsy-data-warehouse-prod.catapult_unified.aggregated_event_func`(start_date, end_date)
-    JOIN
-        `etsy-data-warehouse-dev.madelinecollins.events`
-        USING (event_id)
-    WHERE
-        experiment_id = config_flag_param
-        AND ((NOT is_event_filtered) OR (filtered_bucketing_ts IS NOT NULL))
-);
-
--------------------------------------------------------------------------------------------
--- VISIT COUNT
--------------------------------------------------------------------------------------------
-
--- Get all post-bucketing visits for each experimental unit
-IF bucketing_id_type = 1 THEN -- browser data (see go/catapult-unified-enums)
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.subsequent_visits` AS (
-        SELECT
-            b.bucketing_id,
-            b.variant_id,
-            v.visit_id,
-        FROM
-            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` b
-        JOIN
-            `etsy-data-warehouse-prod.weblog.visits` v
-            ON b.bucketing_id = v.browser_id
-            AND TIMESTAMP_TRUNC(bucketing_ts, SECOND) <= v.end_datetime
-        WHERE
-            v._date BETWEEN start_date AND end_date
-    );
-ELSEIF bucketing_id_type = 2 THEN -- user data (see go/catapult-unified-enums)
-    CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.subsequent_visits` AS (
-        SELECT
-            b.bucketing_id,
-            b.variant_id,
-            v.visit_id,
-        FROM
-            `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` b
-        JOIN
-            `etsy-data-warehouse-prod.weblog.visits` v
-            -- Note that for user experiments, you may miss out on some visits in cases where multiple
-            -- users share the same visit_id. This is because only the first user_id is recorded in
-            -- the weblog.visits table (as of Q4 2023).
-            --
-            -- Additionally, the only difference between the user and browser case is the join on
-            -- bucketing_id. However, due to performance reasons, we apply our conditional logic at
-            -- a higher level rather than in the join itself.
-            ON b.bucketing_id = CAST(v.user_id AS STRING)
-            AND TIMESTAMP_TRUNC(bucketing_ts, SECOND) <= v.end_datetime
-        WHERE
-            v._date BETWEEN start_date AND end_date
-    );
-END IF;
-
--- Get visit count per experimental unit
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.visits_per_unit` AS (
-    SELECT
-        bucketing_id,
-        variant_id,
-        COUNT(*) AS visit_count,
-    FROM
-        `etsy-data-warehouse-dev.madelinecollins.subsequent_visits`
-    GROUP BY
-        bucketing_id, variant_id
-);
-
--------------------------------------------------------------------------------------------
--- COMBINE BUCKETING, EVENT & SEGMENT DATA
--------------------------------------------------------------------------------------------
--- All events for all bucketed units, with segment values.
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments` AS (
-    SELECT
-        bucketing_id,
-        variant_id,
-        bucketing_date,
-        event_id,
-        COALESCE(event_value, 0) AS event_count,
-        buyer_segment,
-        canonical_region,
-    FROM
-        `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket`
-    CROSS JOIN
-        `etsy-data-warehouse-dev.madelinecollins.events`
-    LEFT JOIN
-        `etsy-data-warehouse-dev.madelinecollins.events_per_unit`
-        USING(bucketing_id, variant_id, event_id)
-    JOIN
-        `etsy-data-warehouse-dev.madelinecollins.first_bucket_segments`
-        USING(bucketing_id, variant_id)
-);
-
--------------------------------------------------------------------------------------------
--- RECREATE CATAPULT RESULTS
--------------------------------------------------------------------------------------------
--- Proportion and mean metrics by variant and event_name
-SELECT
-        -- bucketing_date,
+-- Get experiment's bucketed units
+CREATE OR REPLACE TEMPORARY TABLE xp_units AS (
+  SELECT 
+    bucketing_id,
     variant_id,
-    COUNT(distinct bucketing_id) AS total_units_in_variant,
-    avg(case when event_id in ('backend_cart_payment') then IF(event_count = 0, 0, 1) end) AS conversion_rate,
-    (sum(case when event_id in ('gms') then event_count end)/100) AS total_gms,
-    (sum(case when event_id in ('gms') then event_count end)/100)/ COUNT(distinct bucketing_id) AS gms_per_unit,
-    avg(case when event_id in ('total_winsorized_gms') then IF(event_count = 0, NULL, event_count) end) AS acbv
+    bucketing_ts,
+    date(bucketing_ts) as bucketing_date,
+  FROM
+    `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
+  WHERE
+    _date = end_date
+    AND experiment_id = config_flag_param
+);
+
+-- Get experiment's bucketed visits
+CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
+  SELECT
+    v.visit_id,
+    xp.bucketing_id
+  FROM
+    `etsy-data-warehouse-prod.weblog.visits` AS v
+  INNER JOIN
+    xp_units AS xp
+      ON
+        xp.bucketing_id = v.browser_id
+        AND TIMESTAMP_TRUNC(xp.bucketing_ts, SECOND) <= v.end_datetime
+  WHERE
+    v._date BETWEEN start_date AND end_date
+);
+
+-- Get browsers who viewed a listing page with review photos
+CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
+  SELECT DISTINCT
+    v.bucketing_id
+  FROM
+    `etsy-data-warehouse-prod.weblog.events` AS e
+  INNER JOIN 
+    xp_visits AS v USING(visit_id)
+  WHERE
+    e._date BETWEEN start_date AND end_date
+    AND e.event_type = "shop_home_filter_dropdown_open" -- event fires when a browser sees the top of the review section  
+);
+
+-- Get KHM aggregated events for experiment's bucketed units
+CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events AS (
+  SELECT
+    bucketing_date,
+    xp.bucketing_id,
+    xp.variant_id,
+    e.event_id,
+    e.event_type,
+    e.event_value
+  FROM
+    `etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily` AS e
+  INNER JOIN
+    xp_units AS xp USING (bucketing_id)
+  WHERE
+    e._date BETWEEN start_date AND end_date
+    AND e.experiment_id = config_flag_param
+    AND e.event_id IN (
+      "backend_cart_payment",
+        "bounce",
+        "backend_add_to_cart", 
+        "checkout_start",  
+        "engaged_visit",
+        "visits",
+        "completed_checkouts",
+        "page_count",
+        "total_winsorized_gms",
+        "total_winsorized_order_value"
+      )
+    AND e.bucketing_id_type = 1 -- browser_id
+);
+
+-- Get KHM aggregated events for experiment's bucketed units by unit
+CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
+  SELECT
+    bucketing_date,
+    bucketing_id,
+    SUM(IF(event_id = "backend_cart_payment", event_value, 0)) AS orders,
+    SUM(IF(event_id = "bounce", event_value, 0)) AS bounced_visits,
+    COUNTIF(event_id = "backend_add_to_cart") AS atc_count,
+    COUNTIF(event_id = "checkout_start") AS checkout_start_count,
+    SUM(IF(event_id = "engaged_visit", event_value, 0)) AS engaged_visits,
+    SUM(IF(event_id = "visits", event_value, 0)) AS visits,
+    SUM(IF(event_id = "completed_checkouts", event_value, 0)) AS completed_checkouts,
+    SUM(IF(event_id = "page_count", event_value, 0)) AS page_count,
+    SUM(IF(event_id = "total_winsorized_gms", event_value, 0)) AS winsorized_gms,
+    SUM(IF(event_id = "total_winsorized_order_value", event_value, 0)) AS winsorized_order_value_sum
+  FROM
+    xp_khm_agg_events
+  GROUP BY ALL
+);
+
+-- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
+create or replace table etsy-data-warehouse-dev.madelinecollins.pe_dig as (
+SELECT
+  xp.bucketing_date,
+  xp.variant_id,
+  COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
+  SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
+  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  SAFE_DIVIDE(SUM(e.orders), COUNTIF(e.orders > 0)) AS ocb,
+  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
+  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.completed_checkouts)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
 FROM
-    `etsy-data-warehouse-dev.madelinecollins.all_units_events_segments`
-  where variant_id in ('off')
+  xp_units AS xp
+LEFT JOIN
+  xp_khm_agg_events_by_unit AS e USING (bucketing_id)
+  GROUP BY ALL
+ORDER BY
+  1);
+
+-- Key Health Metrics (Winsorized ACBV and AOV) - Only browsers who viewed a listing page with review photos
+create or replace table etsy-data-warehouse-dev.madelinecollins.pe_dig_w_price_filter as (
+SELECT
+  xp.bucketing_date,
+  xp.variant_id,
+  case when b.bucketing_id is not null then 1 else 0 end as visited_shop_home,
+  COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
+  SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
+  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  SAFE_DIVIDE(SUM(e.orders), COUNTIF(e.orders > 0)) AS ocb,
+  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
+  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.completed_checkouts)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
+FROM
+  xp_units AS xp
+LEFT JOIN
+  browsers_with_key_event AS b USING (bucketing_id)
+LEFT JOIN
+  xp_khm_agg_events_by_unit AS e USING (bucketing_id)
 GROUP BY ALL
-order by 1 asc
-  
+ORDER BY
+  1);
+
+/* -- z score calc
+with browser_count as 
+(select
+  sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
+  sum(case when variant_id = 'on' then browsers end) as browsers_t,
+  sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
+  sum(case when variant_id = 'off' then browsers end) as browsers_c,
+from 
+  etsy-data-warehouse-dev.madelinecollins.pe_dig
+)
+, z_values as (
+  select 
+  (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
+  ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
+  (1/browsers_c) + (1/browsers_t) as denom2
+from 
+  browser_count
+  )
+select 
+  abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
+from z_values
+;
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- MOBILE WEB 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Define variables
+DECLARE config_flag_param STRING DEFAULT "growth_regx.lp_review_photos_view_all_link_mweb";
+DECLARE start_date DATE;
+DECLARE end_date DATE;
+
+-- Get experiment's start date and end date
+SET (start_date, end_date) = (
+  SELECT AS STRUCT
+    MAX(DATE(boundary_start_ts)) AS start_date,
+    MAX(_date) AS end_date,
+  FROM
+    `etsy-data-warehouse-prod.catapult_unified.experiment`
+  WHERE
+    experiment_id = config_flag_param
+);
+
+-- Get experiment's bucketed units
+CREATE OR REPLACE TEMPORARY TABLE xp_units AS (
+  SELECT 
+    bucketing_id,
+    variant_id,
+    bucketing_ts
+  FROM
+    `etsy-data-warehouse-prod.catapult_unified.bucketing_period`
+  WHERE
+    _date = end_date
+    AND experiment_id = config_flag_param
+);
+
+-- Get experiment's bucketed visits
+CREATE OR REPLACE TEMPORARY TABLE xp_visits AS (
+  SELECT
+    v.visit_id,
+    xp.bucketing_id
+  FROM
+    `etsy-data-warehouse-prod.weblog.visits` AS v
+  INNER JOIN
+    xp_units AS xp
+      ON
+        xp.bucketing_id = v.browser_id
+        AND TIMESTAMP_TRUNC(xp.bucketing_ts, SECOND) <= v.end_datetime
+  WHERE
+    v._date BETWEEN start_date AND end_date
+);
+
+-- Get browsers who viewed a listing page with review photos
+CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
+  SELECT DISTINCT
+    v.bucketing_id
+  FROM
+    `etsy-data-warehouse-prod.weblog.events` AS e
+  INNER JOIN 
+    xp_visits AS v USING(visit_id)
+  WHERE
+    e._date BETWEEN start_date AND end_date
+    AND e.event_type = "listing_page_reviews_container_top_seen" -- event fires when a browser sees the top of the review section  
+);
+
+-- Get KHM aggregated events for experiment's bucketed units
+CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events AS (
+  SELECT
+    xp.bucketing_id,
+    xp.variant_id,
+    e.event_id,
+    e.event_type,
+    e.event_value
+  FROM
+    `etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily` AS e
+  INNER JOIN
+    xp_units AS xp USING (bucketing_id)
+  WHERE
+    e._date BETWEEN start_date AND end_date
+    AND e.experiment_id = config_flag_param
+    AND e.event_id IN (
+      "backend_cart_payment",
+        "bounce",
+        "backend_add_to_cart", 
+        "checkout_start",  
+        "engaged_visit",
+        "visits",
+        "completed_checkouts",
+        "page_count",
+        "total_winsorized_gms",
+        "total_winsorized_order_value"
+      )
+    AND e.bucketing_id_type = 1 -- browser_id
+);
+
+-- Get KHM aggregated events for experiment's bucketed units by unit
+CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
+  SELECT
+    bucketing_id,
+    SUM(IF(event_id = "backend_cart_payment", event_value, 0)) AS orders,
+    SUM(IF(event_id = "bounce", event_value, 0)) AS bounced_visits,
+    COUNTIF(event_id = "backend_add_to_cart") AS atc_count,
+    COUNTIF(event_id = "checkout_start") AS checkout_start_count,
+    SUM(IF(event_id = "engaged_visit", event_value, 0)) AS engaged_visits,
+    SUM(IF(event_id = "visits", event_value, 0)) AS visits,
+    SUM(IF(event_id = "completed_checkouts", event_value, 0)) AS completed_checkouts,
+    SUM(IF(event_id = "page_count", event_value, 0)) AS page_count,
+    SUM(IF(event_id = "total_winsorized_gms", event_value, 0)) AS winsorized_gms,
+    SUM(IF(event_id = "total_winsorized_order_value", event_value, 0)) AS winsorized_order_value_sum
+  FROM
+    xp_khm_agg_events
+  GROUP BY
+    1
+);
+
+-- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
+create or replace table etsy-data-warehouse-dev.madelinecollins.total_lp_review_photos_view_all_link_mweb as (
+SELECT
+  xp.variant_id,
+  COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
+  SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
+  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  SAFE_DIVIDE(SUM(e.orders), COUNTIF(e.orders > 0)) AS ocb,
+  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
+  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
+FROM
+  xp_units AS xp
+LEFT JOIN
+  xp_khm_agg_events_by_unit AS e USING (bucketing_id)
+GROUP BY
+  1
+ORDER BY
+  1);
+
+-- Key Health Metrics (Winsorized ACBV and AOV) - Only browsers who viewed a listing page with review photos
+create or replace table etsy-data-warehouse-dev.madelinecollins.filtered_lp_review_photos_view_all_link_mweb as (
+SELECT
+  xp.variant_id,
+  COUNT(xp.bucketing_id) AS browsers,
+  -- metrics
+  SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
+  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  SAFE_DIVIDE(SUM(e.orders), COUNTIF(e.orders > 0)) AS ocb,
+  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
+  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov,
+  --browser counts
+  COUNTIF(e.orders > 0) AS converted_browsers,
+  COUNTIF(e.atc_count > 0) AS atc_browsers
+FROM
+  xp_units AS xp
+INNER JOIN
+  browsers_with_key_event AS b USING (bucketing_id)
+LEFT JOIN
+  xp_khm_agg_events_by_unit AS e USING (bucketing_id)
+GROUP BY ALL
+ORDER BY
+  1);
+
+-- -- z score calc
+-- with browser_count as 
+-- (select
+--   sum(case when variant_id = 'on' then converted_browsers end) as cr_browsers_t,
+--   sum(case when variant_id = 'on' then browsers end) as browsers_t,
+--   sum(case when variant_id = 'off' then converted_browsers end) as cr_browsers_c,
+--   sum(case when variant_id = 'off' then browsers end) as browsers_c,
+-- from 
+--   etsy-data-warehouse-dev.madelinecollins.filtered_lp_review_photos_view_all_link_mweb
+-- )
+-- , z_values as (
+--   select 
+--   (cr_browsers_t / browsers_t) - (cr_browsers_c / browsers_c) as num,
+--   ((cr_browsers_t+cr_browsers_c) / (browsers_t+browsers_c)) * (1-(cr_browsers_t+cr_browsers_c)/(browsers_t+browsers_c)) as denom1,
+--   (1/browsers_c) + (1/browsers_t) as denom2
+-- from 
+--   browser_count
+--   )
+-- select 
+--   abs(num/(sqrt(denom1*denom2))) as z_score -- if z-score is above 1.64 it's significant
+-- from z_values
+-- ;
+
+*/
