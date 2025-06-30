@@ -14,7 +14,7 @@ where 1=1
 )
 select
     event_name,
-    concat(price_min,'-',price_min) as price_range,
+    concat(price_min,'-',price_max) as price_range,
     count(sequence_number) as events,
     count(distinct visit_id) as visits,
     count(distinct browser_ids) as browser_ids
