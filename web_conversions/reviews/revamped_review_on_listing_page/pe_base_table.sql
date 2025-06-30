@@ -83,6 +83,6 @@ inner join
     on f.bucketing_id=v.browser_id -- browsers in the pe 
     and f.bucketing_ts <= v.start_datetime -- all visits after the initial bucketed visit
 where 1=1
-  and f.bucketing_date between date('2025-06-10') and date('2025-06-24') -- two weeks after the cat tag experiment was ramped up 
-  and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after the cat tag experiment was ramped up 
+  and f.bucketing_date >= date('2025-06-10') -- two weeks after the cat tag experiment was ramped up 
+  and v._date >=  date('2025-06-10') -- two weeks after the cat tag experiment was ramped up 
 );
