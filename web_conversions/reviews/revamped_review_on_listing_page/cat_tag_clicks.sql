@@ -20,6 +20,7 @@ where 1=1
   and beacon.event_name in 
     ('view_listing', 
     'listing_page_reviews_container_top_seen', -- scrolls far enough to see tags 
+    'listing_page_reviews_seen', -- scrolls far enough to see middle of review section
     'reviews_categorical_tags_seen', -- sees the tags 
     'reviews_categorical_tag_clicked', -- clicks on a tag
     'reviews_categorical_tag_filter_applied' -- clicks on a tag and reviews filter 
