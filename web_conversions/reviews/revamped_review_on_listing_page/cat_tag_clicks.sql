@@ -1,4 +1,5 @@
-/* 
+
+/*
 create or replace table `etsy-data-warehouse-dev.madelinecollins.tag_info` as (
 select
 	date(_partitiontime) as _date,
@@ -29,10 +30,9 @@ where 1=1
 );
 */
 
-
-
 -- funnel view
 select
+  case when _date between date('2025-06-10') and date('2025-06-24') then 1 else 0 end as after_changes_made,
   event_type,
   count(sequence_number) as clicks,
   count(distinct listing_id) as listings_w_clicks
@@ -43,6 +43,7 @@ group by all
 	
 -- clicks by tag name
 select
+  case when _date between date('2025-06-10') and date('2025-06-24') then 1 else 0 end as after_changes_made,
   tag_name,
   tag_type,
   count(sequence_number) as clicks,
@@ -51,6 +52,7 @@ from
   etsy-data-warehouse-dev.madelinecollins.tag_info 
 where 
   event_type in ('reviews_categorical_tag_clicked')
+group by all 
 
 
 -- clicks by tag name / listing attribute 
@@ -86,6 +88,7 @@ where 1=1
 group by all 
 )
 select 
+  case when _date between date('2025-06-10') and date('2025-06-24') then 1 else 0 end as after_changes_made,
   tag_name,
   tag_type,
   count(sequence_number) as clicks,
