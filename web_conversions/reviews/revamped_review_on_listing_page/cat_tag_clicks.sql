@@ -2,6 +2,7 @@
 /*
 create or replace table `etsy-data-warehouse-dev.madelinecollins.tag_info` as (
 select
+  variant_id,
 	date(_partitiontime) as _date,
 	v.visit_id,
 	vb.sequence_number,
@@ -12,12 +13,11 @@ select
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` vb
 inner join 
-  etsy-data-warehouse-prod.weblog.visits v -- only looking at browsers in the experiment 
-    on v.visit_id = vb.visit_id -- everything that happens on bucketing moment and after (cant do sequence number bc there is only one)
+  etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_post_cattags v -- only looking at browsers in the experiment 
+    on v.bucketing_id = split(vb.visit_id, ".")[0] -- browser_id
+    and v.visit_id=vb.visit_id -- all visits after the bucketing_visit 
 where 1=1
-  and v._date between date('2025-02-19') and date('2025-03-06') -- two weeks after last reviews experiment was ramped 
-  and date(_partitiontime) between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped
-  and platform in ('desktop')
+  and date(_partitiontime) >= date('2025-06-10') -- looking after experiment was ramped 
   and beacon.event_name in 
     ('view_listing', 
     'listing_page_reviews_container_top_seen', -- scrolls far enough to see tags 
@@ -88,7 +88,6 @@ where 1=1
 group by all 
 )
 select 
-  case when _date between date('2025-06-10') and date('2025-06-24') then 1 else 0 end as after_changes_made,
   tag_name,
   tag_type,
   count(sequence_number) as clicks,
