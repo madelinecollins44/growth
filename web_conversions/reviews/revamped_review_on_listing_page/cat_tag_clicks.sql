@@ -1,5 +1,35 @@
 
 
+create or replace table `etsy-data-warehouse-dev.madelinecollins.tag_info_beyond_pe` as (
+select
+  variant_id,
+	date(_partitiontime) as _date,
+	v.visit_id,
+  v.bucketing_id,
+	vb.sequence_number,
+	beacon.event_name as event_name,
+  (select value from unnest(beacon.properties.key_value) where key = "tag_name") as tag_name, 
+  (select value from unnest(beacon.properties.key_value) where key = "tag_type") as tag_type, 
+  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons` vb
+-- inner join 
+--   etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_post_cattags v -- only looking at browsers in the experiment 
+--     on v.bucketing_id = split(vb.visit_id, ".")[0] -- browser_id
+--     and v.visit_id=vb.visit_id -- all visits after the bucketing_visit 
+where 1=1
+  and date(_partitiontime) >= date('2025-06-10') -- looking after experiment was ramped 
+  and beacon.event_name in 
+    ('view_listing', 
+    'listing_page_reviews_container_top_seen', -- scrolls far enough to see tags 
+    'listing_page_reviews_seen', -- scrolls far enough to see middle of review section
+    'reviews_categorical_tags_seen', -- sees the tags 
+    'reviews_categorical_tag_clicked', -- clicks on a tag
+    'reviews_categorical_tag_filter_applied' -- clicks on a tag and reviews filter 
+    )
+  group by all 
+);
+
 create or replace table `etsy-data-warehouse-dev.madelinecollins.tag_info` as (
 select
   variant_id,
