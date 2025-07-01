@@ -1,5 +1,5 @@
 
-/*
+
 create or replace table `etsy-data-warehouse-dev.madelinecollins.tag_info` as (
 select
   variant_id,
@@ -33,18 +33,19 @@ where 1=1
 
 -- funnel view
 select
-  case when _date between date('2025-06-10') and date('2025-06-24') then 1 else 0 end as after_changes_made,
-  event_type,
+  variant_id,
+  event_name,
   count(sequence_number) as clicks,
   count(distinct listing_id) as listings_w_clicks
 from 
   etsy-data-warehouse-dev.madelinecollins.tag_info 
 group by all 
+order by 1,2 desc
 
 	
 -- clicks by tag name
 select
-  case when _date between date('2025-06-10') and date('2025-06-24') then 1 else 0 end as after_changes_made,
+  variant_id,
   tag_name,
   tag_type,
   count(sequence_number) as clicks,
@@ -52,9 +53,9 @@ select
 from 
   etsy-data-warehouse-dev.madelinecollins.tag_info 
 where 
-  event_type in ('reviews_categorical_tag_clicked')
+  event_name in ('reviews_categorical_tag_clicked')
 group by all 
-
+order by 1,2,3 desc 
 
 -- clicks by tag name / listing attribute 
 with listing_attributes as ( -- attributes from listings viewed on desktop 
@@ -84,20 +85,21 @@ left join
   (select listing_id, count(distinct transaction_id) from etsy-data-warehouse-prod.rollups.transaction_reviews where has_review > 0) r
         on r.listing_id=l.listing_id
 where 1=1
-  and v._date between date('2025-06-10') and date('2025-06-24') -- two weeks after last reviews experiment was ramped 
-  and v.platform in ('desktop')
+  and v._date >= date('2025-06-10')  -- two weeks after last reviews experiment was ramped 
 group by all 
 )
 select 
+  variant_id,
   tag_name,
   tag_type,
   count(sequence_number) as clicks,
   count(distinct listing_id) as listings_w_clicks,
 from 
   listing_attributes a
-left join 
+inner join 
   (select * from etsy-data-warehouse-dev.madelinecollins.tag_info  where event_type in ('reviews_categorical_tag_clicked')) c   
     using (listing_id)
+group by all 
 
 
 -- conversion among visits that clicked on a tag
