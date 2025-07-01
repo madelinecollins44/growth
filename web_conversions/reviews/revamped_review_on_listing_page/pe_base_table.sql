@@ -76,7 +76,7 @@ select
   f.bucketing_id,
   v.browser_id,
   v.visit_id,
-  v._date as visit_id
+  v._date as visit_date
 from 
   etsy-data-warehouse-dev.madelinecollins.ab_first_bucket f
 inner join 
