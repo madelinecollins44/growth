@@ -5,6 +5,7 @@ select
   variant_id,
 	date(_partitiontime) as _date,
 	v.visit_id,
+  v.bucketing_id,
 	vb.sequence_number,
 	beacon.event_name as event_name,
   (select value from unnest(beacon.properties.key_value) where key = "tag_name") as tag_name, 
