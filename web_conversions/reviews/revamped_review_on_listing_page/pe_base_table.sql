@@ -72,6 +72,7 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket
 create or replace table etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_post_cattags as (
 select
   f.bucketing_date,
+  f.bucketing_ts, -- this is the bucketing timestamp, use this to look at all events AFTER the bucketing timestamp 
   f.variant_id,
   f.bucketing_id,
   v.browser_id,
