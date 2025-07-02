@@ -1,3 +1,6 @@
+-------------------------------------------------------------------------------------------
+-- Create table to get first bucketing moment of all browsers in the PE
+-------------------------------------------------------------------------------------------
 DECLARE config_flag_param STRING DEFAULT "local_pe.q2_2025.buyer_trust_accelerator.browser";
 DECLARE start_date DATE; -- DEFAULT "2023-08-22";
 DECLARE end_date DATE; -- DEFAULT "2023-09-04";
@@ -46,9 +49,6 @@ END IF;
 --       - Whether you would like to look at certain events         (marked with <EVENT>)
 --     Before running, please review the script and adjust the marked sections accordingly!
 
--------------------------------------------------------------------------------------------
--- BUCKETING DATA
--------------------------------------------------------------------------------------------
 -- Get the first bucketing moment for each experimental unit (e.g. browser or user).
 -- If is_event_filtered is true, then only select experimental unit whose `filtered_bucketing_ts` is defined.
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` AS ( -- find the 
