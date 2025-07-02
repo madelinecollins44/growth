@@ -118,3 +118,27 @@ where 1=1
   group by all 
 );
  
+ -- create agg table to look at all listing engagements 
+ create or replace table etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg as (
+ select
+ 	_date,
+    variant_id,
+	visit_id,
+    bucketing_id,
+	sequence_number,
+	event_name,
+    listing_id 
+from 
+    etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_review_engagements 
+union all 
+ select
+ 	_date,
+    variant_id,
+	visit_id,
+    bucketing_id,
+	sequence_number,
+	event_name,
+    listing_id 
+from 
+    etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_views 
+ );
