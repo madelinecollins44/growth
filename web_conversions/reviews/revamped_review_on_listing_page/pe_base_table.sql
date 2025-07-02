@@ -1,3 +1,6 @@
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- This table aggregates all the browsers in the local buyer trust pe. it includes every visit after the bucketing moment, as well as the bucketing time stamp.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DECLARE config_flag_param STRING DEFAULT "local_pe.q2_2025.buyer_trust_accelerator.browser";
 DECLARE start_date DATE; -- DEFAULT "2023-08-22";
 DECLARE end_date DATE; -- DEFAULT "2023-09-04";
