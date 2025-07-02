@@ -103,7 +103,7 @@ select
     v.bucketing_id,
 	vb.sequence_number,
 	beacon.event_name as event_name,
-  coalesce((select value from unnest(beacon.properties.key_value) where key = "listing_id"), regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id 
+    regexp_extract(beacon.loc, r'listing/(\d+)') as listing_id 
 from
 	`etsy-visit-pipe-prod.canonical.visit_id_beacons` vb
 inner join 
