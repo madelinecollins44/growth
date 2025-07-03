@@ -150,21 +150,21 @@ create or replace table etsy-data-warehouse-dev.madelinecollins.segments_and_eve
 with events_agg as (
 select
   variant_id,
-  visit_id,
-  listing_id,
+  b.visit_id,
+  b.listing_id,
   max(case when purchased_after_view > 0 then 1 else 0 end) as purchased_after_view,
   sum(purchased_after_view) as sum_purchased_after_view,
   -- total counts
-  count(case when event_name in ('view_listing') then sequence_number end) as listing_views, 
-  count(case when event_name in ('listing_page_reviews_seen') then sequence_number end) as reviews_seen, 
-  count(case when event_name in ('listing_page_reviews_container_top_seen') then sequence_number end) as reviews_top_container_seen, 
-  count(case when event_name in ('listing_page_review_engagement_frontend') then sequence_number end) as listing_page_review_engagements, 
-  count(case when event_name in ('listing_page_reviews_pagination') then sequence_number end) as paginations, 
-  count(case when event_name in ('appreciation_photo_overlay_opened') then sequence_number end) as photo_opens, 
-  count(case when event_name in ('sort_reviews') then sequence_number end) as review_sorts, 
-  count(case when event_name in ('reviews_categorical_tag_clicked') then sequence_number end) as cat_tag_clicks, 
-  count(case when event_name in ('reviews_categorical_tags_seen') then sequence_number end) as cat_tags_seen, 
-  count(case when event_name in ('listing_page_reviews_content_toggle_opened') then sequence_number end) as toggle_opens, 
+  count(case when event_name in ('view_listing') then b.sequence_number end) as listing_views, 
+  count(case when event_name in ('listing_page_reviews_seen') then b.sequence_number end) as reviews_seen, 
+  count(case when event_name in ('listing_page_reviews_container_top_seen') then b.sequence_number end) as reviews_top_container_seen, 
+  count(case when event_name in ('listing_page_review_engagement_frontend') then b.sequence_number end) as listing_page_review_engagements, 
+  count(case when event_name in ('listing_page_reviews_pagination') then b.sequence_number end) as paginations, 
+  count(case when event_name in ('appreciation_photo_overlay_opened') then b.sequence_number end) as photo_opens, 
+  count(case when event_name in ('sort_reviews') then b.sequence_number end) as review_sorts, 
+  count(case when event_name in ('reviews_categorical_tag_clicked') then b.sequence_number end) as cat_tag_clicks, 
+  count(case when event_name in ('reviews_categorical_tags_seen') then b.sequence_number end) as cat_tags_seen, 
+  count(case when event_name in ('listing_page_reviews_content_toggle_opened') then b.sequence_number end) as toggle_opens, 
   -- max counts
   max(case when event_name in ('view_listing') then 1 else 0 end) as viewed_listing, 
   max(case when event_name in ('listing_page_reviews_seen') then 1 else 0 end) as saw_reviews, 
@@ -183,6 +183,7 @@ left join
     on cast(a.listing_id as string)=b.listing_id
     and b.visit_id=a.visit_id
     and b.sequence_number=a.sequence_number
+    and a._date >= date('2025-06-10')
 group by all 
 )
 , listing_seg as (
