@@ -149,6 +149,7 @@ from
 create or replace table etsy-data-warehouse-dev.madelinecollins.segments_and_events as (
 with events_agg as (
 select
+  variant_id,
   visit_id,
   listing_id,
   -- total counts
@@ -239,6 +240,7 @@ select
   listing_price,
   has_reviews,
   -- event metrics 
+  e.variant_id,
   e.visit_id,
   e.listing_id,
   -- total counts
