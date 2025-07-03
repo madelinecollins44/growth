@@ -142,3 +142,132 @@ union all
 from 
     etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_views 
  );
+
+-------------------------------------------------------------------------------------------
+-- Join together events with listings/ visit segments on listing + visit level
+-------------------------------------------------------------------------------------------
+create or replace table etsy-data-warehouse-dev.madelinecollins.segments_and_events as (
+with events_agg as (
+select
+  visit_id,
+  listing_id,
+  -- total counts
+  count(case when event_name in ('view_listing') then sequence_number end) as listing_views, 
+  count(case when event_name in ('listing_page_reviews_seen') then sequence_number end) as reviews_seen, 
+  count(case when event_name in ('listing_page_reviews_container_top_seen') then sequence_number end) as reviews_top_container_seen, 
+  count(case when event_name in ('listing_page_review_engagement_frontend') then sequence_number end) as listing_page_review_engagements, 
+  count(case when event_name in ('listing_page_reviews_pagination') then sequence_number end) as paginations, 
+  count(case when event_name in ('appreciation_photo_overlay_opened') then sequence_number end) as photo_opens, 
+  count(case when event_name in ('sort_reviews') then sequence_number end) as review_sorts, 
+  count(case when event_name in ('reviews_categorical_tag_clicked') then sequence_number end) as cat_tag_clicks, 
+  count(case when event_name in ('reviews_categorical_tags_seen') then sequence_number end) as cat_tags_seen, 
+  count(case when event_name in ('listing_page_reviews_content_toggle_opened') then sequence_number end) as toggle_opens, 
+  -- max counts
+  max(case when event_name in ('view_listing') then 1 else 0 end) as viewed_listing, 
+  max(case when event_name in ('listing_page_reviews_seen') then 1 else 0 end) as saw_reviews, 
+  max(case when event_name in ('listing_page_reviews_container_top_seen') then 1 else 0 end) as has_top_container, 
+  max(case when event_name in ('listing_page_review_engagement_frontend') then 1 else 0 end) as has_review_engagement, 
+  max(case when event_name in ('listing_page_reviews_pagination') then 1 else 0 end) as has_paginations, 
+  max(case when event_name in ('appreciation_photo_overlay_opened') then 1 else 0 end) as has_photo_open, 
+  max(case when event_name in ('sort_reviews') then 1 else 0 end) as has_review_sort, 
+  max(case when event_name in ('reviews_categorical_tag_clicked') then 1 else 0 end) as has_cat_tag_click, 
+  max(case when event_name in ('reviews_categorical_tags_seen') then 1 else 0 end) as has_cat_tag_seen, 
+  max(case when event_name in ('listing_page_reviews_content_toggle_opened') then 1 else 0 end) as has_toggle_opens, 
+from 
+  etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg
+group by all 
+)
+, listing_seg as (
+select
+  is_digital,
+  top_category,
+  is_personalizable, 
+  case when va.listing_id is not null then 1 else 0 end as has_variation,
+  case 
+    when (l.price_usd/100) > 100 then 'high' 
+    when (l.price_usd/100) > 30 then 'mid' 
+    when (l.price_usd/100) <= 30 then 'low' 
+  end as listing_price, -- uses same logic as segment
+  max(case when r.reviews > 0 or r.listing_id is not null then 1 else 0 end) as has_reviews,
+  v.listing_id,
+from 
+  (select distinct listing_id from etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg) v 
+inner join 
+  etsy-data-warehouse-prod.listing_mart.listings l 
+    on cast(l.listing_id as string)=v.listing_id 
+left join
+  etsy-data-warehouse-prod.listing_mart.listing_attributes a 
+    on a.listing_id=l.listing_id
+left join 
+  (select listing_id from etsy-data-warehouse-prod.listing_mart.listing_variations where variation_count > 0) va 
+    on va.listing_id=l.listing_id
+left join   
+  (select listing_id, count(distinct transaction_id) as reviews from etsy-data-warehouse-prod.rollups.transaction_reviews where has_review > 0 group by all ) r   
+    on l.listing_id=r.listing_id
+group by all 
+)
+, visit_seg as (
+select
+  a.visit_id,
+  case when user_id = 0 or user_id is null then 0 else 1 end as signed_in,
+  new_visitor,
+  coalesce(has_review_engagement,0) as engaged_w_reviews
+from 
+  (select 
+    visit_id, 
+    max(case when event_name in ('listing_page_review_engagement_frontend') then 1 else 0 end) as has_review_engagement 
+  from 
+    etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg 
+  group by all) a
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  _date >= date('2025-06-10')
+)
+select 
+  -- visit segments
+  visit_id,
+  signed_in,
+  new_visitor,
+  engaged_w_reviews, 
+  -- listing segments 
+  is_digital,
+  top_category,
+  is_personalizable, 
+  has_variation,
+  listing_price,
+  has_reviews,
+  -- event metrics 
+  visit_id,
+  listing_id,
+  -- total counts
+  listing_views, 
+  reviews_seen, 
+  reviews_top_container_seen, 
+  listing_page_review_engagements, 
+  paginations, 
+  photo_opens, 
+  review_sorts, 
+  cat_tag_clicks, 
+  cat_tags_seen, 
+  toggle_opens, 
+  -- max counts
+  viewed_listing, 
+  saw_reviews, 
+  has_top_container, 
+  has_review_engagement, 
+  has_paginations, 
+  has_photo_open, 
+  has_review_sort, 
+  has_cat_tag_click, 
+  has_cat_tag_seen, 
+  has_toggle_opens, 
+from 
+  events_agg e
+left join 
+  listing_seg l
+    on e.listing_id=l.listing_id
+left join 
+  visit_seg v
+    on e.visit_id=v.visit_id
+);
