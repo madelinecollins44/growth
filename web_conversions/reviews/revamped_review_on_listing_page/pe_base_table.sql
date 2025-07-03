@@ -180,7 +180,7 @@ from
   etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg b
 left join 
   etsy-data-warehouse-prod.analytics.listing_views a   
-    on b.listing_id=a.listing_id
+    on cast(b.listing_id as string)=a.listing_id
     and b.visit_id=a.visit_id
     and b.sequence_number=a.sequence_number
 group by all 
