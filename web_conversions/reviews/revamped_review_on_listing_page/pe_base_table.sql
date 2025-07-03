@@ -179,20 +179,20 @@ group by all
 )
 , listing_seg as (
 select
-  is_digital,
-  top_category,
-  is_personalizable, 
-  case when va.listing_id is not null then 1 else 0 end as has_variation,
-  case 
+  coalesce(is_digital,0) as is_digital, 
+  coalesce(top_category,'n/a') as top_category,
+  coalesce(is_personalizable,0) as is_personalizable,
+  coalesce((case when va.listing_id is not null then 1 else 0 end),0) as has_variation,
+  coalesce((case 
     when (l.price_usd/100) > 100 then 'high' 
     when (l.price_usd/100) > 30 then 'mid' 
     when (l.price_usd/100) <= 30 then 'low' 
-  end as listing_price, -- uses same logic as segment
-  max(case when r.reviews > 0 or r.listing_id is not null then 1 else 0 end) as has_reviews,
+  end),'n/a') as listing_price, -- uses same logic as segment
+  coalesce(max(case when r.reviews > 0 or r.listing_id is not null then 1 else 0 end),0) as has_reviews,
   v.listing_id,
 from 
   (select distinct listing_id from etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg) v 
-inner join 
+left join 
   etsy-data-warehouse-prod.listing_mart.listings l 
     on cast(l.listing_id as string)=v.listing_id 
 left join
@@ -211,7 +211,7 @@ select
   a.visit_id,
   v.platform,
   case when user_id = 0 or user_id is null then 0 else 1 end as signed_in,
-  new_visitor,
+  coalesce(new_visitor,0) as new_visitor,
   coalesce(has_review_engagement,0) as engaged_w_reviews
 from 
   (select 
