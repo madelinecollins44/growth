@@ -152,6 +152,8 @@ select
   variant_id,
   visit_id,
   listing_id,
+  max(case when purchased_after_view > 0 then 1 else 0 end) as purchased_after_view,
+  sum(purchased_after_view) as sum_purchased_after_view,
   -- total counts
   count(case when event_name in ('view_listing') then sequence_number end) as listing_views, 
   count(case when event_name in ('listing_page_reviews_seen') then sequence_number end) as reviews_seen, 
@@ -175,7 +177,12 @@ select
   max(case when event_name in ('reviews_categorical_tags_seen') then 1 else 0 end) as has_cat_tag_seen, 
   max(case when event_name in ('listing_page_reviews_content_toggle_opened') then 1 else 0 end) as has_toggle_opens, 
 from 
-  etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg
+  etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_engagements_agg b
+left join 
+  etsy-data-warehouse-prod.analytics.listing_views a   
+    on b.listing_id=a.listing_id
+    and b.visit_id=a.visit_id
+    and b.sequence_number=a.sequence_number
 group by all 
 )
 , listing_seg as (
@@ -213,7 +220,8 @@ select
   v.platform,
   case when user_id = 0 or user_id is null then 0 else 1 end as signed_in,
   coalesce(new_visitor,0) as new_visitor,
-  coalesce(has_review_engagement,0) as engaged_w_reviews
+  coalesce(converted,0) as converted,
+  coalesce(has_review_engagement,0) as engaged_w_reviews,
 from 
   (select 
     visit_id, 
@@ -231,6 +239,7 @@ select
   platform,
   signed_in,
   new_visitor,
+  converted,
   engaged_w_reviews, 
   -- listing segments 
   is_digital,
@@ -244,6 +253,8 @@ select
   e.visit_id,
   e.listing_id,
   -- total counts
+  purchased_after_view,
+  sum_purchased_after_view,
   listing_views, 
   reviews_seen, 
   reviews_top_container_seen, 
