@@ -4,6 +4,7 @@ select
   signed_in,
   new_visitor,
   engaged_w_reviews,
+  converted,
   count(distinct visit_id) as visits, 
   count(distinct listing_id) as listings, 
   sum(listing_views) as listing_views, 
