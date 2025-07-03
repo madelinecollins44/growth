@@ -5,6 +5,7 @@ select
   has_variation,
   listing_price,
   has_reviews,
+  variant_id,
   count(distinct listing_id) as listings, 
   sum(listing_views) as listing_views, 
   sum(reviews_seen) as reviews_seen, 
