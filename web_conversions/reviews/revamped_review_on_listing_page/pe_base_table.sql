@@ -209,6 +209,7 @@ group by all
 , visit_seg as (
 select
   a.visit_id,
+  v.platform,
   case when user_id = 0 or user_id is null then 0 else 1 end as signed_in,
   new_visitor,
   coalesce(has_review_engagement,0) as engaged_w_reviews
@@ -226,7 +227,7 @@ where
 )
 select 
   -- visit segments
-  visit_id,
+  platform,
   signed_in,
   new_visitor,
   engaged_w_reviews, 
@@ -238,8 +239,8 @@ select
   listing_price,
   has_reviews,
   -- event metrics 
-  visit_id,
-  listing_id,
+  e.visit_id,
+  e.listing_id,
   -- total counts
   listing_views, 
   reviews_seen, 
