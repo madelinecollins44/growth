@@ -101,3 +101,65 @@ left join
     on v.listing_id=r.listing_id 
 group by all 
 
+
+--------------------------------------------------------------------------------------------------------------
+-- LISTING PAGE COVERAGE OF LISTINGS WITHOUT RATINGS (no reviews in last 365 days, but has reviews)
+--------------------------------------------------------------------------------------------------------------
+with reviews as (
+select
+  listing_id,
+  -- count(distinct transaction_id) as total_reviews,
+  count(distinct case when date(transaction_date) >= current_date-365 then transaction_id end) reviews_in_last_year,
+  count(distinct case when date(transaction_date) < current_date-365 then transaction_id end) reviews_before_last_year
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews  
+where 
+  has_review > 0 -- only listings 
+group by all
+)
+, views as (
+select
+  platform,
+  listing_id,
+  visit_id,
+  count(sequence_number) as total_views,
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  -- and platform in ('desktop','mobile_web','boe')
+group by all
+)
+, engagements as (
+select
+  platform,
+	visit_id,
+  (regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  count(sequence_number) as events 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-30
+  and _date >= current_date-30
+	and beacon.event_name in ('listing_page_review_engagement_frontend')
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+select
+  v.platform,
+  count(distinct case when r.reviews_in_last_year= 0 and reviews_before_last_year > 0 then v.visit_id end) as visits_view_w_listing_no_rating,-- listing has reviews but not in last year 
+  count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and (e.visit_id is not null and e.listing_id is not null) then v.visit_id end) as visits_engage_w_listing_no_ratings,
+  count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and (e.visit_id is not null and e.listing_id is not null) and (purchases > 0) then v.visit_id end) as visits_engage_and_purchase_w_listing_no_ratings,
+from
+  views v 
+left join 
+  engagements e
+    on cast(v.listing_id as string)=e.listing_id
+    and v.visit_id=e.visit_id
+left join 
+  reviews r 
+    on v.listing_id=r.listing_id 
+group by all 
