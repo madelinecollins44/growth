@@ -337,3 +337,90 @@ where 1=1
   and platform in ('mobile_web','desktop')
 group by all 
 order by 1,2 desc
+
+--------------------------------------------------------------------------------------------------------------
+-- SHOP LEVEL LISTING STATS
+--------------------------------------------------------------------------------------------------------------
+with reviews as (
+    select
+        shop_id,
+        count(distinct case when date(transaction_date) >= current_date-365 then transaction_id end) reviews_in_last_year,
+     count(distinct case when date(transaction_date) < current_date-365 then transaction_id end) reviews_before_last_year
+    from
+        etsy-data-warehouse-prod.rollups.transaction_reviews
+    where
+        has_review > 0 -- only listings with reviews
+    group by all
+)
+, views as (
+select
+  platform,
+  listing_id,
+  seller_user_id,
+  visit_id,
+  count(sequence_number) as total_views,
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  -- and platform in ('desktop','mobile_web','boe')
+group by all
+)
+, engagements as (
+select
+  platform,
+	visit_id,
+  (regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  count(sequence_number) as engagement_events 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-30
+  and _date >= current_date-30
+	and beacon.event_name in ('listing_page_review_engagement_frontend')
+  and platform in ('mobile_web','desktop')
+group by all
+)
+, views_and_engagements as (
+select 
+  v.platform,
+  s.shop_id,
+  s.shop_name,
+  v.visit_id,
+  total_views,
+  purchases,
+  engagement_events
+from   
+    views v
+left join 
+    engagements e 
+        on v.visit_id=e.visit_id
+        and e.listing_id=cast(v.listing_id as string)
+inner join 
+    etsy-data-warehouse-prod.rollups.seller_basics s  
+        on v.seller_user_id=s.user_id
+)
+select
+    platform,
+    -- ve.shop_id,
+    -- shop_name,
+    -- case when r.shop_id is null then 1 else 0 end as no_reviews,
+    count(distinct visit_id) as listing_views,
+    count(distinct case when engagement_events > 0 then visit_id end) as visits_w_review_engagement,
+    count(distinct case when r.reviews_in_last_year= 0 and reviews_before_last_year > 0 then visit_id end) as visits_w_no_shop_reviews,
+    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) then visit_id end) as visits_w_shop_reviews,
+    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 then visit_id end) as visits_engaged_w_shop_reviews,
+    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 then visit_id end) as visits_engaged_w_no_shop_reviews,
+    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and purchases > 0 then visit_id end) as  converted_visits_w_no_shop_reviews,
+    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 and purchases > 0 then visit_id end) as converted_visits_engaged_w_no_shop_reviews,
+from 
+    views_and_engagements ve
+left join 
+    reviews r
+        on ve.shop_id=r.shop_id
+group by all 
+order by 7 desc
+limit 10
