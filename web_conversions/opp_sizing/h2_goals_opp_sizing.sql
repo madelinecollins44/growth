@@ -223,3 +223,51 @@ left join
   ooak_listings o 
     on v.listing_id=o.listing_id 
 group by all 
+
+
+--------------------------------------------------------------------------------------------------------------
+-- LISTING PAGE COVERAGE 
+--------------------------------------------------------------------------------------------------------------
+with views as (
+select
+  platform,
+  listing_id,
+  visit_id,
+  count(sequence_number) as total_views,
+  sum(purchased_after_view) as purchases,
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+where 
+  _date >= current_date-30
+  -- and platform in ('desktop','mobile_web','boe')
+group by all
+)
+, engagements as (
+select
+  platform,
+	visit_id,
+  (regexp_extract(beacon.loc, r'listing/(\d+)')) as listing_id,
+  count(sequence_number) as events 
+from
+	`etsy-visit-pipe-prod.canonical.visit_id_beacons`
+inner join 
+  etsy-data-warehouse-prod.weblog.visits using (visit_id)
+where
+	date(_partitiontime) >= current_date-30
+  and _date >= current_date-30
+	and beacon.event_name in ('listing_page_review_engagement_frontend')
+  and platform in ('mobile_web','desktop')
+group by all 
+)
+select
+  v.platform,
+  count(distinct v.visit_id) as visit_w_lv,
+  count(distinct case when (e.visit_id is not null and e.listing_id is not null) then v.visit_id end) as visits_engage_w_listing,
+  count(distinct case when (e.visit_id is not null and e.listing_id is not null) and (purchases > 0) then v.visit_id end) as visits_engage_and_purchase_w_listing,
+from
+  views v 
+left join 
+  engagements e
+    on cast(v.listing_id as string)=e.listing_id
+    and v.visit_id=e.visit_id
+group by all 
