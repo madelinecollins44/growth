@@ -11,42 +11,11 @@ select
 from etsy-data-warehouse-prod.weblog.visits
 where _date >= current_date-30
 group by all
-
--------------------------------------------------------
---LISTING PAGE LANDINGS (last 90 days)
--------------------------------------------------------
-select
-  platform,
-  count(distinct visit_id) as listing_landing_visits,
-  sum(total_gms) as listing_landing_gms
-from 
-  etsy-data-warehouse-prod.weblog.visits 
-where 
-  _date >= current_date-90
-  and platform in ('mobile_web','desktop')
-  and landing_event in ("view_listing", "image_zoom",'listing_page_recommendations','view_sold_listing','view_unavailable_listing','listing__listing_hub__tapped','appreciation_photo_detail')
-group by all
-
--------------------------------------------------------
---SHOP HOME LANDINGS (last 90 days)
--------------------------------------------------------
-select
-  platform,
-  count(distinct visit_id) as shop_home_landings,
-  sum(total_gms) as shop_home_gms
-from 
-  etsy-data-warehouse-prod.weblog.visits 
-where 
-  _date >= current_date-90
-  and platform in ('mobile_web','desktop')
-  and landing_event in ('shop_home')
-  --and top_channel like ('social_%')
-group by all
   
 -------------------------------------------------------
---SHOP HOME VISITS (last 30 days)
+-- PAGE SURFACE TRAFFIC (last 30 days)
 -------------------------------------------------------
-with shop_home_visits as (
+with surface_traffic as (
 select
   distinct visit_id
 from 
@@ -57,64 +26,18 @@ where
 )
 select
   platform,
-  count(distinct a.visit_id) as shop_home_visits,
-  sum(total_gms) as shop_home_gms
+  count(distinct a.visit_id) as surface_visits,
+  count(distinct case when converted > 0 then a.visit_id end ) as converted_surface_visits,
+  sum(total_gms) as surface_gms 
 from 
-  shop_home_visits a
+  surface_traffic a
 inner join 
   etsy-data-warehouse-prod.weblog.visits b using (visit_id)
 where 
   b._date >= current_date-30
-  and b.platform in ('mobile_web','desktop')
+  -- and b.platform in ('mobile_web','desktop')
 group by all
-
--- BOE
-  with shop_home_visits as (
-select
-  distinct visit_id
-from 
-  etsy-data-warehouse-prod.weblog.events
-where 
-  _date >= current_date-30
-  and event_type in ('shop_home')
-)
-select
-  platform,
-  count(distinct a.visit_id) as shop_home_visits,
-  sum(total_gms) as shop_home_gms
-from 
-  shop_home_visits a
-inner join 
-  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
-where 
-  b._date >= current_date-30
-  and b.platform in ('boe')
-group by all
-
--------------------------------------------------------
---LISTING PAGE (last 30 days)
--------------------------------------------------------
-with lp_visits as (
-select
-  distinct visit_id
-from 
-  etsy-data-warehouse-prod.weblog.events
-where 
-  _date >= current_date-30
-  and event_type in ('view_listing')
-)
-select
-  platform,
-  count(distinct a.visit_id) as lp_visits,
-  sum(total_gms) as lp_gms
-from 
-  lp_visits a
-inner join 
-  etsy-data-warehouse-prod.weblog.visits b using (visit_id)
-where 
-  b._date >= current_date-30
-  and b.platform in ('mobile_web','desktop')
-group by all
+  
 
 -------------------------------------------------------
 --LISTING PAGE WHERE LISTING HAD A REVIEW (last 30 days)
@@ -236,43 +159,6 @@ where
     and platform in ('mobile_web','desktop')
 group by all
 
-----TESTING
-  with reviews as (
-select
-  listing_id,
-  sum(has_review) as total_reviews
-from etsy-data-warehouse-prod.rollups.transaction_reviews
-group by all
-)
-select * from reviews where listing_id = 1675270968
--- listing_id without reviews 
--- 1718881800
--- 1689001150
--- 1771603778
--- 1675270968
--- 1759252800
-
--- listing_ids w reviews
--- 1142035121
--- 951381169
--- 1316226954
--- 784930715
--- 473800867
-, lv_without_reviews as (
-select
-  visit_id,
-  listing_id
-  -- count(listing_id) as listings_w_review
-from  
-  etsy-data-warehouse-prod.analytics.listing_views lv
-inner join 
-  reviews r using (listing_id)
-where 
-  lv._date >= current_date-30 -- listing views in last 30 days 
-  and r.total_reviews < 1 -- only looks at listings without reviews  
-group by all 
-)
-select distinct listing_id from lv_without_reviews limit 5
 
 --avg transaction stats for listings without any reviews
 with reviews as (
