@@ -300,7 +300,6 @@ inner join
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where 
   event_type in ('view_listing')
-  and v.converted > 0 
   and v._date >= current_date-30
 group by all 
 order by 2 desc
