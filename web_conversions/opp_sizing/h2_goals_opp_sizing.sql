@@ -272,3 +272,35 @@ left join
     on cast(v.listing_id as string)=e.listing_id
     and v.visit_id=e.visit_id
 group by all 
+
+--------------------------------------------------------------------------------------------------------------
+-- LISTING PAGE TO SHOP HOME TRAFFIC
+--------------------------------------------------------------------------------------------------------------
+with shop_home_visits as (
+select
+  visit_id,
+  sequence_number,
+  event_type,
+  lead(event_type) over (partition by visit_id order by sequence_number) as next_page
+from 
+  etsy-data-warehouse-prod.weblog.events
+where
+  _date >= current_date-30
+  and page_view=1 
+)
+select
+  platform,
+  count(distinct visit_id) as visits_w_lv,
+  count(distinct case when next_page in ('shop_home') then visit_id end) as visits_from_lv_to_sh,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits,
+  count(distinct case when next_page in ('shop_home') and converted > 0 then visit_id end) as converted_visits_from_lv_to_sh,
+from 
+  shop_home_visits shv
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  event_type in ('view_listing')
+  and v.converted > 0 
+  and v._date >= current_date-30
+group by all 
+order by 2 desc
