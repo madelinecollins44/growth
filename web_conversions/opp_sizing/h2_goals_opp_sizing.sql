@@ -318,3 +318,20 @@ where
   and v._date >= current_date-30
 group by all 
 order by 2 desc
+	
+--------------------------------------------------------------------------------------------------------------
+-- POST PURCHASE OPP SIZE 
+--------------------------------------------------------------------------------------------------------------
+select
+  platform,
+  event_type,
+  count(distinct visit_id) as visits,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits 
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 1=1
+  and event_type in ('yr_purchases','thank_you_page','purchases_page_track_package_button_clicked')
+  and v._date >= current_date-30
+group by all
