@@ -332,6 +332,8 @@ from
 inner join
   etsy-data-warehouse-prod.weblog.visits v using (visit_id)
 where 1=1
-  and event_type in ('yr_purchases','thank_you_page','purchases_page_track_package_button_clicked')
+  and event_type in ('yr_purchases','thank_you','purchases_page_track_package_button_clicked')
   and v._date >= current_date-30
-group by all
+  and platform in ('mobile_web','desktop')
+group by all 
+order by 1,2 desc
