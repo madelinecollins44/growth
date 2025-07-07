@@ -150,6 +150,7 @@ group by all
 )
 select
   v.platform,
+  count(distinct v.visit_id) as visits_view_w_listing,
   count(distinct case when r.reviews_in_last_year= 0 and reviews_before_last_year > 0 then v.visit_id end) as visits_view_w_listing_no_rating,-- listing has reviews but not in last year 
   count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and (e.visit_id is not null and e.listing_id is not null) then v.visit_id end) as visits_engage_w_listing_no_ratings,
   count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and (e.visit_id is not null and e.listing_id is not null) and (purchases > 0) then v.visit_id end) as visits_engage_and_purchase_w_listing_no_ratings,
@@ -163,7 +164,7 @@ left join
   reviews r 
     on v.listing_id=r.listing_id 
 group by all 
-
+	
 --------------------------------------------------------------------------------------------------------------
 -- LISTING PAGE COVERAGE OF OOAK LISTINGS
 --------------------------------------------------------------------------------------------------------------
