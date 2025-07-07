@@ -273,6 +273,21 @@ left join
     and v.visit_id=e.visit_id
 group by all 
 
+
+select
+  platform,
+  event_type,
+  count(distinct visit_id) as visits,
+from 
+  etsy-data-warehouse-prod.weblog.events e 
+inner join 
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 
+  v._date >= current_date-30
+  and event_type in ('view_listing','listing_page_review_engagement_frontend')
+group by all
+
+	
 --------------------------------------------------------------------------------------------------------------
 -- LISTING PAGE TO SHOP HOME TRAFFIC
 --------------------------------------------------------------------------------------------------------------
