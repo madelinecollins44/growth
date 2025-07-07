@@ -410,10 +410,10 @@ select
     -- case when r.shop_id is null then 1 else 0 end as no_reviews,
     count(distinct visit_id) as listing_views,
     count(distinct case when engagement_events > 0 then visit_id end) as visits_w_review_engagement,
-    count(distinct case when r.reviews_in_last_year= 0 and reviews_before_last_year > 0 then visit_id end) as visits_w_no_shop_reviews,
-    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) then visit_id end) as visits_w_shop_reviews,
-    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 then visit_id end) as visits_engaged_w_shop_reviews,
-    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 then visit_id end) as visits_engaged_w_no_shop_reviews,
+    count(distinct case when r.reviews_in_last_year= 0 and reviews_before_last_year > 0 then visit_id end) as visits_w_no_shop_reviews_last_year,
+    count(distinct case when r.reviews_in_last_year> 0 then visit_id end) as visits_w_shop_reviews,
+    count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 then visit_id end) as visits_engaged_w_shop_reviews_last_year,
+    count(distinct case when r.reviews_in_last_year> 0 and engagement_events > 0 then visit_id end) as visits_engaged_w_no_shop_reviews,
     count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and purchases > 0 then visit_id end) as  converted_visits_w_no_shop_reviews,
     count(distinct case when (r.reviews_in_last_year= 0 and reviews_before_last_year > 0) and engagement_events > 0 and purchases > 0 then visit_id end) as converted_visits_engaged_w_no_shop_reviews,
 from 
@@ -422,5 +422,5 @@ left join
     reviews r
         on ve.shop_id=r.shop_id
 group by all 
-order by 7 desc
-limit 10
+-- order by 7 desc
+-- limit 10
