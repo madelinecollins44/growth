@@ -338,6 +338,21 @@ where 1=1
 group by all 
 order by 1,2 desc
 
+select
+  platform,
+  count(distinct visit_id) as visits,
+  count(distinct case when converted > 0 then visit_id end) as converted_visits 
+from 
+  etsy-data-warehouse-prod.weblog.events e
+inner join
+  etsy-data-warehouse-prod.weblog.visits v using (visit_id)
+where 1=1
+  and (event_type in ('purchases_page_track_package_button_clicked') or lower(url) like '%utm_content=track_button%')
+  and v._date >= current_date-30
+  and platform in ('mobile_web','desktop')
+group by all 
+order by 1,2 desc
+	
 --------------------------------------------------------------------------------------------------------------
 -- SHOP LEVEL LISTING STATS
 --------------------------------------------------------------------------------------------------------------
