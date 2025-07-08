@@ -138,7 +138,7 @@ union all
     bucketing_id,
 	sequence_number,
 	event_name,
-    listing_id 
+   cast(listing_id as string) as listing_id, 
 from 
     etsy-data-warehouse-dev.madelinecollins.browsers_in_pe_listing_views 
  );
