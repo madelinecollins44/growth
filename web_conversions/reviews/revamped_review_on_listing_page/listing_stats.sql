@@ -17,7 +17,7 @@ select
   sum(cat_tag_clicks) as cat_tag_clicks, 
   sum(cat_tags_seen) as cat_tags_seen, 
   sum(toggle_opens) as toggle_opens,
-  sum(purchased_after_view) as purchased_after_view, 
+  purchased_after_view, 
   sum(sum_purchased_after_view) as sum_purchased_after_view, 
 from
     etsy-data-warehouse-dev.madelinecollins.segments_and_events 
