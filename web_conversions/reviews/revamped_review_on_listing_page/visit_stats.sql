@@ -27,6 +27,7 @@ select
   count(distinct case when has_cat_tag_click > 0 then visit_id end) as visit_w_cat_tag_click,
   count(distinct case when has_cat_tag_seen > 0 then visit_id end) as visit_w_cat_tag_seen,
   count(distinct case when has_toggle_opens > 0 then visit_id end) as visit_w_toggle_open,
+  count(distinct case when converted > 0 then visit_id end) as visit_w_conversion,
 from
     etsy-data-warehouse-dev.madelinecollins.segments_and_events 
 group by all 
