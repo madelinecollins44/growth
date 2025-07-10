@@ -133,8 +133,8 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
 create or replace table etsy-data-warehouse-dev.madelinecollins.pe_habitual_metrics as (
 SELECT
   xp.variant_id,
-  -- xp.bucketing_date,
-  --case when lower(xp.buyer_segment) in ('habitual') then 1 else 0 end as habitual_browser,
+  xp.bucketing_date,
+  case when lower(xp.buyer_segment) in ('habitual') then 1 else 0 end as habitual_browser,
   COUNT(xp.bucketing_id) AS browsers,
   -- metrics
   SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
@@ -148,11 +148,15 @@ SELECT
   -- SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
   SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.completed_checkouts > 0)) AS winsorized_acbv,
   SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.completed_checkouts)) AS winsorized_aov,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv_orders,
+  SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.orders)) AS winsorized_aov_orders,
 FROM
   xp_units AS xp
 LEFT JOIN
   xp_khm_agg_events_by_unit AS e USING (bucketing_id)
+WHERE lower(xp.buyer_segment) in ('habitual')
 GROUP BY ALL
-ORDER BY
-  1);
+ORDER BY 1,2, 3 asc
+);
+
 
