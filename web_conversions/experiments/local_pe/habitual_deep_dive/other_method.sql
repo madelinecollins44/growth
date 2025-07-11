@@ -1,4 +1,3 @@
-
 DECLARE config_flag_param STRING DEFAULT 'local_pe.q2_2025.buyer_trust_accelerator.browser';
 DECLARE start_date DATE;
 DECLARE end_date DATE;
@@ -37,8 +36,8 @@ WITH
       bp.bucketing_id,
       bp.variant_id,
       bp.bucketing_ts,
-      us.buyer_segment,
-      min(bp.bucketing_ts) as bucketing_date,
+      date(bp.bucketing_ts) as bucketing_date,
+      us.buyer_segment
     FROM
       `etsy-data-warehouse-prod.catapult_unified.bucketing_period` AS bp
     LEFT JOIN 
@@ -46,7 +45,6 @@ WITH
     WHERE
       bp._date = end_date
       AND bp.experiment_id = config_flag_param
-  group by all
   ),
 
   -- Get KHM aggregated events for experiment's bucketed units
@@ -112,21 +110,21 @@ WITH
 
 -- Key Health Metrics (Winsorized ACBV and AOV)
 SELECT
-  -- case when lower(xp.buyer_segment) in ('habitual') then 1 else 0 end as habitual_browser,
-  -- bucketing_date
+  case when lower(xp.buyer_segment) in ('habitual') then 1 else 0 end as habitual_buyers,
+  xp.bucketing_date,
   xp.variant_id,
   COUNT(xp.bucketing_id) AS browsers,
   SAFE_DIVIDE(COUNT(xp.bucketing_id), tu.total_browsers) AS browsers_share,
   SAFE_DIVIDE(COUNTIF(e.orders > 0), COUNT(xp.bucketing_id)) AS conversion_rate,
-  SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
-  SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
-  SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
-  SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
-  SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
-  SAFE_DIVIDE(SUM(e.completed_checkouts), COUNTIF(e.orders > 0)) AS ocb,
+  -- SAFE_DIVIDE(COUNTIF(e.bounced_visits > 0), COUNT(xp.bucketing_id)) AS bounce_rate,
+  -- SAFE_DIVIDE(COUNTIF(e.atc_count > 0), COUNT(xp.bucketing_id)) AS pct_with_atc,
+  -- SAFE_DIVIDE(COUNTIF(e.checkout_start_count > 0), COUNT(xp.bucketing_id)) AS pct_with_checkout_start,
+  -- SAFE_DIVIDE(SUM(e.engaged_visits), COUNT(xp.bucketing_id)) AS mean_engaged_visits,
+  -- SAFE_DIVIDE(SUM(e.visits), COUNT(xp.bucketing_id)) AS mean_visits,
+  -- SAFE_DIVIDE(SUM(e.completed_checkouts), COUNTIF(e.orders > 0)) AS ocb,
   SAFE_DIVIDE(SUM(e.completed_checkouts), COUNT(xp.bucketing_id)) AS orders_per_browser,
-  SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
-  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.orders > 0)) AS winsorized_acbv,
+  -- SAFE_DIVIDE(SUM(e.page_count), COUNT(xp.bucketing_id)) AS pages_per_browser,
+  SAFE_DIVIDE(SUM(e.winsorized_gms), COUNTIF(e.completed_checkouts > 0)) AS winsorized_acbv,
   SAFE_DIVIDE(SUM(e.winsorized_order_value_sum), SUM(e.completed_checkouts)) AS winsorized_aov
 FROM
   xp_units AS xp
@@ -134,6 +132,7 @@ LEFT JOIN
   xp_total_units_by_variant AS tu ON tu.variant_id = xp.variant_id
 LEFT JOIN
   xp_khm_agg_events_by_unit AS e USING (bucketing_id)
-GROUP BY ALL
+GROUP BY
+  1,2, 3,tu.total_browsers
 ORDER BY
-  1, 2;
+  1, 2 asc;
