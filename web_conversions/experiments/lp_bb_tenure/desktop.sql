@@ -138,10 +138,14 @@ from
 with trans as (
 select
   seller_user_id,
+  listing_id,
   sum(trans_gms_net) as gms_net,
   count(distinct tranaction_id) as transactions
 from 
   etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+where 1=1 
+  and _date between date('2025-07-01') and date('2025-07-08') -- purchases during the experiment 
+group by all 
 )
 , tenure as (
 select
@@ -155,12 +159,13 @@ from
 , listing_views as (
 select
   seller_user_id,
-  count(distinct listing_id) as listings,
+  listing_id,
   sum(purchased_after_view) as purchases,
   count(distinct visit_id) as visits,
   count(sequence_number) as views,
 from 
   etsy-data-warehouse-dev.madelinecollins.browsers_w_lv 
+group by all 
 )
 select
   tenure_label,
@@ -180,3 +185,5 @@ left join
 left join   
   trans tr 
     on lv.seller_user_id=tr.seller_user_id
+    and lv.listing_id=tr.listing_id
+group by all 
