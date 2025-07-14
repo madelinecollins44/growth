@@ -144,7 +144,11 @@ from
   etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
 )
 , tenure as (
-
+select
+  user_id,
+  case 
+    when 
+  end tenure_label
 from
   etsy-data-warehouse-prod.rollups.seller_basics
 )
@@ -158,3 +162,21 @@ select
 from 
   etsy-data-warehouse-dev.madelinecollins.browsers_w_lv 
 )
+select
+  tenure_label,
+  count(distinct lv.seller_user_id) as shops,
+  sum(listings) as listings,
+  sum(purchases) as purchases,
+  sum(visits) as visits,
+  sum(views) as views,
+  sum(gms_net) as total_gms,
+  sum(transactions) as total_transactions,
+  sum(gms_net)/sum(transactions) as aov,
+from 
+  listing_views lv
+left join 
+  tenure te  
+    on lv.seller_user_id=te.user_id
+left join   
+  trans tr 
+    on lv.seller_user_id=tr.seller_user_id
