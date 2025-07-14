@@ -185,5 +185,5 @@ left join
 left join   
   trans tr 
     on lv.seller_user_id=tr.seller_user_id
-    and lv.listing_id=tr.listing_id
+    and lv.listing_id=tr.listing_id -- only want to look at listings viewed, not all shop's gms 
 group by all 
