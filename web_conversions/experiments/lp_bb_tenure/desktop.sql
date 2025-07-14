@@ -102,7 +102,7 @@ inner join
     --        or (vb.visit_id > v.visit_id)) -- everything after the bucketing visit 
 where 1=1
   and date(_partitiontime) >= date('2025-06-10') 
-  and beacon.event_name in ('listing_page_reviews_seen','listing_page_reviews_container_top_seen','listing_page_review_engagement_frontend')
+  and beacon.event_name in ('listing_page_reviews_seen','listing_page_reviews_container_top_seen','reviews_anchor_click')
   group by all 
 );
  
