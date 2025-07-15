@@ -137,14 +137,16 @@ from
 -------------------------------------------------------------------------------------------
 with trans as (
 select
-  seller_user_id,
-  listing_id,
+  a.seller_user_id,
+  a.listing_id,
   sum(trans_gms_net) as gms_net,
-  count(distinct tranaction_id) as transactions
+  count(distinct a.transaction_id) as transactions
 from 
-  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans
+  etsy-data-warehouse-prod.transaction_mart.transactions_gms_by_trans g
+inner join  
+  etsy-data-warehouse-prod.transaction_mart.all_transactions a using (transaction_id)
 where 1=1 
-  and _date between date('2025-07-01') and date('2025-07-08') -- purchases during the experiment 
+  and a.date between date('2025-07-01') and date('2025-07-08') -- purchases during the experiment 
 group by all 
 )
 , tenure as (
