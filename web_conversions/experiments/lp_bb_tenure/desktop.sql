@@ -153,15 +153,16 @@ group by all
 select
   user_id,
   create_date,
+  date_diff(current_date(), create_date, month) as months_on_etsy,
     case
-      when date_diff(current_date(), create_date, day) < 30 then 'New on Etsy'
-      when date_diff(current_date(), create_date, month) = 1 then '1 month on Etsy'
+      when date_diff(current_date(), create_date, day) < 30 then 'New'
+      when date_diff(current_date(), create_date, month) = 1 then '1 month'
       when date_diff(current_date(), create_date, month) between 2 and 11 
-        then concat(cast(date_diff(current_date(), create_date, month) as string), ' months on Etsy')
-      when date_diff(current_date(), create_date, month) between 12 and 17 then '1 year on Etsy'
-      when date_diff(current_date(), create_date, month) between 18 and 23 then '1.5 years on Etsy'
-      when date_diff(current_date(), create_date, month) between 24 and 29 then '2 years on Etsy'
-      else concat(cast(round(date_diff(current_date(), create_date, month) / 12.0 * 2) / 2.0 as string), ' years on Etsy')
+        then concat(cast(date_diff(current_date(), create_date, month) as string), ' months')
+      when date_diff(current_date(), create_date, month) between 12 and 17 then '1 year'
+      when date_diff(current_date(), create_date, month) between 18 and 23 then '1.5 years'
+      when date_diff(current_date(), create_date, month) between 24 and 29 then '2 years'
+      else concat(cast(round(date_diff(current_date(), create_date, month) / 12.0 * 2) / 2.0 as string), ' years')
   end as tenure_label,
 from
   etsy-data-warehouse-prod.rollups.seller_basics
@@ -169,6 +170,7 @@ from
 , listing_views as (
 select
   variant_id,
+  bucketing_id,
   seller_user_id,
   listing_id,
   sum(purchased_after_view) as purchases,
@@ -181,8 +183,10 @@ group by all
 select
   variant_id,
   tenure_label,
+  -- months_on_etsy,
+  -- count(distinct bucketing_id) as browsers,
   count(distinct lv.seller_user_id) as shops,
-  sum(listings) as listings,
+  count(distinct lv.listing_id) as listings,
   sum(purchases) as purchases,
   sum(visits) as visits,
   sum(views) as views,
