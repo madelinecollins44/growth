@@ -7,7 +7,7 @@ DECLARE end_date DATE; -- DEFAULT "2023-09-04";
 DECLARE is_event_filtered BOOL; -- DEFAULT FALSE;
 DECLARE bucketing_id_type INT64;
 
-IF start_date IS NULL OR end_date IS NULL THEN
+IF start_date IS NULL OR end_date IS NULL then
     SET (start_date, end_date) = (
         SELECT AS STRUCT
             MAX(DATE(boundary_start_ts)) AS start_date,
@@ -19,7 +19,7 @@ IF start_date IS NULL OR end_date IS NULL THEN
     );
 END IF;
 
-IF is_event_filtered IS NULL THEN
+IF is_event_filtered IS NULL then
     SET (is_event_filtered, bucketing_id_type) = (
         SELECT AS STRUCT
             is_filtered,
@@ -150,14 +150,23 @@ group by all
 , tenure as (
 select
   user_id,
-  case 
-    when 
-  end tenure_label
+  create_date,
+    case
+      when date_diff(current_date(), create_date, day) < 30 then 'New on Etsy'
+      when date_diff(current_date(), create_date, month) = 1 then '1 month on Etsy'
+      when date_diff(current_date(), create_date, month) between 2 and 11 
+        then concat(cast(date_diff(current_date(), create_date, month) as string), ' months on Etsy')
+      when date_diff(current_date(), create_date, month) between 12 and 17 then '1 year on Etsy'
+      when date_diff(current_date(), create_date, month) between 18 and 23 then '1.5 years on Etsy'
+      when date_diff(current_date(), create_date, month) between 24 and 29 then '2 years on Etsy'
+      else concat(cast(round(date_diff(current_date(), create_date, month) / 12.0 * 2) / 2.0 as string), ' years on Etsy')
+  end as tenure_label,
 from
   etsy-data-warehouse-prod.rollups.seller_basics
 )
 , listing_views as (
 select
+  variant_id,
   seller_user_id,
   listing_id,
   sum(purchased_after_view) as purchases,
@@ -168,6 +177,7 @@ from
 group by all 
 )
 select
+  variant_id,
   tenure_label,
   count(distinct lv.seller_user_id) as shops,
   sum(listings) as listings,
