@@ -116,7 +116,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events AS (
   FROM
     `etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily` AS e
   INNER JOIN
-    xp_units AS xp USING (bucketing_id)
+    browsers_with_key_event AS xp USING (bucketing_id)
   WHERE
     e._date BETWEEN start_date AND end_date
     AND e.experiment_id = config_flag_param
@@ -158,12 +158,12 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
   GROUP BY ALL
 );
 
-/*
+
 -- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
 create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_desktop as (
 SELECT
   xp.variant_id,
-  buyer_segment,
+  case when lower(buyer_segment) in ('habitual') then 1 else 0 end as habitual_browser,
   top_reviews_events,
   mid_reviews_events,
   COUNT(xp.bucketing_id) AS browsers,
@@ -186,9 +186,6 @@ FROM
   xp_units AS xp
 LEFT JOIN
   xp_khm_agg_events_by_unit AS e USING (bucketing_id)
-WHERE 
-  lower(buyer_segment) in ('habitual')
-GROUP BY
-  1
+GROUP BY ALL
 ORDER BY
-  1); */
+  1); 
