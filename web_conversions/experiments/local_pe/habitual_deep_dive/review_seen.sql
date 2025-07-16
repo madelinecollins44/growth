@@ -92,13 +92,13 @@ CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
     count(case when event_type in ('listing_page_reviews_container_top_seen') then sequence_number end) as top_reviews_events,
     count(case when event_type in ('listing_page_reviews_seen') then sequence_number end) as mid_reviews_events,
   FROM
-    `etsy-data-warehouse-prod.weblog.events` AS e
+    first_bucket_segments as v
   LEFT JOIN 
-    first_bucket_segments AS v 
+    `etsy-data-warehouse-prod.weblog.events` AS e
       on timestamp_millis(e.epoch_ms) >= v.bucketing_ts-- only look at events that happen after bucketing moment 
       and v.bucketing_id= split(e.visit_id, ".")[0] -- joining on browser_id
-  WHERE
-    e._date BETWEEN start_date AND end_date
+      and event_type in ('listing_page_reviews_container_top_seen','listing_page_reviews_seen')
+      and e._date BETWEEN start_date AND end_date
   GROUP BY ALL 
 );
 
