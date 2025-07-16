@@ -155,8 +155,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
     SUM(IF(event_id = "total_winsorized_order_value", event_value, 0)) AS winsorized_order_value_sum
   FROM
     xp_khm_agg_events
-  GROUP BY
-    1
+  GROUP BY ALL
 );
 
 /*
