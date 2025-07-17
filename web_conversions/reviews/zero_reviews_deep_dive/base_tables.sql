@@ -12,4 +12,12 @@ inner join
 group by all 
 having sum(has_review) = 0
 )
-select * from shops_wo_reviews order by transactions desc limit 40
+select
+  seller_user_id,
+  sum(purchased_after_view) as purchases,
+  count(sequence_number) as views, 
+from 
+  etsy-data-warehouse-prod.analytics.listing_views
+left join 
+  shops_wo_reviews using (seller_user_id)
+group by all 
