@@ -164,6 +164,7 @@ select
       when date_diff(current_date(), create_date, month)  > 96 and date_diff(current_date(), create_date, month)  <= 108 then '8 - 9 years'
       when date_diff(current_date(), create_date, month)  > 108 and date_diff(current_date(), create_date, month)  <= 120 then '9 - 10 years'
       when date_diff(current_date(), create_date, month)  > 120 then '10+ years' 
+      else 'Less than a year'
     end as tenure_label,
 from
   etsy-data-warehouse-prod.rollups.seller_basics
