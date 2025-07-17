@@ -13,11 +13,20 @@ group by all
 having sum(has_review) = 0
 )
 select
-  seller_user_id,
+  case when user_id is null or user_id= 0 then 0 else 1 end as signed_in,
+  -- seller_user_id,
   sum(purchased_after_view) as purchases,
   count(sequence_number) as views, 
 from 
-  etsy-data-warehouse-prod.analytics.listing_views
+  etsy-data-warehouse-prod.analytics.listing_views l
 left join 
-  shops_wo_reviews using (seller_user_id)
+  shops_wo_reviews using (seller_user_id) r
+left join 
+  (select
+      user_id,
+      visit_id
+    from 
+      etsy-data-warehouse-prod.weblog.visits
+    where _date >= current_date-30 ) v
+      on l.visit_id=v.visit_id
 group by all 
