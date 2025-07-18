@@ -50,14 +50,23 @@ inner join
 where 
   l._date >= current_date-30 
   and v._date >= current_date-30 
-  and (total_reviews = 0 or r.seller_user_id is null)
-  and transactions = 1
+  -- and (total_reviews = 0)
+  and r.seller_user_id is null 
 group by all 
 order by 7 desc
 limit 10
 /* 
 --- NO REVIEWS
-
+seller_user_id	shop_name	has_shop_reviews	has_transactions	viewed_listings	purchases	views
+822803007	GemsTurk	0	1	42	0	21996
+915148059	TSWSHOPStore	0	1	51	0	21116
+869640931	MNRDIGITALSHOPS	0	1	10	0	20105
+1102983913	schanzjulypeggyp	0	1	8	4	19097
+1088175042	InsightByDaniel	0	0	7	0	135072
+912453789	DRHALS999	0	0	1	0	93682
+972158091	DesignWizardCreation	0	0	1	0	42415
+1083323145	PeachesandMandarines	0	0	14	0	39387
+1086693596	WordByDeshdeepak	0	0	20	0	38015
 
 --- NO TRANSACTIONS
 seller_user_id	shop_name	has_shop_reviews	has_transactions	viewed_listings	purchases	views
@@ -70,4 +79,4 @@ seller_user_id	shop_name	has_shop_reviews	has_transactions	viewed_listings	purch
 */
 
 --checking to make sure listing views match
-select count(sequence_number) from etsy-data-warehouse-prod.analytics.listing_views where seller_user_id =1086693596 and _date >= current_date-30
+-- select count(sequence_number) from etsy-data-warehouse-prod.analytics.listing_views where seller_user_id =1086693596 and _date >= current_date-30
