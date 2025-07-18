@@ -32,7 +32,7 @@ select
   shop_name,
   case when total_reviews = 0 then 0 else 1 end as has_shop_reviews,
   case when transactions = 0 then 0 else 1 end as has_transactions,
-  case when v.user_id is null or v.user_id= 0 then 0 else 1 end as signed_in,
+  -- case when v.user_id is null or v.user_id= 0 then 0 else 1 end as signed_in,
   -- seller_user_id,
   count(distinct l.listing_id) as viewed_listings, 
   sum(purchased_after_view) as purchases,
@@ -51,7 +51,7 @@ where
   l._date >= current_date-30 
   and v._date >= current_date-30 
 group by all 
-order by 3 asc
+order by 3,7 asc
 limit 10
 /* 
 --- NO REVIEWS
@@ -62,5 +62,11 @@ seller_user_id	shop_name	has_shop_reviews	has_transactions	signed_in	viewed_list
 550565166	Limafortheworld	0	1	0	74	12	131
 
 --- NO TRANSACTIONS
-
+seller_user_id	shop_name	has_shop_reviews	has_transactions	signed_in	viewed_listings	purchases	views
+1039189831	Vivawalls	0	1	0	532	0	2131
+10882599	TemplatesbyHC	0	1	0	9	0	15
+469486035	RiverCraftsman	0	1	1	5	0	23
+1079694067	NamiHoStudio	0	1	0	2	0	30
+1046222496	AlyaNCo	0	1	1	3	0	5
+1049173343	USAJEWELRYCO	0	1	1	58	0	164
 */
