@@ -42,9 +42,9 @@ group by all
 )
 select
   l.platform,
-  case when total_reviews = 0 then 0 else 1 end as has_shop_reviews,
-  case when transactions = 0 then 0 else 1 end as has_transactions,
-  case when user_id is null or user_id= 0 then 0 else 1 end as signed_in,
+  case when total_reviews = 0 or r.seller_user_id is null then 0 else 1 end as has_shop_reviews,
+  -- case when transactions = 0 or r.seller_user_id is null then 0 else 1 end as has_transactions,
+  -- case when user_id is null or user_id= 0 then 0 else 1 end as signed_in,
   -- seller_user_id,
   count(distinct l.listing_id) as viewed_listings, 
   sum(purchased_after_view) as purchases,
@@ -59,4 +59,7 @@ inner join
 where 
   l._date >= current_date-30 
   and v._date >= current_date-30 
+  and l.platform in ('boe','mobile_web','desktop')
+  -- and (total_reviews = 0 or r.seller_user_id is null) 
 group by all 
+order by 1,2,3,4 asc
