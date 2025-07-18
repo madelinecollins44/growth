@@ -46,7 +46,9 @@ left join
     on basics.shop_id=promoted_offer.shop_id
 group by all);
 */
-
+------------------------------------------------------------------
+-- WHAT % OF SHOPS HAVE ABOUT VARIOUS PAGE ELEMENTS?
+------------------------------------------------------------------
 with shop_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
 select 
   shop_id,
@@ -85,3 +87,24 @@ left join
 where 
   active_seller_status = 1  -- only active sellers 
 group by all 
+
+------------------------------------------------------------------
+-- WHAT % OF SHOPS HAVE ABOUT VIDEOS?
+------------------------------------------------------------------
+with shop_stats as (
+select 
+  sb.shop_id,
+  shop_name,
+  seller_tier_new, 
+  case when state=0 then 1 else 0 end as has_video,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  shop_reviews r
+   using (shop_id)
+left join 
+  etsy-data-warehouse-prod.etsy_shard.shop_about_videos v using (shop_id)
+where 
+  b.active_seller_status > 0 
+group by all 
+
