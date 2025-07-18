@@ -30,8 +30,8 @@ select
   -- l.platform,
   l.seller_user_id,
   shop_name,
-  case when total_reviews = 0 then 0 else 1 end as has_shop_reviews,
-  case when transactions = 0 then 0 else 1 end as has_transactions,
+  case when total_reviews = 0 or r.seller_user_id is null then 0 else 1 end as has_shop_reviews,
+  case when transactions = 0 or r.seller_user_id is null then 0 else 1 end as has_transactions,
   -- case when v.user_id is null or v.user_id= 0 then 0 else 1 end as signed_in,
   -- seller_user_id,
   count(distinct l.listing_id) as viewed_listings, 
@@ -50,23 +50,24 @@ inner join
 where 
   l._date >= current_date-30 
   and v._date >= current_date-30 
+  and (total_reviews = 0 or r.seller_user_id is null)
+  and transactions = 1
 group by all 
-order by 3,7 asc
+order by 7 desc
 limit 10
 /* 
 --- NO REVIEWS
-seller_user_id	shop_name	has_shop_reviews	has_transactions	signed_in	viewed_listings	purchases	views
-232016740	SilentPacific	0	1	0	36	0	95
-890479285	JustCaseStore	0	1	0	59	0	119
-1082596133	KettyPrintsCo	0	1	0	15	0	88
-550565166	Limafortheworld	0	1	0	74	12	131
+
 
 --- NO TRANSACTIONS
-seller_user_id	shop_name	has_shop_reviews	has_transactions	signed_in	viewed_listings	purchases	views
-1039189831	Vivawalls	0	1	0	532	0	2131
-10882599	TemplatesbyHC	0	1	0	9	0	15
-469486035	RiverCraftsman	0	1	1	5	0	23
-1079694067	NamiHoStudio	0	1	0	2	0	30
-1046222496	AlyaNCo	0	1	1	3	0	5
-1049173343	USAJEWELRYCO	0	1	1	58	0	164
+seller_user_id	shop_name	has_shop_reviews	has_transactions	viewed_listings	purchases	views
+1088175042	InsightByDaniel	0	0	7	0	135072
+912453789	DRHALS999	0	0	1	0	93682
+972158091	DesignWizardCreation	0	0	1	0	42415
+1083323145	PeachesandMandarines	0	0	14	0	39387
+1086693596	WordByDeshdeepak	0	0	20	0	38015
+1082376266	SaveGet	0	0	45	0	32486
 */
+
+--checking to make sure listing views match
+select count(sequence_number) from etsy-data-warehouse-prod.analytics.listing_views where seller_user_id =1086693596 and _date >= current_date-30
