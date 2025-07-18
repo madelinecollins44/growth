@@ -12,7 +12,7 @@ group by all
 )
 , listing_shop_reviews as (
 select
-  case when b.total_reviews > 0 or b.seller_user_id is null then 1 else 0 end has_shop_reviews,
+  case when b.total_reviews = 0 or b.seller_user_id is null then 1 else 0 end has_shop_reviews,
   a.listing_id,
   sum(purchased_after_view) as purchases,
   count(sequence_number) as views, 
