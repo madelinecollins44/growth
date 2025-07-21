@@ -12,7 +12,8 @@ select
   max(top_reviews_events) as max_top_reviews_events, 
   max(mid_reviews_events) as max_mid_reviews_events
 from 
-  etsy-bigquery-adhoc-prod._scriptf559414066a34ea7573bf7d307f319636261725a.browsers_with_key_event group by all 
+  etsy-bigquery-adhoc-prod._script81a4daba13d5955bfae8baa89d36899eb0574151.xp_khm_agg_events_by_unit
+group by all 
 
 ----------------------------------------------------------------------------------------
 -- CHECKING SEEN EVENTS FOR BROWSERS 
