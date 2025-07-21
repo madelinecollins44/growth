@@ -89,16 +89,17 @@ CREATE OR REPLACE TEMPORARY TABLE browsers_with_key_event AS (
     v.variant_id,
     v.buyer_segment,
     v.bucketing_id,
-    count(case when event_type in ('listing_page_reviews_container_top_seen') then sequence_number end) as top_reviews_events,
-    count(case when event_type in ('listing_page_reviews_seen') then sequence_number end) as mid_reviews_events,
+    sum(case when event_id in ('listing_page_reviews_container_top_seen') then event_value end) as top_reviews_events,
+    sum(case when event_id in ('listing_page_reviews_seen') then event_value end) as mid_reviews_events,
   FROM
     first_bucket_segments as v
   LEFT JOIN 
-    `etsy-data-warehouse-prod.weblog.events` AS e
-      on timestamp_millis(e.epoch_ms) >= v.bucketing_ts-- only look at events that happen after bucketing moment 
-      and v.bucketing_id= split(e.visit_id, ".")[0] -- joining on browser_id
-      and event_type in ('listing_page_reviews_container_top_seen','listing_page_reviews_seen')
+   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily AS e
+      on e.bucketing_ts = v.bucketing_ts-- only look at events that happen after bucketing moment 
+      and v.bucketing_id= e.bucketing_id -- joining on browser_id
+      and event_id in ('listing_page_reviews_container_top_seen','listing_page_reviews_seen')
       and e._date BETWEEN start_date AND end_date
+      and e.experiment_id in ('local_pe.q2_2025.buyer_trust_accelerator.browser')
   GROUP BY ALL 
 );
 
@@ -158,7 +159,7 @@ CREATE OR REPLACE TEMPORARY TABLE xp_khm_agg_events_by_unit AS (
   GROUP BY ALL
 );
 
-
+/*
 -- Key Health Metrics (Winsorized ACBV and AOV) - Total (To compare with Catapult as a sanity check)
 create or replace table etsy-data-warehouse-dev.madelinecollins.xp_feature_tags_desktop as (
 SELECT
@@ -189,3 +190,5 @@ LEFT JOIN
 GROUP BY ALL
 ORDER BY
   1); 
+
+  */
