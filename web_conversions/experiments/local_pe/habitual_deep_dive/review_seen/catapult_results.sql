@@ -1,10 +1,9 @@
 /* OVERALL RECREATED RESULTS */
-
 SELECT
   variant_id,
   -- case when lower(buyer_segment) in ('habitual') then 1 else 0 end as habitual_browser,
-  -- case when mid_reviews_events > 0 then 1 else 0 end as saw_mid_reviews,
-  case when top_reviews_events > 0 then 1 else 0 end as saw_top_reviews,
+  case when mid_reviews_events > 0 then 1 else 0 end as saw_mid_reviews,
+  -- case when top_reviews_events > 0 then 1 else 0 end as saw_top_reviews,
   -- mid_reviews_events,
   COUNT(bucketing_id) AS browsers,
   -- metrics
@@ -24,7 +23,7 @@ SELECT
   COUNTIF(e.orders > 0) AS converted_browsers,
   COUNTIF(e.atc_count > 0) AS atc_browsers
 FROM
-  etsy-bigquery-adhoc-prod._script62fa58361ece06f40681dab645e289b397a057c7.xp_khm_agg_events_by_unit AS e 
+  etsy-bigquery-adhoc-prod._script81a4daba13d5955bfae8baa89d36899eb0574151.xp_khm_agg_events_by_unit AS e 
 WHERE lower(buyer_segment) in ('habitual')
 GROUP BY ALL
 ORDER BY 1, 2,3 desc
@@ -76,8 +75,6 @@ WHERE lower(buyer_segment) in ('habitual')
 GROUP BY ALL
 ORDER BY 1, 2 asc
 
-
-
 /* ALL SEGMENTS IN TREATMENT GROUP*/
   SELECT
   variant_id,
@@ -103,9 +100,8 @@ ORDER BY 1, 2 asc
   COUNTIF(e.orders > 0) AS converted_browsers,
   COUNTIF(e.atc_count > 0) AS atc_browsers
 FROM
-  etsy-bigquery-adhoc-prod._scriptb5f7cb041c3195bf654f02d1bddc3e589685a40e.xp_khm_agg_events_by_unit AS e 
+  etsy-bigquery-adhoc-prod._script81a4daba13d5955bfae8baa89d36899eb0574151.xp_khm_agg_events_by_unit AS e 
 -- WHERE lower(buyer_segment) in ('habitual')
 WHERE variant_id in ('on')
 GROUP BY ALL
 ORDER BY 2,1,3 desc
-
