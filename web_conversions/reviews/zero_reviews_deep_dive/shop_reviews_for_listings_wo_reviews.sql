@@ -18,8 +18,11 @@ from
 group by all 
 )
 select
-  platform,
-
+  -- platform,
+  case when (s.seller_user_id is null or s.total_reviews = 0) then 0 else 1 end as has_shop_reviews,
+  -- avg(s.total_reviews) as avg_shop_review_count,
+  -- case 
+  --   s.total_reviews 
   count(distinct a.listing_id) as listings,
   sum(purchased_after_view) as purchases,
   count(sequence_number) as views, 
@@ -34,6 +37,6 @@ left join
 where  1=1
   and a._date >= current_date-30 
   and a.platform in ('mobile_web','desktop','boe')
-  and s.total_reviews= 0 -- shops without any reviews 
+  and (l.listing_id is null or l.total_reviews=0) -- listings without reviews
 group by all
-order by 1,2,3 desc
+-- order by 1,2,3 desc
