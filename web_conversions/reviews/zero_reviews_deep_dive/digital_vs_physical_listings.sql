@@ -10,21 +10,22 @@ group by all
 )
 select
   platform,
-  case when b.total_reviews > 0 or b.seller_user_id is null then 1 else 0 end has_shop_reviews,
+  case when r.total_reviews = 0 or r.shop_id is null then 0 else 1 end has_shop_reviews,
   is_digital,
-  count(distinct a.listing_id) as listings,
+  count(distinct b.listing_id) as active_listings,
   sum(purchased_after_view) as purchases,
   count(sequence_number) as views, 
 from
-  etsy-data-warehouse-prod.analytics.listing_views a
+  etsy-data-warehouse-prod.rollups.active_listing_basics b
 left join 
-  shops_reviews b
-    using (seller_user_id)
-inner join 
-  etsy-data-warehouse-prod.listing_mart.listing_attributes atr 
-    on a.listing_id=atr.listing_id
+  etsy-data-warehouse-prod.analytics.listing_views a
+      on a.listing_id=b.listing_id
+left join 
+  shops_reviews r
+    on r.shop_id=b.shop_id
 where  1=1
   and a._date >= current_date-30 
   and a.platform in ('mobile_web','desktop','boe')
+  and (r.shop_id is null or r.total_reviews = 0) -- shop either has no transactions or no reviews
 group by all
 order by 1,2,3 desc
