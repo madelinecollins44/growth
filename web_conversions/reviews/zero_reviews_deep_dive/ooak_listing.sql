@@ -27,4 +27,4 @@ where 1=1
   and v._date >= current_date-30 
   and v.platform in ('mobile_web','desktop','boe')
 group by all 
-
+order by 1,2,3 desc
