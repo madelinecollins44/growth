@@ -33,9 +33,10 @@ order by 1,2,3 desc
 
 
 /* SHOP LEVEL */
--- with seller_count as (
+with vintage_shops as ( --more than half of listings are vintage/ ooak
 select 
   a.shop_id,
+  b.user_id as seller_user_id,
   shop_name,
   count(distinct a.listing_id) as active_listings,
   count(distinct case when(mk.is_vintage != 1 and a.quantity > 1) then a.listing_id end) as non_vintage_listings,
@@ -50,5 +51,37 @@ inner join
   etsy-data-warehouse-prod.rollups.seller_basics b
     on a.shop_id=b.shop_id
 group by all
-order by 2 desc
-limit 10 
+order by 3 desc
+)
+, shop_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  shop_id,
+  seller_user_id,
+  count(distinct transaction_id) as transactions,
+  sum(has_review) as total_reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+)
+select
+  platform,
+  case when r.total_reviews = 0 or r.seller_user_id is null then 0 else 1 end has_shop_reviews,
+  coalesce(majority_vintage,0) as majority_vintage,
+  count(distinct lv.seller_user_id) as viewed_shops, 
+  count(distinct lv.listing_id) as viewed_listings,
+  count(sequence_number) as views,
+  sum(purchased_after_view) as purchases
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv 
+left join 
+  vintage_shops vs
+    on lv.seller_user_id=vs.seller_user_id
+left join 
+  shop_reviews r
+    on r.seller_user_id=lv.seller_user_id
+where 1=1
+  and lv._date >= current_date-30 
+  and lv.platform in ('mobile_web','desktop','boe')
+group by all 
+order by 1,2,3 desc
+
