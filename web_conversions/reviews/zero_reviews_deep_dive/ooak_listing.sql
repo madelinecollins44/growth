@@ -1,3 +1,5 @@
+/* LISTING LEVEL */
+
 with listing_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
 select 
   listing_id,
@@ -28,3 +30,25 @@ where 1=1
   and v.platform in ('mobile_web','desktop','boe')
 group by all 
 order by 1,2,3 desc
+
+
+/* SHOP LEVEL */
+-- with seller_count as (
+select 
+  a.shop_id,
+  shop_name,
+  count(distinct a.listing_id) as active_listings,
+  count(distinct case when(mk.is_vintage != 1 and a.quantity > 1) then a.listing_id end) as non_vintage_listings,
+  count(distinct case when(mk.is_vintage = 1 or a.quantity = 1) then a.listing_id end) as vintage_listing,
+  case when ((count(distinct case when(mk.is_vintage = 1 or a.quantity = 1) then a.listing_id end)) / count(distinct a.listing_id)) > 0.5 then 1 else 0 end as majority_vintage
+from 
+  etsy-data-warehouse-prod.rollups.active_listing_basics a
+inner join 
+  `etsy-data-warehouse-prod.materialized.listing_marketplaces` mk
+    on a.listing_id = mk.listing_id
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+    on a.shop_id=b.shop_id
+group by all
+order by 2 desc
+limit 10 
