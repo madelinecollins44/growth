@@ -79,6 +79,13 @@ ORDER BY 1, 2 asc
   SELECT
   variant_id,
   buyer_segment,
+  --   case   
+  --   when lower('buyer_segment') in ('habitual') then 'habitual'
+  --   when lower('buyer_segment') in ('active') then 'active'
+  --   when lower('buyer_segment') in ('repeat') then 'repeat'    
+  --   when lower('buyer_segment') in ('signed_out') then 'signed out'
+  --   else 'other'
+  -- end as buyer_segment,
   -- case when mid_reviews_events > 0 then 1 else 0 end as saw_mid_reviews,
   case when top_reviews_events > 0 then 1 else 0 end as saw_top_reviews,
   -- mid_reviews_events,
