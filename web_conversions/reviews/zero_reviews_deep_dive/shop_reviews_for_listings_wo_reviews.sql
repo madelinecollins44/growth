@@ -164,3 +164,78 @@ FROM
   agg
 GROUP BY
   all 
+
+
+-- QUARTILES BY LISTING VIEWS
+-- LISTING AND SHOP LEVEL
+with shops_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  seller_user_id,
+  count(distinct transaction_id) as transactions,
+  sum(has_review) as total_reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+)
+, listing_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  listing_id,
+  seller_user_id,
+  count(distinct tr.transaction_id) as listing_transactions,
+  sum(tr.has_review) as listing_reviews,
+  sr.total_reviews as shop_reviews 
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr 
+left join 
+  shops_reviews sr
+    using (seller_user_id)
+group by all 
+)
+, shop_stats as (
+SELECT
+    lr.seller_user_id,
+    shop_reviews,
+    count(sequence_number) as views,
+from
+  etsy-data-warehouse-prod.analytics.listing_views a
+inner join 
+  listing_reviews lr
+    on lr.listing_id=a.listing_id
+where  1=1
+  and a._date >= current_date-30 
+  and a.platform in ('mobile_web','desktop')
+  and (lr.listing_id is null or lr.listing_reviews = 0) -- listings without item reviews 
+  -- and (lr.shop_reviews > 0 or lr.seller_user_id is not null)
+group by all
+)
+, shop_with_ntiles AS (
+  SELECT
+    *,
+    NTILE(4) OVER (ORDER BY views) AS view_quartile
+  FROM
+    shop_stats
+),
+weighted_avg_reviews AS (
+  SELECT
+    view_quartile,
+    SUM(shop_reviews * views) / NULLIF(SUM(views), 0) AS weighted_avg_reviews
+  FROM
+    shop_with_ntiles
+  GROUP BY
+    view_quartile
+)
+SELECT * FROM weighted_avg_reviews
+ORDER BY view_quartile;
+-- SELECT
+--   review_quartile,
+--   MIN(shop_reviews) AS min_reviews_in_quartile,
+--   MAX(shop_reviews) AS max_reviews_in_quartile,
+--   COUNT(DISTINCT seller_user_id) as shops,
+--   AVG(shop_reviews) as avg_reviews,
+--   AVG(shop_reviews) as avg_reviews,
+--   sum(views) as total_views,
+--   avg(views) as avg_views,
+-- FROM
+--   agg
+-- GROUP BY
+--   all 
