@@ -106,3 +106,55 @@ where  1=1
   and (lr.listing_id is null or lr.listing_reviews = 0) -- listings without item reviews 
 group by all
 order by 1,2,3 desc
+
+
+/* QUANTILES FOR # OF REVIEWS IN EACH SHOP*/
+-- LISTING AND SHOP LEVEL
+with shops_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  seller_user_id,
+  count(distinct transaction_id) as transactions,
+  sum(has_review) as total_reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+)
+, listing_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  listing_id,
+  seller_user_id,
+  count(distinct tr.transaction_id) as listing_transactions,
+  sum(tr.has_review) as listing_reviews,
+  sr.total_reviews as shop_reviews 
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr 
+left join 
+  shops_reviews sr
+    using (seller_user_id)
+group by all 
+)
+, agg as (
+SELECT
+    lr.seller_user_id,
+    shop_reviews,
+    NTILE(4) OVER (ORDER BY shop_reviews) AS review_quartile
+from
+  etsy-data-warehouse-prod.analytics.listing_views a
+inner join 
+  listing_reviews lr
+    on lr.listing_id=a.listing_id
+where  1=1
+  and a._date >= current_date-30 
+  and a.platform in ('mobile_web','desktop')
+  and (lr.listing_id is null or lr.listing_reviews = 0) -- listings without item reviews 
+  -- and (lr.shop_reviews > 0 or lr.seller_user_id is not null)
+group by all
+)
+SELECT
+  review_quartile,
+  MIN(shop_reviews) AS min_reviews_in_quartile,
+  MAX(shop_reviews) AS max_reviews_in_quartile
+FROM
+  agg
+GROUP BY
+  all 
