@@ -153,7 +153,9 @@ group by all
 SELECT
   review_quartile,
   MIN(shop_reviews) AS min_reviews_in_quartile,
-  MAX(shop_reviews) AS max_reviews_in_quartile
+  MAX(shop_reviews) AS max_reviews_in_quartile,
+  COUNT(DISTINCT seller_user_id) as shops,
+  AVG(shop_reviews) as avg_reviews
 FROM
   agg
 GROUP BY
