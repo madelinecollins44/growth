@@ -1,12 +1,7 @@
-d a._date >= current_date-30 
-  and a.platform in ('mobile_web','desktop','boe')
-group by all
-order by 1,2,3 desc
-
 -- LISTING AND SHOP LEVEL
 with shops_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
 select 
-  seller_user_id,
+  shop_id,
   count(distinct transaction_id) as transactions,
   sum(has_review) as total_reviews
 from 
@@ -16,7 +11,7 @@ group by all
 , listing_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
 select 
   listing_id,
-  seller_user_id,
+  shop_id,
   count(distinct tr.transaction_id) as listing_transactions,
   sum(tr.has_review) as listing_reviews,
   sr.total_reviews as shop_reviews 
@@ -24,11 +19,11 @@ from
   etsy-data-warehouse-prod.rollups.transaction_reviews tr 
 left join 
   shops_reviews sr
-    using (seller_user_id)
+    using (shop_id)
 group by all 
 )
 select
-  platform,
+  -- platform,
   case when r.total_reviews = 0 or r.shop_id is null then 0 else 1 end has_shop_reviews,
   top_category,
   count(distinct b.listing_id) as active_listings,
@@ -44,7 +39,7 @@ left join
     on r.shop_id=b.shop_id
 where  1=1
   and a._date >= current_date-30 
-  and a.platform in ('mobile_web','desktop','boe')
+  and a.platform in ('mobile_web','desktop')
   and (r.shop_id is null or r.total_reviews = 0) -- shop either has no transactions or no reviews
 group by all
-order by 1,2,3 desc
+order by 2,1 asc
