@@ -137,6 +137,7 @@ group by all
 SELECT
     lr.seller_user_id,
     shop_reviews,
+    count(sequence_number) as views,
     NTILE(4) OVER (ORDER BY shop_reviews) AS review_quartile
 from
   etsy-data-warehouse-prod.analytics.listing_views a
@@ -155,7 +156,10 @@ SELECT
   MIN(shop_reviews) AS min_reviews_in_quartile,
   MAX(shop_reviews) AS max_reviews_in_quartile,
   COUNT(DISTINCT seller_user_id) as shops,
-  AVG(shop_reviews) as avg_reviews
+  AVG(shop_reviews) as avg_reviews,
+  AVG(shop_reviews) as avg_reviews,
+  sum(views) as total_views,
+  avg(views) as avg_views,
 FROM
   agg
 GROUP BY
