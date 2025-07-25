@@ -166,8 +166,9 @@ GROUP BY
   all 
 
 
--- QUARTILES BY LISTING VIEWS
--- LISTING AND SHOP LEVEL
+------------------------------------------------------------------
+-- QUANTILES FOR # OF REVIEWS IN EACH SHOP
+------------------------------------------------------------------
 with shops_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
 select 
   seller_user_id,
@@ -191,51 +192,112 @@ left join
     using (seller_user_id)
 group by all 
 )
-, shop_stats as (
+, seller_stats as (
 SELECT
     lr.seller_user_id,
-    shop_reviews,
+    coalesce(shop_reviews,0) as shop_reviews, -- if a shop doenst have transactions, its given 0 reviews 
     count(sequence_number) as views,
 from
   etsy-data-warehouse-prod.analytics.listing_views a
-inner join 
+left join 
+  listing_reviews lr
+    on lr.listing_id=a.listing_id
+    and a.seller_user_id=lr.seller_user_id
+where  1=1
+  and a._date >= current_date-30 
+  and a.platform in ('mobile_web','desktop')
+  and (lr.listing_id is null or lr.listing_reviews = 0) -- listings without item reviews or transactions
+  -- and (lr.shop_reviews > 0 or lr.seller_user_id is not null)
+group by all
+)
+, sorted_data AS (
+  SELECT
+    *,    
+    NTILE(4) OVER (ORDER BY shop_reviews) AS review_quartile
+  FROM
+    seller_stats
+)
+SELECT
+  review_quartile,
+  COUNT(*) AS num_shops,
+  avg(shop_reviews) as avg_shop_reviews,
+  SUM(views) AS total_views
+FROM sorted_data
+GROUP BY review_quartile
+ORDER BY review_quartile;
+
+------------------------------------------------------------------
+-- WEIGHTED MEDIAN
+------------------------------------------------------------------
+with shops_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  seller_user_id,
+  count(distinct transaction_id) as transactions,
+  sum(has_review) as total_reviews
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews
+group by all 
+)
+, listing_reviews as ( -- this looks at all listings that have been purchased and whether or not they have a review
+select 
+  listing_id,
+  seller_user_id,
+  count(distinct tr.transaction_id) as listing_transactions,
+  sum(tr.has_review) as listing_reviews,
+  sr.total_reviews as shop_reviews 
+from 
+  etsy-data-warehouse-prod.rollups.transaction_reviews tr 
+left join 
+  shops_reviews sr
+    using (seller_user_id)
+group by all 
+)
+, seller_stats as (
+SELECT
+    lr.seller_user_id,
+    coalesce(shop_reviews,0) as shop_reviews, -- if a shop doenst have transactions, its given 0 reviews 
+    count(sequence_number) as views,
+from
+  etsy-data-warehouse-prod.analytics.listing_views a
+left join 
   listing_reviews lr
     on lr.listing_id=a.listing_id
 where  1=1
   and a._date >= current_date-30 
-  and a.platform in ('mobile_web','desktop')
-  and (lr.listing_id is null or lr.listing_reviews = 0) -- listings without item reviews 
+  and a.platform in ('mobile_web','desktop','boe')
+  and (lr.listing_id is null or lr.listing_reviews = 0) -- listings without item reviews or transactions
   -- and (lr.shop_reviews > 0 or lr.seller_user_id is not null)
 group by all
 )
-, shop_with_ntiles AS (
+, base as (
+  SELECT
+    seller_user_id,
+    shop_reviews,
+    views,
+    NTILE(4) OVER (ORDER BY shop_reviews) AS review_quartile
+  FROM seller_stats
+),
+ranked AS (
   SELECT
     *,
-    NTILE(4) OVER (ORDER BY views) AS view_quartile
-  FROM
-    shop_stats
+    SUM(views) OVER (PARTITION BY review_quartile ORDER BY shop_reviews) AS cum_views,
+    SUM(views) OVER (PARTITION BY review_quartile) AS total_views
+  FROM base
 ),
-weighted_avg_reviews AS (
+median_in_quartiles AS (
   SELECT
-    view_quartile,
-    SUM(shop_reviews * views) / NULLIF(SUM(views), 0) AS weighted_avg_reviews
-  FROM
-    shop_with_ntiles
-  GROUP BY
-    view_quartile
+    review_quartile,
+    shop_reviews,
+    cum_views,
+    total_views,
+    RANK() OVER (PARTITION BY review_quartile ORDER BY cum_views) AS rnk
+  FROM ranked
+  WHERE cum_views >= total_views / 2
 )
-SELECT * FROM weighted_avg_reviews
-ORDER BY view_quartile;
--- SELECT
---   review_quartile,
---   MIN(shop_reviews) AS min_reviews_in_quartile,
---   MAX(shop_reviews) AS max_reviews_in_quartile,
---   COUNT(DISTINCT seller_user_id) as shops,
---   AVG(shop_reviews) as avg_reviews,
---   AVG(shop_reviews) as avg_reviews,
---   sum(views) as total_views,
---   avg(views) as avg_views,
--- FROM
---   agg
--- GROUP BY
---   all 
+-- for each quartile, select the first row where cumulative weight passes 50%
+SELECT
+  review_quartile,
+  MIN(shop_reviews) AS weighted_median_shop_reviews_seen
+FROM median_in_quartiles
+GROUP BY review_quartile
+ORDER BY review_quartile;
