@@ -53,7 +53,7 @@ left join
 left join 
   (select 
     shop_id,
-    case when related_links != '[]' then 0 else 1 end as has_link 
+    case when related_links = '[]' or related_links is null then 0 else 1 end as has_link 
   from 
     etsy-data-warehouse-prod.etsy_shard.shop_about) l -- related links 
     on b.shop_id=l.shop_id
