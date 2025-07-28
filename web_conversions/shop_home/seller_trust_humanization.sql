@@ -15,6 +15,10 @@ group by all
 )
 select
   active_seller_status,
+  case when m.shop_id is not null then 1 else 0 end as has_members,
+  case when i.shop_id is not null then 1 else 0 end as has_images,
+  case when v.shop_id is not null then 1 else 0 end as has_videos,
+  case when l.shop_id is not null then 1 else 0 end as has_link,
   count(distinct b.shop_id) as shops,
   sum(views) as shop_home_traffic,
 
@@ -53,4 +57,5 @@ left join
   from 
     etsy-data-warehouse-prod.etsy_shard.shop_about) l -- related links 
     on b.shop_id=l.shop_id
+group by all
 
