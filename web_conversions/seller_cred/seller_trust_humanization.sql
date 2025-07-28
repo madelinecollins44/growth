@@ -82,3 +82,32 @@ left join
     on b.shop_id=l.shop_id
 group by all
 
+
+select
+  active_seller_status,
+  count(distinct b.shop_id) as shops,
+  count(distinct case when m.shop_id is not null then b.shop_id end) as has_members,
+  count(distinct case when i.shop_id is not null then b.shop_id end) as has_images,
+  count(distinct case when v.shop_id is not null then b.shop_id end) as has_videos,
+  count(distinct case when l.shop_id =1 then b.shop_id end) as has_link,
+  sum(views) as shop_home_traffic,
+from 
+  etsy-data-warehouse-prod.rollups.seller_basics b
+left join 
+  etsy-bigquery-adhoc-prod._script8d9c96dd0e81e141d44b4a6997d9f39aec730a85.shop_traffic t
+    on cast(b.shop_id as string)=t.shop_id
+left join 
+  etsy-bigquery-adhoc-prod._scriptdd2e597ab01fcb89dc06725853ebbe1efb1f9af2.members m -- shop members 
+      on b.shop_id=m.shop_id
+left join 
+  etsy-bigquery-adhoc-prod._scriptdd2e597ab01fcb89dc06725853ebbe1efb1f9af2.images i
+      on b.shop_id=m.shop_id
+left join 
+  etsy-bigquery-adhoc-prod._scriptdd2e597ab01fcb89dc06725853ebbe1efb1f9af2.video v
+     on b.shop_id=m.shop_id
+left join 
+  etsy-bigquery-adhoc-prod._scriptdd2e597ab01fcb89dc06725853ebbe1efb1f9af2.links l -- related links 
+    on b.shop_id=l.shop_id
+group by all
+
+
