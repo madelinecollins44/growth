@@ -16,5 +16,11 @@ where 1=1
       'review_form_open', -- Screen 1: Review form opened/loaded
       'multistage_review_form_rating_submit'-- Screen 2: Submit star rating 
       'multistage_review_form_text_submit'-- Screen 3: Submit text review 
+      -- 'hp_review_nudger_delivered',
+      -- 'review_form_selected_rating',
+      -- 'multistage_review_form_photo_skipped',
+      -- 'multistage_review_form_photo_submit',
+      -- 'review_purchases_nav_v3_click',
+      -- 'choose_your_own_review_card_clicked',
       )
 group by all 
