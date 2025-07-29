@@ -110,4 +110,26 @@ left join
     on b.shop_id=l.shop_id
 group by all
 
+------------------------------------------
+-- TESTING
+------------------------------------------
+-- MAKE SURE RELATED LINKS ARE GETTING PULLED PROPERLY
+with agg as (
+select 
+    shop_id,
+    related_links,
+    case when related_links = '[]' or related_links is null then 0 else 1 end as has_link 
+from 
+  etsy-data-warehouse-prod.etsy_shard.shop_about
+where 
+  status in ('active')
+group by all 
+)
+select distinct related_links from agg where has_link = 0
+/*
+related_links
+[]
+*/
+
+
 
