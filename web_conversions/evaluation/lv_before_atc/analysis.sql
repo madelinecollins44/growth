@@ -196,8 +196,34 @@ group by all
 order by 1 desc
   
 ----------------------------------------------------------------------------------------------------------------
--- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
+-- SHARE OF VISITS THAT ATC BY # OF LISTINGS VIEWED
 ----------------------------------------------------------------------------------------------------------------
+with visit_stats as (
+select
+  platform,
+  visit_id, 
+  count(sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  sum(added_to_cart) as atcs
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+group by all 
+)
+select
+  platform,
+  case when listing_views = 1 and atcs = 1 then '1 LV' else '1+ LV' end,
+  count(distinct visit_id) as visits,
+  sum(listing_views) as total_lv
+from 
+  visit_stats
+where 
+  atcs > 0 -- visits that atc at least once
+group by all 
+order by 1 desc
+  
 ----------------------------------------------------------------------------------------------------------------
 -- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
 ----------------------------------------------------------------------------------------------------------------
