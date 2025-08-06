@@ -38,7 +38,6 @@ from
 left join 
   first_atc f
     on lv.visit_id=f.visit_id
-    and lv.sequence_number= f.sequence_number 
 where 
   _date >= current_date-30
   and platform in ('boe','mobile_web','desktop')
