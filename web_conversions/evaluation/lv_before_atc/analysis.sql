@@ -14,37 +14,23 @@ where
   and added_to_cart = 1
 group by all 
 )
-, visit_stats as (
 select
-  platform,
-  visit_id, 
-  count(sequence_number) as listing_views,
-  count(distinct listing_id) as listings,
-  sum(added_to_cart) as atcs
-from 
-  etsy-data-warehouse-prod.analytics.listing_views lv
-where 
-  _date >= current_date-30
-  and platform in ('boe','mobile_web','desktop')
-group by all 
-)
-select
-  platform,
-  -- case when lv.sequence_number <= f.sequence_number then 1 else 0 end as before_first_atc, 
+  lv.platform,
+  case when lv.sequence_number <= f.sequence_number then 1 else 0 end as before_first_atc, 
   count(lv.sequence_number) as listing_views,
   count(distinct listing_id) as listings,
   count(distinct lv.visit_id) as visits
 from 
   etsy-data-warehouse-prod.analytics.listing_views lv
-left join 
+inner join 
   first_atc f
     on lv.visit_id=f.visit_id
 where 
   _date >= current_date-30
-  and platform in ('boe','mobile_web','desktop')
-  and lv.sequence_number<= f.sequence_number -- all seq before atc
+  and lv.platform in ('boe','mobile_web','desktop')
 group by all 
-order by 1 desc
+order by 1,2 desc
+  
 
 ------------------------ BY PLATFORM
   with first_atc as (
