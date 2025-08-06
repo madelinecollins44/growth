@@ -259,8 +259,8 @@ where
 group by all 
 )
 select 
-  s.platform,
-  case when l.listing_views<= 100 then cast(l.listing_views as string) else '101+' end as listing_views,
+  -- s.platform,
+  case when l.listing_views<= 50 then cast(l.listing_views as string) else '51+' end as listing_views,
   count(distinct l.visit_id) as visits,
 from 
   lv_by_atc l -- 
@@ -271,5 +271,6 @@ inner join
     and s.listing_views > 1
 where 
   before_atc = 1 -- only look at everything before atc
+  -- and s.platform in ('mobile_web')
 group by all
 order by 1 asc
