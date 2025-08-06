@@ -43,7 +43,11 @@ where
   and platform in ('boe','mobile_web','desktop')
   and lv.sequence_number<= f.sequence_number -- all seq before atc
 group by all 
-
+order by 1 desc
+  
+----------------------------------------------------------------------------------------------------------------
+-- AVG LISTING VIEWS AMONG VISITS THAT ATC BY PLATFORM
+----------------------------------------------------------------------------------------------------------------
   
 ----------------------------------------------------------------------------------------------------------------
 -- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
