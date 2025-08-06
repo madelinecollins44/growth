@@ -23,6 +23,9 @@ from
 left join 
   first_atc f
     using (visit_id, sequence_number)
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
 group by all 
 )
 select
