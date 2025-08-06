@@ -1,3 +1,4 @@
+-- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
 with first_atc as (
 select
   visit_id,
@@ -28,10 +29,13 @@ where
   and platform in ('boe','mobile_web','desktop')
 group by all 
 )
-select
+select 
   listing_views,
   count(distinct visit_id) as visits,
 from 
   visit_level
-where after_atc =0 -- only look at everything before atc
-group by all 
+inner join 
+  (select distinct visit_id from visit_level where after_atc = 1) -- looking at visits that did atc 
+    using (visit_id)
+where 
+  after_atc =0 -- only look at everything before atc
