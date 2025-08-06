@@ -146,3 +146,20 @@ _date	run_date	visit_id	listing_id	platform	sequence_number	is_first_page	event_
 2025-07-24	1753315200	3mq139_WeVAweWOtvhf-uOaQ9fL3.1753373116771.1	4338415649	mobile_web	89	0	Internal	search	sr_gallery-1-7	42	814434186	de	DE	DE	de	CT	1753373151083	6822	1	0	0	0	46.5	6.01		1753315200	1	3	4	174	0	37.9	EUR	31. Juli-06. Aug.	false	false		2025-07-31	2025-08-06	meets	egregious	0		"{""override"":false,""ships_on_saturday"":true}"	44.59	seller_designed
 2025-07-24	1753315200	3mq139_WeVAweWOtvhf-uOaQ9fL3.1753373116771.1	4338415649	mobile_web	161	0	Internal	search	sr_gallery-1-7	42	814434186	de	DE	DE	de	CT	1753373159294	1250	0	0	0	0	46.5	6.01		1753315200	1	3	4	174	0	37.9	EUR	31. Juli-06. Aug.	false	false		2025-07-31	2025-08-06	meets	egregious	0		"{""override"":false,""ships_on_saturday"":true}"	44.59	seller_designed
 */
+
+----------------------------------------------------------------------------------------------------------------
+-- test 2: make sure number of visits w atc matches 
+----------------------------------------------------------------------------------------------------------------
+select
+  count(distinct visit_id) as viists,
+  -- split(visit_id, ".")[0] as browser_id, 
+  min(sequence_number) as sequence_number
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+  and added_to_cart = 1
+group by all 
+/* viists	sequence_number
+24272103	0 */
