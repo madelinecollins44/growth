@@ -1,4 +1,6 @@
+----------------------------------------------------------------------------------------------------------------
 -- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
+----------------------------------------------------------------------------------------------------------------
 with first_atc as (
 select
   visit_id,
@@ -39,3 +41,5 @@ inner join
     using (visit_id)
 where 
   after_atc =0 -- only look at everything before atc
+group by all
+order by 1 asc
