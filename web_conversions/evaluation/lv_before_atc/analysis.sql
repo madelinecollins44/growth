@@ -48,7 +48,47 @@ order by 1 desc
 ----------------------------------------------------------------------------------------------------------------
 -- AVG LISTING VIEWS AMONG VISITS THAT ATC BY PLATFORM
 ----------------------------------------------------------------------------------------------------------------
+with visits_w_atc as (
+select
+  distinct visit_id
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+  and added_to_cart = 1
+group by all 
+)
+, lv_for_visits_w_atc as (
+select
+  platform,
+  visit_id,
+  count(sequence_number) as total_lv,
+  sum(added_to_cart) as atcs
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+inner join 
+  visits_w_atc using (visit_id)
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+group by all 
+)
+select 
+  platform,
+  count(distinct visit_id) as visits,
+  sum(total_lv) as total_lv,
+  avg(total_lv) as avg_total_lv,
+  sum(atcs) as total_atcs,
+  avg(atcs) as avg_atcs
+from 
+  lv_for_visits_w_atc
+group by all 
+order by 1 desc
   
+----------------------------------------------------------------------------------------------------------------
+-- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
+----------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------
 -- NUMBER OF LISTING VIEWS AMONG VISITS THAT ADDED TO CART 
 ----------------------------------------------------------------------------------------------------------------
@@ -65,11 +105,25 @@ where
   and added_to_cart = 1
 group by all 
 )
-, visit_level as (
+, visit_stats as (
 select
   platform,
   visit_id, 
-  case when sequence_number >= f.sequence_number then 1 else 0 end as after_atc,
+  count(sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  sum(added_to_cart) as atcs
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+group by all 
+)
+, lv_by_atc as (
+select
+  platform,
+  visit_id, 
+  case when lv.sequence_number >= f.sequence_number then 0 else 1 end as before_atc, -- marks if lv happened before or after first atc
   count(sequence_number) as listing_views,
   count(distinct listing_id) as listings
 from 
@@ -83,14 +137,17 @@ where
 group by all 
 )
 select 
-  listing_views,
-  count(distinct visit_id) as visits,
+  s.platform,
+  case when l.listing_views<= 100 then cast(l.listing_views as string) else '101+' end as listing_views,
+  count(distinct l.visit_id) as visits,
 from 
-  visit_level
+  lv_by_atc l -- 
 inner join 
-  (select distinct visit_id from visit_level where after_atc = 1) -- looking at visits that did atc 
-    using (visit_id)
+  visit_stats s  -- looking at visits that did atc 
+    on l.visit_id=s.visit_id
+    and atcs > 0 -- only looking at visits that atc
+    and s.listing_views > 1
 where 
-  after_atc =0 -- only look at everything before atc
+  before_atc = 1 -- only look at everything before atc
 group by all
 order by 1 asc
