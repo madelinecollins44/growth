@@ -30,6 +30,7 @@ group by all
 )
 select
   platform,
+  -- case when lv.sequence_number <= f.sequence_number then 1 else 0 end as before_first_atc, 
   count(lv.sequence_number) as listing_views,
   count(distinct listing_id) as listings,
   count(distinct lv.visit_id) as visits
