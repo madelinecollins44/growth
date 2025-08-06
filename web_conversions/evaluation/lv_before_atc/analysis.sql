@@ -9,9 +9,12 @@ where
   _date >= current_date-30
   and platform in ('boe','mobile_web','desktop')
   and added_to_cart = 1
+group by all 
 )
+, visit_level as (
 select
   platform,
+  visit_id, 
   case when sequence_number >= f.sequence_number then 1 else 0 end as after_atc,
   count(sequence_number) as listing_views,
   count(distinct listing_id) as listings
@@ -20,3 +23,12 @@ from
 left join 
   first_atc f
     using (visit_id, sequence_number)
+group by all 
+)
+select
+  listing_views,
+  count(distinct visit_id) as visits,
+from 
+  visit_level
+where after_atc =0 -- only look at everything before atc
+group by all 
