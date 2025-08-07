@@ -60,9 +60,6 @@ group by 1
 --------------------------------------------------------
 -- GET LV BEFORE AND AFTER FIRST ATC
 --------------------------------------------------------
---------------------------------------------------------
--- GET LV BEFORE AND AFTER FIRST ATC
---------------------------------------------------------
 with visit_w_atc as ( -- GRABS FIRST VISIT_ID WHERE ATC HAPPENS
 select
   browser_id,
@@ -118,3 +115,60 @@ select
   avg(visits) as avg_visit
 from agg
 group by all 
+
+--------------------------------------------------------
+-- # of lv by browsers before atc
+--------------------------------------------------------
+with visit_w_atc as ( -- GRABS FIRST VISIT_ID WHERE ATC HAPPENS
+select
+  browser_id,
+  min(visit_id) as first_atc_visit
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table
+where
+  added_to_cart =1 
+group by all 
+)
+, atc_seq_number as ( -- GRABS THE SEQ NUMBER + VISIT ID OF WHEN FIRST ATC OCCURRED 
+select
+  ht.browser_id,
+  va.first_atc_visit as atc_visit,
+  min(sequence_number) as atc_seq_number
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table ht
+inner join 
+  visit_w_atc va 
+    on va.browser_id=ht.browser_id
+    and va.first_atc_visit=ht.visit_id
+where
+  added_to_cart =1
+group by all 
+)
+, agg as (
+select
+  lv.platform,
+  -- case 
+  --   when lv.visit_id < f.atc_visit OR (lv.visit_id = f.atc_visit and lv.sequence_number < f.atc_seq_number) then 1 
+  --   else 0 
+  -- end as before_first_atc, 
+  lv.browser_id,
+  -- count(distinct lv.browser_id) as browsers
+  count(lv.sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  count(distinct lv.visit_id) as visits,
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table lv
+inner join 
+  atc_seq_number f
+    on lv.browser_id=f.browser_id
+where (lv.visit_id < f.atc_visit OR (lv.visit_id = f.atc_visit and lv.sequence_number < f.atc_seq_number))
+group by all 
+order by 1,2 desc
+)
+select 
+  -- platform,
+  case when listing_views<= 50 then cast(listing_views as string) else '51+' end as listing_views,
+  count(distinct browser_id) as browsers,
+from agg
+group by all 
+order by 1 asc
