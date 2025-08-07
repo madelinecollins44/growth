@@ -163,3 +163,53 @@ where
 group by all 
 /* viists	sequence_number
 24272103	0 */
+
+----------------------------------------------------------------------------------------------------------------
+-- test 3: make sure first_atc cte works
+----------------------------------------------------------------------------------------------------------------
+select
+  visit_id,
+  min(sequence_number) as sequence_number
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+  and added_to_cart = 1
+group by all 
+LIMIT 5
+/* 
+visit_id	sequence_number
+316C4BD9D63A487EB629B38E8F58.1752497536144.1	323
+3271CD892F7A429B9E6A095EFD20.1752465263413.1	304
+52F5DA422E43406199D98049237A.1752456445596.2	1086
+5439011A2EC34205AF5EEE64AF56.1752451072026.1	853
+54099E598162457DA060E362604E.1752463214071.1	999
+*/
+
+select
+  visit_id,
+  sequence_number
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+  and added_to_cart = 1
+  and visit_id in ('54099E598162457DA060E362604E.1752463214071.1')
+group by all 
+order by 2 asc
+/* 
+visit_id	sequence_number
+316C4BD9D63A487EB629B38E8F58.1752497536144.1	323
+316C4BD9D63A487EB629B38E8F58.1752497536144.1	690
+
+visit_id	sequence_number
+3271CD892F7A429B9E6A095EFD20.1752465263413.1	304
+
+visit_id	sequence_number
+5439011A2EC34205AF5EEE64AF56.1752451072026.1	853
+5439011A2EC34205AF5EEE64AF56.1752451072026.1	1216
+5439011A2EC34205AF5EEE64AF56.1752451072026.1	3111
+*/
+
