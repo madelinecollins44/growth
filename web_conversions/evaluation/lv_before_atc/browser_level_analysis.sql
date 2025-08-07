@@ -33,13 +33,17 @@ with unique_visits as (
 --------------------------------------------------------
 -- avg act / lv across platforms
 --------------------------------------------------------
-with agg as (
+with browsers as (
+select distinct browser_id from etsy-data-warehouse-dev.madelinecollins.holder_table where added_to_cart =1
+)
+, agg as (
 select
   platform,
   browser_id,
   count(sequence_number) as listing_views,
   sum(added_to_cart) as atc
 from etsy-data-warehouse-dev.madelinecollins.holder_table
+inner join browsers using (browser_id)
 group by 1,2
 )
 select
