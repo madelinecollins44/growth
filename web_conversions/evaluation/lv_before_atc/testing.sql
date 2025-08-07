@@ -213,3 +213,78 @@ visit_id	sequence_number
 5439011A2EC34205AF5EEE64AF56.1752451072026.1	3111
 */
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- test 4: testing to see visit level before_atc + # of lv stats 
+------ if someone has 1 LV + before_ATC= 1 and listing_views = 1 then ATC on first listing. if 1+ LV + before_ATC= 1 and listing_views = 1 then ATC on second listing. 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+with first_atc as (
+select
+  visit_id,
+  -- split(visit_id, ".")[0] as browser_id, 
+  min(sequence_number) as sequence_number
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+  and added_to_cart = 1
+group by all 
+)
+, visit_stats as (
+select
+  platform,
+  visit_id, 
+  count(sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  sum(added_to_cart) as atcs
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+group by all 
+)
+select
+  lv.platform,
+  lv.visit_id,
+  case when lv.sequence_number <= f.sequence_number then 1 else 0 end as before_first_atc, 
+  case when vs.listing_views = 1 then '1 LV' else '1+ LV' end as visit_view_type,
+  count(lv.sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  count(distinct lv.visit_id) as visits
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  first_atc f
+    on lv.visit_id=f.visit_id
+left join 
+  visit_stats vs
+    on vs.visit_id=lv.visit_id
+where 
+  _date >= current_date-30
+  and lv.platform in ('boe','mobile_web','desktop')
+    and lv.visit_id in ('NvLA8ZCAV_PZYl0nVPZam58LIwjL.1754185642538.1')
+    -- and listing_views = 1
+group by all order by 5 asc
+limit 3
+/* platform	visit_id	before_first_atc	f0_	listing_views	listings	visits
+boe	_u5euiFRSh-YyypsV-2HCw.1754369615780.1	0	1+ LV	4699	5	1
+desktop	uoUqElmnzfDo2DlZNv4pXz8Ssfkj.1752216718729.2	1	1+ LV	743	711	1
+boe	7A5A951457F54527878C1A1A741E.1753781097996.3	0	1+ LV	736	175	1
+mobile_web	HTdrEmU2AvV1rybpCSMN5I_-bXuz.1752325990297.1	1	1+ LV	1	1	1
+mobile_web	lL9PTXQe0H_9UhlPmRKYqdoezC7K.1752340736014.1	0	1+ LV	1	1	1
+desktop	tMrf2YvTXc2KXj-MQV_O3ERHmp9a.1753055920748.1	1	1+ LV	1	1	1
+desktop	NvLA8ZCAV_PZYl0nVPZam58LIwjL.1754185642538.1	1	1 LV	1	1	1
+desktop	yQ3GhCLT4jzdI_qvNLASQlmI4LS5.1754337313220.2	1	1 LV	1	1	1
+desktop	I3ZQFPkPzoLBl3qmuUS3V68KJBC0.1752328307233.1	1	1 LV	1	1	1
+*/
+
+select *
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and visit_id in ('NvLA8ZCAV_PZYl0nVPZam58LIwjL.1754185642538.1')
+group by all 
+order by 
+sequence_number asc
