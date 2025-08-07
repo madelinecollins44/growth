@@ -41,7 +41,8 @@ select
   platform,
   browser_id,
   count(sequence_number) as listing_views,
-  sum(added_to_cart) as atc
+  sum(added_to_cart) as atc,
+  count(distinct visit_id) as visits,
 from etsy-data-warehouse-dev.madelinecollins.holder_table
 inner join browsers using (browser_id)
 group by 1,2
@@ -53,6 +54,8 @@ select
   avg(listing_views) as avg_lv,
   sum(atc) as total_atc,
   avg(atc) as avg_atc,
+  sum(visits) as total_visits,
+  avg(visits) as avg_visits,
 from 
   agg
 group by 1
