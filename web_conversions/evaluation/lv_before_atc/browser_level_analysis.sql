@@ -29,8 +29,9 @@ with unique_visits as (
 );
 */
 
-
--- GRAB FIRST ATC 
+--------------------------------------------------------
+-- GET LV BEFORE AND AFTER FIRST ATC
+--------------------------------------------------------
 with visit_w_atc as ( -- GRABS FIRST VISIT_ID WHERE ATC HAPPENS
 select
   browser_id,
@@ -56,3 +57,19 @@ where
   added_to_cart =1
 group by all 
 )
+select
+  lv.platform,
+  case 
+    when lv.visit_id < f.atc_visit OR (lv.visit_id = f.atc_visit and lv.sequence_number < f.atc_seq_number) then 1 
+    else 0 
+  end as before_first_atc, 
+  count(lv.sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  count(distinct lv.visit_id) as visits
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table lv
+inner join 
+  atc_seq_number f
+    on lv.browser_id=f.browser_id
+group by all 
+order by 1,2 desc
