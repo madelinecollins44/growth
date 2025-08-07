@@ -60,6 +60,9 @@ group by 1
 --------------------------------------------------------
 -- GET LV BEFORE AND AFTER FIRST ATC
 --------------------------------------------------------
+--------------------------------------------------------
+-- GET LV BEFORE AND AFTER FIRST ATC
+--------------------------------------------------------
 with visit_w_atc as ( -- GRABS FIRST VISIT_ID WHERE ATC HAPPENS
 select
   browser_id,
@@ -85,19 +88,33 @@ where
   added_to_cart =1
 group by all 
 )
+, agg as (
 select
   lv.platform,
-  case 
-    when lv.visit_id < f.atc_visit OR (lv.visit_id = f.atc_visit and lv.sequence_number < f.atc_seq_number) then 1 
-    else 0 
-  end as before_first_atc, 
+  -- case 
+  --   when lv.visit_id < f.atc_visit OR (lv.visit_id = f.atc_visit and lv.sequence_number < f.atc_seq_number) then 1 
+  --   else 0 
+  -- end as before_first_atc, 
+  lv.browser_id,
+  -- count(distinct lv.browser_id) as browsers
   count(lv.sequence_number) as listing_views,
   count(distinct listing_id) as listings,
-  count(distinct lv.visit_id) as visits
+  count(distinct lv.visit_id) as visits,
 from 
   etsy-data-warehouse-dev.madelinecollins.holder_table lv
 inner join 
   atc_seq_number f
     on lv.browser_id=f.browser_id
+where (lv.visit_id < f.atc_visit OR (lv.visit_id = f.atc_visit and lv.sequence_number < f.atc_seq_number))
 group by all 
 order by 1,2 desc
+)
+select 
+  platform,
+  count(distinct browser_id) as browsers,
+  sum(listing_views) as total_lv,
+  avg(listing_views) as avg_lv,
+  sum(visits) as visits,
+  avg(visits) as avg_visit
+from agg
+group by all 
