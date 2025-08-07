@@ -60,6 +60,46 @@ from
   agg
 group by 1
 
+
+with browsers as (
+select distinct browser_id from etsy-data-warehouse-dev.madelinecollins.holder_table where added_to_cart =1
+)
+, agg as (
+select
+  platform,
+  browser_id,
+  count(sequence_number) as listing_views,
+  sum(added_to_cart) as atc,
+  count(distinct visit_id) as visits,
+from etsy-data-warehouse-dev.madelinecollins.holder_table
+inner join browsers using (browser_id)
+group by 1,2
+)
+, visit_level_stats as (
+select
+  ht.browser_id,
+  count(sequence_number) as listing_views
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table ht
+group by 1 
+)
+select
+  platform,
+  count(distinct a.browser_id) as browsers,
+  sum(a.listing_views) as total_lv,
+  avg(a.listing_views) as avg_lv,
+  sum(atc) as total_atc,
+  avg(atc) as avg_atc,
+  sum(visits) as total_visits,
+  avg(visits) as avg_visits,
+from 
+  agg a
+inner join 
+  visit_level_stats s
+   on a.browser_id=s.browser_id
+   and s.listing_views > 1
+group by 1
+
 --------------------------------------------------------
 -- GET LV BEFORE AND AFTER FIRST ATC
 --------------------------------------------------------
