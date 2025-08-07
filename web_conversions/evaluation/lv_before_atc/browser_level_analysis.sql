@@ -28,3 +28,31 @@ with unique_visits as (
   where lv._date >= current_date - 14
 );
 */
+
+
+-- GRAB FIRST ATC 
+with visit_w_atc as ( -- GRABS FIRST VISIT_ID WHERE ATC HAPPENS
+select
+  browser_id,
+  min(visit_id) as first_atc_visit
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table
+where
+  added_to_cart =1 
+group by all 
+)
+, atc_seq_number as ( -- GRABS THE SEQ NUMBER + VISIT ID OF WHEN FIRST ATC OCCURRED 
+select
+  ht.browser_id,
+  va.first_atc_visit as atc_visit,
+  min(sequence_number) as atc_seq_number
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table ht
+inner join 
+  visit_w_atc va 
+    on va.browser_id=ht.browser_id
+    and va.first_atc_visit=ht.visit_id
+where
+  added_to_cart =1
+group by all 
+)
