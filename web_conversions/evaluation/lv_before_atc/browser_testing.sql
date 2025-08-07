@@ -51,3 +51,56 @@ mobile_web	tAlCW0axYrDvqeljozEvH81B-LXA	tAlCW0axYrDvqeljozEvH81B-LXA.17533491107
 mobile_web	tAlCW0axYrDvqeljozEvH81B-LXA	tAlCW0axYrDvqeljozEvH81B-LXA.1753349745228.4	2025-07-24 09:35:45.000000 UTC	0	4332294612	0	4
 mobile_web	tAlCW0axYrDvqeljozEvH81B-LXA	tAlCW0axYrDvqeljozEvH81B-LXA.1753349766931.5	2025-07-24 09:36:06.000000 UTC	0	1863472783	0	5
 */
+
+----------------------------------------------------------------
+-- TEST 2: testing logic to get first atc moment for visit/ seq number
+----------------------------------------------------------------
+with visit_w_atc as (
+select
+  browser_id,
+  min(visit_id) as first_atc_visit
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table
+where
+  added_to_cart =1 
+group by all 
+)
+-- , atc_seq_number as (
+select
+  ht.browser_id,
+  va.first_atc_visit as atc_visit,
+  min(sequence_number) as atc_seq_number
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table ht
+inner join 
+  visit_w_atc va 
+    on va.browser_id=ht.browser_id
+    and va.first_atc_visit=ht.visit_id
+where
+  added_to_cart =1
+group by all 
+limit 5 
+/* 
+browser_id	atc_visit	atc_seq_number
+30AEE65372134BF39EF867D7B99F	30AEE65372134BF39EF867D7B99F.1754066534858.1	2613
+4F8E4A9752FF4A90AC7581EE1663	4F8E4A9752FF4A90AC7581EE1663.1754303737408.1	236
+92BE2F1DEB10491E878D8837971F	92BE2F1DEB10491E878D8837971F.1753769566970.1	993
+zdXggN5aS6WHnOHx456DcA	zdXggN5aS6WHnOHx456DcA.1753868065039.1	995
+08BDCC1F69344A69BFEAB8346A96	08BDCC1F69344A69BFEAB8346A96.1754435311589.1	440
+*/
+
+select * from etsy-data-warehouse-dev.madelinecollins.holder_table where browser_id in ('92BE2F1DEB10491E878D8837971F') and added_to_cart = 1 order by visit_order, sequence_number asc
+/* 
+platform	browser_id	visit_id	start_datetime	sequence_number	listing_id	added_to_cart	visit_order
+boe	30AEE65372134BF39EF867D7B99F	30AEE65372134BF39EF867D7B99F.1754066534858.1	2025-08-01 16:42:14.000000 UTC	2613	1446278113	1	54
+boe	30AEE65372134BF39EF867D7B99F	30AEE65372134BF39EF867D7B99F.1754324369909.2	2025-08-04 16:19:29.000000 UTC	5483	1247010964	1	63
+boe	30AEE65372134BF39EF867D7B99F	30AEE65372134BF39EF867D7B99F.1754330609634.3	2025-08-04 18:03:29.000000 UTC	297	1446278113	1	64
+boe	30AEE65372134BF39EF867D7B99F	30AEE65372134BF39EF867D7B99F.1754330609634.3	2025-08-04 18:03:29.000000 UTC	1242	154083162	1	64
+boe	30AEE65372134BF39EF867D7B99F	30AEE65372134BF39EF867D7B99F.1754351478478.1	2025-08-04 23:51:18.000000 UTC	280	1446278113	1	65
+
+platform	browser_id	visit_id	start_datetime	sequence_number	listing_id	added_to_cart	visit_order
+boe	4F8E4A9752FF4A90AC7581EE1663	4F8E4A9752FF4A90AC7581EE1663.1754303737408.1	2025-08-04 10:35:37.000000 UTC	236	4341059824	1	1
+
+platform	browser_id	visit_id	start_datetime	sequence_number	listing_id	added_to_cart	visit_order
+boe	92BE2F1DEB10491E878D8837971F	92BE2F1DEB10491E878D8837971F.1753769566970.1	2025-07-29 06:12:46.000000 UTC	993	4324179915	1	1
+*/
