@@ -29,6 +29,30 @@ with unique_visits as (
 );
 */
 
+
+--------------------------------------------------------
+-- avg act / lv across platforms
+--------------------------------------------------------
+with agg as (
+select
+  platform,
+  browser_id,
+  count(sequence_number) as listing_views,
+  sum(added_to_cart) as atc
+from etsy-data-warehouse-dev.madelinecollins.holder_table
+group by 1,2
+)
+select
+  platform,
+  count(distinct browser_id) as browsers,
+  sum(listing_views) as total_lv,
+  avg(listing_views) as avg_lv,
+  sum(atc) as total_atc,
+  avg(atc) as avg_atc,
+from 
+  agg
+group by 1
+
 --------------------------------------------------------
 -- GET LV BEFORE AND AFTER FIRST ATC
 --------------------------------------------------------
