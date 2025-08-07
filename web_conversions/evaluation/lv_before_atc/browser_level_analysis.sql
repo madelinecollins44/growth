@@ -6,7 +6,7 @@ select
   sequence_number, 
   listing_id, 
   added_to_cart,
-  row_number() over (order by split(visit_id, ".")[0], visit_id) AS visit_order
+  row_number() over (partition by split(visit_id, ".")[0]  order by visit_id) AS visit_order
 from 
   etsy-data-warehouse-prod.analytics.listing_views 
 where 
