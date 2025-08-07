@@ -274,3 +274,54 @@ where
   -- and s.platform in ('mobile_web')
 group by all
 order by 2 asc
+
+----------------------------------------------------------------------------------------------------------------
+-- LISTING VIEWS + BEFORE ATC STATUS
+----------------------------------------------------------------------------------------------------------------
+with first_atc as (
+select
+  visit_id,
+  -- split(visit_id, ".")[0] as browser_id, 
+  min(sequence_number) as sequence_number
+from 
+  etsy-data-warehouse-prod.analytics.listing_views 
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+  and added_to_cart = 1
+group by all 
+)
+, visit_stats as (
+select
+  platform,
+  visit_id, 
+  count(sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  sum(added_to_cart) as atcs
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+where 
+  _date >= current_date-30
+  and platform in ('boe','mobile_web','desktop')
+group by all 
+)
+select
+  lv.platform,
+  case when lv.sequence_number <= f.sequence_number then 1 else 0 end as before_first_atc, 
+  case when vs.listing_views = 1 then '1 LV' else '1+ LV' end,
+  count(lv.sequence_number) as listing_views,
+  count(distinct listing_id) as listings,
+  count(distinct lv.visit_id) as visits
+from 
+  etsy-data-warehouse-prod.analytics.listing_views lv
+inner join 
+  first_atc f
+    on lv.visit_id=f.visit_id
+left join 
+  visit_stats vs
+    on vs.visit_id=lv.visit_id
+where 
+  _date >= current_date-30
+  and lv.platform in ('boe','mobile_web','desktop')
+group by all 
+order by 1,2,3 desc
