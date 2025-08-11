@@ -17,6 +17,7 @@ from
 where 1=1
   and event_name = "shop_home"
   and _date is not null 
+  and primary_event is true
 group by all 
 UNION ALL 
 select
@@ -29,5 +30,6 @@ from
 where 1=1
   and event_name = "shop_home"
   and _date is not null 
+  and primary_event is true
 group by all 
 ); 
