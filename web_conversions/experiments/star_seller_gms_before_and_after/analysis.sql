@@ -14,7 +14,7 @@ from
   etsy-data-warehouse-prod.weblog.visits 
 where  
   platform in ('desktop')
-  and _date >= ('2025-06-01')
+  and _date >= ('2025-06-01') and _date >= ('2025-07-17') -- only looking between 6/1 and 7/17
 )
 select
    _date
