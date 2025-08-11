@@ -7,6 +7,15 @@ Catapult: https://atlas.etsycorp.com/catapult/1386410949401
 -- GET ALL SHOP HOME TRAFFIC INFO 
 --------------------------------------------------------------------------------
 create or replace table etsy-data-warehouse-dev.madelinecollins.holder_table as (
+with desktop_browsers as (
+select
+  distinct browser_id
+from 
+  etsy-data-warehouse-prod.weblog.visits 
+where  
+  platform in ('desktop')
+  and _date >= ('2025-06-01')
+)
 select
    _date
   , browser_id
@@ -14,6 +23,8 @@ select
   , count(*) as visits 
 from 
   etsy-visit-pipe-prod.canonical.beacon_main_2025_06 -- june data
+inner join 
+  desktop_browser using (browser_id)
 where 1=1
   and event_name = "shop_home"
   and _date is not null 
@@ -26,7 +37,9 @@ select
   , (select kv.value from unnest(properties.map) as kv where kv.key = "shop_shop_id") as shop_id
   , count(*) as visits 
 from 
-  etsy-visit-pipe-prod.canonical.beacon_main_2025_07 -- june data
+  etsy-visit-pipe-prod.canonical.beacon_main_2025_07 -- july data
+inner join 
+  desktop_browser using (browser_id)
 where 1=1
   and event_name = "shop_home"
   and _date is not null 
