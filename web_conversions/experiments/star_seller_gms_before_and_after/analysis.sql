@@ -24,7 +24,7 @@ select
 from 
   etsy-visit-pipe-prod.canonical.beacon_main_2025_06 -- june data
 inner join 
-  desktop_browser using (browser_id)
+  desktop_browsers using (browser_id)
 where 1=1
   and event_name = "shop_home"
   and _date is not null 
@@ -39,7 +39,7 @@ select
 from 
   etsy-visit-pipe-prod.canonical.beacon_main_2025_07 -- july data
 inner join 
-  desktop_browser using (browser_id)
+  desktop_browsers using (browser_id)
 where 1=1
   and event_name = "shop_home"
   and _date is not null 
