@@ -1,31 +1,29 @@
 ----------------------------------------------------------------------------------------------------
 -- TEST 1: see if august beacons table matches with event data while its still in the table 
 ----------------------------------------------------------------------------------------------------
--- beacons table 
-select
-   _date
-  , browser_id
-  -- , (select kv.value from unnest(properties.map) as kv where kv.key = "shop_shop_id") as shop_id
-  , count(*) as visits 
-from 
-  etsy-visit-pipe-prod.canonical.beacon_main_2025_08 -- june data
-where 1=1
-  and event_name = "shop_home"
-  and _date >= current_date-30 
-group by all 
-order by 3 asc limit 5 
+-- ----------------------------------------------------------------------------------------------------
+-- -- TEST 1: see if august beacons table matches with event data while its still in the table 
+-- ----------------------------------------------------------------------------------------------------
+-- -- beacons table 
+-- select
+--    _date
+--   , browser_id
+--   -- , (select kv.value from unnest(properties.map) as kv where kv.key = "shop_shop_id") as shop_id
+--   , count(*) as visits 
+-- from 
+--   etsy-visit-pipe-prod.canonical.beacon_main_2025_07 -- june data
+-- where 1=1
+--   and event_name = "shop_home"
+--   and _date = '2025-07-12'
+-- group by all 
+-- order by 3 desc limit 5 
 /* 
 _date	browser_id	visits
-2025-08-06	RGRL26AW4MkEfFpVF1mJ0aXUebad	26594
-2025-08-01	D5a2bouxu09VvD2M1lPLFu8d5zgg	14015
-2025-08-11	ALJeZ2Fs5OEthxGMDYh1OwHq5_Hl	13151
-2025-08-03	RGRL26AW4MkEfFpVF1mJ0aXUebad	11525
-2025-08-07	RGRL26AW4MkEfFpVF1mJ0aXUebad	11153
-2025-08-01	HT27X-EdreBURy2b8BxEl87Mo2nr	1
-2025-08-01	64FE06F278E4414E83CE4092EA7F	1
-2025-08-01	3psX8CG35QlSvuuwhpTbjU_McX0C	1
-2025-08-01	NI7_13mQSSSwzQmNRxxo-Q	1
-2025-08-01	zKUX0_GrThWvKVTwXZgnCQ	1
+2025-07-12	D5a2bouxu09VvD2M1lPLFu8d5zgg	15657
+2025-07-12	zoRQxvO8Hp9ie_BQANnFkvPyn7qg	6081
+2025-07-12	RGRL26AW4MkEfFpVF1mJ0aXUebad	5978
+2025-07-12	0998guxbYVQqKd_bC1GChmM-a5td	3371
+2025-07-12	SPr7Rxb7eTm6xnI2T6cFOA55CpIx	3154
 */
 
 -- events table 
@@ -36,13 +34,14 @@ select
 from 
   etsy-data-warehouse-prod.weblog.events
 where 
-  _date in ('2025-08-07')
-  and split(visit_id, ".")[0] in ('RGRL26AW4MkEfFpVF1mJ0aXUebad')
+  _date in ('2025-07-12')
+  and split(visit_id, ".")[0] in ('SPr7Rxb7eTm6xnI2T6cFOA55CpIx')
   and event_type in ('shop_home')
 group by 1,2
 /* 
 _date	browser_id	f0_
-2025-08-06	RGRL26AW4MkEfFpVF1mJ0aXUebad	27192
-2025-08-01	D5a2bouxu09VvD2M1lPLFu8d5zgg	13690
-2025-08-01	NI7_13mQSSSwzQmNRxxo-Q	1
-*/
+2025-07-12	D5a2bouxu09VvD2M1lPLFu8d5zgg	15591
+2025-07-12	zoRQxvO8Hp9ie_BQANnFkvPyn7qg	6422
+2025-07-12	RGRL26AW4MkEfFpVF1mJ0aXUebad	5855
+2025-07-12	0998guxbYVQqKd_bC1GChmM-a5td	3371
+2025-07-12	SPr7Rxb7eTm6xnI2T6cFOA55CpIx	3154*/
