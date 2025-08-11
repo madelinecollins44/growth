@@ -1,22 +1,19 @@
 ----------------------------------------------------------------------------------------------------
 -- TEST 1: see if august beacons table matches with event data while its still in the table 
 ----------------------------------------------------------------------------------------------------
--- ----------------------------------------------------------------------------------------------------
--- -- TEST 1: see if august beacons table matches with event data while its still in the table 
--- ----------------------------------------------------------------------------------------------------
--- -- beacons table 
--- select
---    _date
---   , browser_id
---   -- , (select kv.value from unnest(properties.map) as kv where kv.key = "shop_shop_id") as shop_id
---   , count(*) as visits 
--- from 
---   etsy-visit-pipe-prod.canonical.beacon_main_2025_07 -- june data
--- where 1=1
---   and event_name = "shop_home"
---   and _date = '2025-07-12'
--- group by all 
--- order by 3 desc limit 5 
+-- beacons table 
+select
+   _date
+  , browser_id
+  -- , (select kv.value from unnest(properties.map) as kv where kv.key = "shop_shop_id") as shop_id
+  , count(*) as visits 
+from 
+  etsy-visit-pipe-prod.canonical.beacon_main_2025_07 -- june data
+where 1=1
+  and event_name = "shop_home"
+  and _date = '2025-07-12'
+group by all 
+order by 3 desc limit 5 
 /* 
 _date	browser_id	visits
 2025-07-12	D5a2bouxu09VvD2M1lPLFu8d5zgg	15657
