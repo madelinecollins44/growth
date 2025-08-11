@@ -6,7 +6,7 @@ Catapult: https://atlas.etsycorp.com/catapult/1386410949401
 --------------------------------------------------------------------------------
 -- GET ALL SHOP HOME TRAFFIC INFO 
 --------------------------------------------------------------------------------
-with shop_home_traffic as (
+create or replace table etsy-data-warehouse-dev.madelinecollins.holder_table as (
 select
    _date
   , browser_id
