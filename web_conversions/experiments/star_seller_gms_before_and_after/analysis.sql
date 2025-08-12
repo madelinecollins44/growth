@@ -73,7 +73,7 @@ select
   _date,
   browser_id, 
   ht.shop_id,
-  case when ht.shop_id is not null then 1 else 0 end as star_seller_status,
+  case when ssd.shop_id is not null then 1 else 0 end as star_seller_status,
   sum(visits) as total_visits
 from 
   etsy-data-warehouse-dev.madelinecollins.holder_table ht
@@ -86,7 +86,7 @@ left join
       and (_date >= ('2025-06-01') and _date <= ('2025-07-17'))
       and is_star_seller is true) ssd 
   on cast(ssd.shop_id as string)=ht.shop_id
-group by 1,2,3
+group by 1,2,3,4
 )
 select
   case 
