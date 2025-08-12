@@ -77,3 +77,67 @@ where 1=1
   and primary_event is true
 group by 1,2,3,4,5 
 ); 
+
+------------------------------------------------------------------------------------------------------------------------
+-- ADDING IN TRANSACTION DATA TO TRAFFIC 
+------------------------------------------------------------------------------------------------------------------------
+with trans as (
+select
+  _date, 
+  split(visit_id, ".")[0] as browser_id, 
+  shop_id,
+  sum(trans_gms_net) as trans_gms_net,
+  count(distinct transaction_id) as transactions
+from 
+  etsy-data-warehouse-prod.visit_mart.visits_transactions vt
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb 
+    on vt.seller_user_id=sb.user_id
+where 1=1
+  -- and transaction_live=1 -- trans is still live
+  and _date >=('2025-06-16') and _date <=('2025-06-24') -- dates of experiment 
+group by 1,2,3
+)
+, traffic as (
+select
+  variant_id,
+  visit_date,
+  browser_id, 
+  ht.shop_id,
+  case when ssd.shop_id is not null then 1 else 0 end as star_seller_status,
+  sum(visits) as total_visits
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table ht
+left join 
+    (select
+      distinct shop_id 
+    from 
+      etsy-data-warehouse-prod.star_seller.star_seller_daily 
+    where 1=1
+      and (_date >= ('2025-06-16') and _date <=('2025-06-24'))
+      and is_star_seller is true) ssd 
+  on cast(ssd.shop_id as string)=ht.shop_id
+group by 1,2,3,4,5
+)
+select
+  -- count(distinct tfc.browser_id) as browsers,
+  -- count(distinct tfc.shop_id) as shops,
+  -- sum(tfc.total_visits) as total_visits
+  variant_id,
+  coalesce(star_seller_status,0) as star_seller_status,
+  count(distinct tfc.browser_id) as browser_visits,
+  count(distinct tfc.shop_id) as shop_visits,
+  sum(total_visits) as total_visits,
+  count(distinct trns.browser_id) as browser_converts,
+  count(distinct trns.shop_id) as shop_converts,
+  sum(transactions) as total_transactions,
+  sum(trans_gms_net) as total_gms,
+from 
+  traffic tfc
+left join 
+  trans trns 
+    on tfc.browser_id=trns.browser_id
+    and cast(trns.shop_id as string)=tfc.shop_id
+    -- and tfc._date=date(timestamp_seconds(_date))
+group by 1,2
+order by 2,1 desc
