@@ -123,7 +123,7 @@ select
   -- count(distinct tfc.browser_id) as browsers,
   -- count(distinct tfc.shop_id) as shops,
   -- sum(tfc.total_visits) as total_visits
-  variant_id,
+  -- variant_id,
   coalesce(star_seller_status,0) as star_seller_status,
   count(distinct tfc.browser_id) as browser_visits,
   count(distinct tfc.shop_id) as shop_visits,
@@ -139,5 +139,5 @@ left join
     on tfc.browser_id=trns.browser_id
     and cast(trns.shop_id as string)=tfc.shop_id
     -- and tfc._date=date(timestamp_seconds(_date))
-group by 1,2
+group by 1
 order by 2,1 desc
