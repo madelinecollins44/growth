@@ -46,3 +46,54 @@ where 1=1
   and primary_event is true
 group by all 
 ); 
+
+--------------------------------------------------------------------------------
+-- ADDING TOGETHER TRANS DATA WITH VISIT DATA
+--------------------------------------------------------------------------------
+with trans as (
+select
+  case 
+    when purch_date >= ('2025-06-01') and purch_date >= ('2025-06-15') then 'before' -- two weeks before experiment 
+    when purch_date >= ('2025-07-03') and purch_date >= ('2025-07-17') then 'after' -- two weeks after experiment 
+    else 'during'
+  end as experiment_period, 
+  split(visit_id, ".")[0] as browser_id, 
+  shop_id,
+  sum(trans_gms_net) as trans_gms_net,
+  count(distinct transaction_id) as transactions
+from 
+  etsy-data-warehouse-prod.visit_mart.visits_transactions vt
+inner join 
+  etsy-data-warehouse-prod.rollups.seller_basics sb 
+    on vt.seller_user_id=sb.user_id
+where 1=1
+  and transaction_live=1 -- trans is still live
+  and purch_date >= ('2025-06-01') and purch_date >= ('2025-07-17') -- only looking between 6/1 and 7/17
+group by 1,2,3
+)
+, traffic as (
+select
+  case 
+    when _date >= ('2025-06-01') and _date >= ('2025-06-15') then 'before' -- two weeks before experiment 
+    when _date >= ('2025-07-03') and _date >= ('2025-07-17') then 'after' -- two weeks after experiment 
+    else 'during'
+  end as experiment_period,
+  browser_id, 
+  shop_id,
+  sum(visits) as total_visits
+from 
+  etsy-data-warehouse-dev.madelinecollins.holder_table
+inner join 
+  
+group by 1,2,3
+)
+select
+  experiment_period,
+
+from 
+  traffic tfc
+left join 
+  trans trns 
+    on tfc.browser_id=trns.browser_id
+    and tfc.shop_id=trns.shop_id   
+    and tfc.experiment_period=trns.experiment_period
