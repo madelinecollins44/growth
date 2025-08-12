@@ -96,7 +96,7 @@ left join
 group by 1,2,3
 )
 select
-  experiment_period,
+  tfc.experiment_period,
   star_seller_status,
   count(distinct tfc.browser_id) as browser_visits,
   sum(total_visits) as total_visits,
@@ -108,5 +108,6 @@ from
 left join 
   trans trns 
     on tfc.browser_id=trns.browser_id
-    and tfc.shop_id=trns.shop_id   
+    and cast(trns.shop_id as string)=tfc.shop_id
     and tfc.experiment_period=trns.experiment_period
+group by 1,2
