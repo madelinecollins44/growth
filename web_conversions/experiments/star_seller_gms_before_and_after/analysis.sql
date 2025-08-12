@@ -53,8 +53,8 @@ group by all
 with trans as (
 select
   case 
-    when purch_date >= ('2025-06-01') and purch_date >= ('2025-06-15') then 'before' -- two weeks before experiment 
-    when purch_date >= ('2025-07-03') and purch_date >= ('2025-07-17') then 'after' -- two weeks after experiment 
+    when cast(purch_date as string) >= ('2025-06-01') and cast(purch_date as string) >= ('2025-06-15') then 'before' -- two weeks before experiment 
+    when cast(purch_date as string) >= ('2025-07-03') and cast(purch_date as string) >= ('2025-07-17') then 'after' -- two weeks after experiment 
     else 'during'
   end as experiment_period, 
   split(visit_id, ".")[0] as browser_id, 
@@ -68,7 +68,7 @@ inner join
     on vt.seller_user_id=sb.user_id
 where 1=1
   and transaction_live=1 -- trans is still live
-  and purch_date >= ('2025-06-01') and purch_date >= ('2025-07-17') -- only looking between 6/1 and 7/17
+  and cast(purch_date as string) >= ('2025-06-01') and cast(purch_date as string) >= ('2025-07-17') -- only looking between 6/1 and 7/17
 group by 1,2,3
 )
 , traffic as (
@@ -79,17 +79,30 @@ select
     else 'during'
   end as experiment_period,
   browser_id, 
-  shop_id,
+  ht.shop_id,
+  case when ht.shop_id is not null then 1 else 0 end as star_seller_status,
   sum(visits) as total_visits
 from 
-  etsy-data-warehouse-dev.madelinecollins.holder_table
-inner join 
-  
+  etsy-data-warehouse-dev.madelinecollins.holder_table ht
+left join 
+    (select
+      distinct shop_id 
+    from 
+      etsy-data-warehouse-prod.star_seller.star_seller_daily 
+    where 1=1
+      and (_date >= ('2025-06-01') and _date >= ('2025-07-17'))
+      and is_star_seller is true) ssd 
+  on cast(ssd.shop_id as string)=ht.shop_id
 group by 1,2,3
 )
 select
   experiment_period,
-
+  star_seller_status,
+  count(distinct tfc.browser_id) as browser_visits,
+  sum(total_visits) as total_visits,
+  count(distinct trns.browser_id) as browser_converts,
+  sum(transactions) as total_transactions,
+  sum(trans_gms_net) as total_gms,
 from 
   traffic tfc
 left join 
