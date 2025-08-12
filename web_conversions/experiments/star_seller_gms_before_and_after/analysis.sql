@@ -14,7 +14,7 @@ from
   etsy-data-warehouse-prod.weblog.visits 
 where  
   platform in ('desktop')
-  and _date >= ('2025-06-01') and _date >= ('2025-07-17') -- only looking between 6/1 and 7/17
+  and (_date >= ('2025-06-01') and _date <= ('2025-07-17')) -- only looking between 6/1 and 7/17
 )
 select
    _date
@@ -44,6 +44,7 @@ where 1=1
   and event_name = "shop_home"
   and _date is not null 
   and primary_event is true
+  and _date <= ('2025-07-17')
 group by all 
 ); 
 
@@ -52,11 +53,7 @@ group by all
 --------------------------------------------------------------------------------
 with trans as (
 select
-  case 
-    when cast(purch_date as string) >= ('2025-06-01') and cast(purch_date as string) >= ('2025-06-15') then 'before' -- two weeks before experiment 
-    when cast(purch_date as string) >= ('2025-07-03') and cast(purch_date as string) >= ('2025-07-17') then 'after' -- two weeks after experiment 
-    else 'during'
-  end as experiment_period, 
+  _date, 
   split(visit_id, ".")[0] as browser_id, 
   shop_id,
   sum(trans_gms_net) as trans_gms_net,
@@ -67,17 +64,13 @@ inner join
   etsy-data-warehouse-prod.rollups.seller_basics sb 
     on vt.seller_user_id=sb.user_id
 where 1=1
-  and transaction_live=1 -- trans is still live
-  and cast(purch_date as string) >= ('2025-06-01') and cast(purch_date as string) >= ('2025-07-17') -- only looking between 6/1 and 7/17
+  -- and transaction_live=1 -- trans is still live
+  and cast(_date as string) >= ('2025-06-01') and cast(_date as string) <= ('2025-07-17') -- only looking between 6/1 and 7/17
 group by 1,2,3
 )
 , traffic as (
 select
-  case 
-    when _date >= ('2025-06-01') and _date >= ('2025-06-15') then 'before' -- two weeks before experiment 
-    when _date >= ('2025-07-03') and _date >= ('2025-07-17') then 'after' -- two weeks after experiment 
-    else 'during'
-  end as experiment_period,
+  _date,
   browser_id, 
   ht.shop_id,
   case when ht.shop_id is not null then 1 else 0 end as star_seller_status,
@@ -90,14 +83,18 @@ left join
     from 
       etsy-data-warehouse-prod.star_seller.star_seller_daily 
     where 1=1
-      and (_date >= ('2025-06-01') and _date >= ('2025-07-17'))
+      and (_date >= ('2025-06-01') and _date <= ('2025-07-17'))
       and is_star_seller is true) ssd 
   on cast(ssd.shop_id as string)=ht.shop_id
 group by 1,2,3
 )
 select
-  tfc.experiment_period,
-  star_seller_status,
+  case 
+    when tfc._date >= ('2025-06-01') and tfc._date <= ('2025-06-15') then 'before' -- two weeks before experiment 
+    when tfc._date >= ('2025-07-03') and tfc._date <= ('2025-07-17') then 'after' -- two weeks after experiment 
+    else 'during'
+  end as experiment_period,
+  coalesce(star_seller_status,0) as star_seller_status,
   count(distinct tfc.browser_id) as browser_visits,
   sum(total_visits) as total_visits,
   count(distinct trns.browser_id) as browser_converts,
@@ -109,5 +106,5 @@ left join
   trans trns 
     on tfc.browser_id=trns.browser_id
     and cast(trns.shop_id as string)=tfc.shop_id
-    and tfc.experiment_period=trns.experiment_period
+    -- and tfc._date=date(timestamp_seconds(_date))
 group by 1,2
