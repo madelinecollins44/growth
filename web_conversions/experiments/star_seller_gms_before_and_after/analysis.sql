@@ -89,6 +89,9 @@ left join
 group by 1,2,3,4
 )
 select
+  -- count(distinct tfc.browser_id) as browsers,
+  -- count(distinct tfc.shop_id) as shops,
+  -- sum(tfc.total_visits) as total_visits
   case 
     when tfc._date >= ('2025-06-01') and tfc._date <= ('2025-06-15') then 'before' -- two weeks before experiment 
     when tfc._date >= ('2025-07-03') and tfc._date <= ('2025-07-17') then 'after' -- two weeks after experiment 
@@ -96,8 +99,10 @@ select
   end as experiment_period,
   coalesce(star_seller_status,0) as star_seller_status,
   count(distinct tfc.browser_id) as browser_visits,
+  count(distinct tfc.shop_id) as shop_visits,
   sum(total_visits) as total_visits,
   count(distinct trns.browser_id) as browser_converts,
+  count(distinct trns.shop_id) as shop_converts,
   sum(transactions) as total_transactions,
   sum(trans_gms_net) as total_gms,
 from 
@@ -108,3 +113,4 @@ left join
     and cast(trns.shop_id as string)=tfc.shop_id
     -- and tfc._date=date(timestamp_seconds(_date))
 group by 1,2
+order by 2,1 desc
