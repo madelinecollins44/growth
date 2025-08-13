@@ -88,7 +88,6 @@ select * from agg where visit_date >= first_bucket_date -- only looking at visit
 ------------------------------------------------------------------------------------------------------------------------
 with trans as (
 select
-  _date, 
   split(visit_id, ".")[0] as browser_id, 
   shop_id,
   sum(trans_gms_net) as trans_gms_net,
@@ -101,12 +100,12 @@ inner join
 where 1=1
   and transaction_live=1 -- trans is still live
   and _date >=('2025-06-16') and _date <=('2025-06-24') -- dates of experiment 
-group by 1,2,3
+group by 1,2
 )
 , traffic as (
 select
   variant_id,
-  visit_date,
+  -- visit_date,
   browser_id, 
   ht.shop_id,
   case when ssd.shop_id is not null then 1 else 0 end as star_seller_status,
@@ -122,7 +121,7 @@ left join
       and (_date >= ('2025-06-16') and _date <=('2025-06-24'))
       and is_star_seller is true) ssd 
   on cast(ssd.shop_id as string)=ht.shop_id
-group by 1,2,3,4,5
+group by 1,2,3,4
 )
 select
   -- count(distinct tfc.browser_id) as browsers,
