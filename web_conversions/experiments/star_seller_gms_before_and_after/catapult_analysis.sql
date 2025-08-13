@@ -99,7 +99,7 @@ inner join
   etsy-data-warehouse-prod.rollups.seller_basics sb 
     on vt.seller_user_id=sb.user_id
 where 1=1
-  -- and transaction_live=1 -- trans is still live
+  and transaction_live=1 -- trans is still live
   and _date >=('2025-06-16') and _date <=('2025-06-24') -- dates of experiment 
 group by 1,2,3
 )
