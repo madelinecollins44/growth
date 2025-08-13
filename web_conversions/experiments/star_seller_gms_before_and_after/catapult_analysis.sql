@@ -59,8 +59,9 @@ where
 -- LOOK AT SHOP HOME TRAFFIC FOR ALL VISITS 
 ------------------------------------------------------------------------------------------------------------------------
 create or replace table etsy-data-warehouse-dev.madelinecollins.holder_table as (
+with agg as (
 select
-   fb._date as bucket_date
+   min(fb._date) as first_bucket_date
   , bm._date as visit_date
   , browser_id
   , variant_id
@@ -72,11 +73,15 @@ inner join
   `etsy-data-warehouse-dev.madelinecollins.ab_first_bucket` fb 
     on fb.bucketing_id=bm.browser_id
 where 1=1
-  and event_name = "shop_home"
-  and bm._date >=('2025-06-16') and bm._date <=('2025-06-24')
-  and primary_event is true
-group by 1,2,3,4,5 
+  and event_name = "shop_home" -- only shop home traffic 
+  and bm._date >=('2025-06-16') and bm._date <=('2025-06-24') -- during experiment run 
+  -- and primary_event is true 
+group by all 
+)
+select * from agg where visit_date >= first_bucket_date -- only looking at visits that happened post bucketing visit 
 ); 
+
+-- select variant_id, count(distinct browser_id) from etsy-data-warehouse-dev.madelinecollins.holder_table  group by 1
 
 ------------------------------------------------------------------------------------------------------------------------
 -- ADDING IN TRANSACTION DATA TO TRAFFIC 
