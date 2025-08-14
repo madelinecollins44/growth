@@ -1,21 +1,22 @@
-with all_receipts as (
+with all_receipts as ( -- get all receipts and time between 
 select
   receipt_id,
   initial_edd_min,
-  date_diff(initial_edd_min, current_date,day) as dates_between_edd
+  date_diff(current_date,initial_edd_min,day) as dates_between_edd -- proxy for review eligbility 
 from etsy-data-warehouse-prod.rollups.receipt_shipping_basics
+where order_date >= current_date-365 -- orders within the last year for filtering
 group by 1,2,3
 )
 , eligible_receipts as (
 select 
   distinct receipt_id 
 from all_receipts
-where dates_between_edd <= 100 -- can leave reviews up to 100 days after edd
+where dates_between_edd <= 100 and dates_between_edd >=0 -- can leave reviews up to 100 days after edd
 )
 , browsers_for_receipts as (
 select
   split(visit_id, ".")[0] as browser_id, 
-  count(distinct receipt_id) -- elgibile receipts for reviews
+  count(distinct receipt_id) as receipts-- elgibile receipts for reviews
 from 
   etsy-data-warehouse-prod.transaction_mart.receipts_visits
 inner join  
