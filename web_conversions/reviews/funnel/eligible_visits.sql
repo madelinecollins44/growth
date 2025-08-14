@@ -28,9 +28,11 @@ select
   count(distinct v.visit_id) as total_visits,
   count(distinct case when event_type in ('hp_review_nudger_delivered') then v.visit_id end) as visits_w_nudge,
   count(distinct case when event_type in ('review_purchases_nav_v3_click') then v.visit_id end) as visits_w_nav_clicks,
+  count(distinct case when event_type in ('choose_your_own_review_card_clicked', 'review_form_open') then v.visit_id end) as visits_w_review_starts,
   count(distinct v.browser_id) as total_browsers,
   count(distinct case when event_type in ('hp_review_nudger_delivered') then v.browser_id end) as browsers_w_nudge,
   count(distinct case when event_type in ('review_purchases_nav_v3_click') then v.browser_id end) as browsers_w_nav_clicks,
+  count(distinct case when event_type in ('choose_your_own_review_card_clicked', 'review_form_open') then v.browser_id end) as browsers_w_review_starts,
 from 
   etsy-data-warehouse-prod.weblog.visits v
 inner join 
