@@ -22,7 +22,7 @@ from
 inner join 
   experiments e
    on rcd.launch_id=e.launch_id
-   and rcd._date=e.most_recent_date
+   and rcd._date=e.end_date
 where 1=1
   and coverage_name in ('GMS coverage','Traffic coverage')
   and unit in ('PERCENTAGE')
@@ -40,7 +40,7 @@ from
 inner join 
   experiments e
    on rms.launch_id=e.launch_id
-   and rmd._date=e.most_recent_date
+   and rmd._date=e.end_date
 where 1=1
   and segmentation in ('any')
   and segment in ('all')
