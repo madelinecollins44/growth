@@ -57,10 +57,10 @@ where 1=1
 with all_receipts as ( -- get all receipts and time between 
 select
   receipt_id,
-  initial_edd_min,
-  date_diff(current_date, initial_edd_min, day) as dates_between_edd
+  initial_edd_max,
+  date_diff(current_date, initial_edd_max, day) as dates_between_edd
 from etsy-data-warehouse-prod.rollups.receipt_shipping_basics
-where initial_edd_min <= current_date-100
+where initial_edd_max <= current_date-100 and initial_edd_max < current_date
 group by 1,2,3
 )
 -- , eligible_receipts as (
