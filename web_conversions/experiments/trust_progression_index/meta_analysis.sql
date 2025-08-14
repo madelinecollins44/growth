@@ -22,6 +22,7 @@ where 1=1
   and lower(segmentation) in ('any')
   and lower(segment) in('all')
 )
+, metrics as (
 select
   metric_display_name,
   metric_value_control,
