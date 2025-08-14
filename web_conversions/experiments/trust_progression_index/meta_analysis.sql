@@ -1,9 +1,16 @@
 with experiments as (
 select
   launch_id,
-  max(_date) as most_recent_date
+  end_date, 
+  config_flag, 
+  status,
+  ramp_decision,
+  platform,
 from 
-  etsy-data-warehouse-prod.catapult.results_metric_day 
+  etsy-data-warehouse-prod.rollups.experiment_reports 
+where 1=1
+  and group_name in ('Drive Conversion')
+  and subteam in ('RegX')
 )
 , coverages as (
 select 
@@ -22,7 +29,6 @@ where 1=1
   and lower(segmentation) in ('any')
   and lower(segment) in('all')
 )
-, metrics as (
 select
   metric_display_name,
   metric_value_control,
