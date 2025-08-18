@@ -1,3 +1,6 @@
+---------------------------------------------------------------------------------
+-- PULL EXPERIMENT BACKGROUND INFO 
+---------------------------------------------------------------------------------
 with experiments as (
 select
   launch_id,
@@ -50,3 +53,121 @@ where 1=1
       '1227229423992', -- Ads CR
   )
 
+---------------------------------------------------------------------------------
+-- PULL TRUST INDICATOR METRICS
+---------------------------------------------------------------------------------
+create or replace table `etsy-data-warehouse-dev.cdonica.boe_trust_experiments_events_q2` as
+with experiments as (
+select 
+  launch_id,
+  end_date, 
+  config_flag, 
+  status,
+  ramp_decision,
+  platform,
+  subteam,
+  group_name,
+  initiative
+from 
+  etsy-data-warehouse-prod.rollups.experiment_reports 
+where 1=1
+  and (trim(lower(initiative)) like '%drive conversion%')
+  and end_date >= '2025-04-01'
+  and platform in ('mobile_web','desktop')
+)
+select 
+  a.experiment_id,
+  variant_id,
+  platform,
+  a.event_id,
+  count(*) as counts, 
+  sum(event_value) as total_events
+from 
+  etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
+inner join experiments c on a.experiment_id = c.config_flag
+where a._date >= '2025-04-01'
+and event_id in 
+  ( /* TRUST BUILDING */
+    'view_listing',  --view listing
+  'listing_expand_description_open','product_details_content_toggle_open' --- open description
+  'shop_home', --- shop home
+  'cart_view', -- cart view
+  'search', --search
+  'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+  'listing_page_review_engagement_frontend', -- engagement
+ /* FUNNEL PROGRESSION */
+  'backend_favorite_item2', -- favorited
+  'add_to_cart', --A2C
+  'checkout_start', --- checkout start
+  'backend_cart_payment', --- conversion rate
+  'backend_send_convo', -- convo
+  )
+group by all;
+
+select
+  *,
+  concat("variant - ", abs(ranked1 - total_variants)) as variant_id --- cleaning up variants for google sheet
+from (
+select
+  experiment_id,
+  variant_id,
+  platform,
+  count(case when variant_id != 'off' then variant_id else null end) over (partition by experiment_id) as total_variants,
+  case when variant_id != 'off' then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
+from `etsy-data-warehouse-dev.cdonica.boe_trust_experiments_events` 
+group by all);
+
+select 
+  *,
+  case when variant_id in ('off','control') then 'off' 
+    when variant_id not in ('off', 'control') then concat("variant - ", case when ranked1 = 1 then 1 when ranked1 = 2 then 2 else ranked1 end) else null end as variant_id_clean, --- cleaning up variants for google sheet
+  total_trust_building_actions/total_funnel_progression as tpi
+from (
+select
+  experiment_id,
+  variant_id,
+  platform,
+  count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
+  case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
+  sum(case when (platform = 'BOE iOS' and event_id in (
+        'view_listing',
+        'listing_item_details_read_more_description_tapped', --iOS
+        'shop_home', 
+        'cart_view',
+        'search', 
+        'listing_page_image_carousel_changed',
+        'listing_image_swipe',
+          ---- Review Engagement Events
+      'listing_see_all_reviews_tapped', --iOS
+      'listing_screen_review_card_swipe', --iOS
+      'review_card_tapped',-- iOS
+      'review_updates_view_shop_home_reviews', --iOS
+      'listing_screen_reviews_seen', --iOS
+      'fullscreen_review_media_screen', --iOS + Android
+      'reviews_sort_suggested_clicked', --iOS
+      'reviews_sort_most_recent_clicked', --iOS
+      'reviews_sort_highest_rated_clicked', --iOS
+      'reviews_sort_lowest_rated_clicked' ---iOS
+        )) OR   
+    (platform = 'BOE Android' and event_id in (
+        'view_listing',
+        'listing_item_details_read_description_clicked', 
+        'shop_home', 
+        'cart_view',
+        'search', 
+        'listing_media_gallery_scrolled',
+        'listing_page_image_carousel_changed',
+        --- Review Engagement
+        'see_all_reviews_clicked', --Android
+        'highlighted_review_clicked',
+        'listing_reviews_carousel_scrolled',
+        'listing_all_reviews_screen',
+        'reviews_sort_button_clicked'
+    )) then total_events else null end) as total_trust_building_actions,
+  sum(case when event_id in ('add_to_cart',
+        'backend_favorite_item2',
+        'checkout_start',
+        'backend_cart_payment') then total_events else null end) as total_funnel_progression
+from 
+  `etsy-data-warehouse-dev.cdonica.boe_trust_experiments_events_q2`
+group by all);
