@@ -72,7 +72,7 @@ select
   experiments e
 inner join
   metrics mtcs
-   on rmd.launch_id=e.launch_id
+   on mtcs.launch_id=e.launch_id
 inner join 
   coverages cvg
     on cvg.launch_id=e.launch_id
@@ -102,6 +102,7 @@ where 1=1
 )
 , events as (
 select 
+  launch_id,
   a.experiment_id,
   variant_id,
   platform,
@@ -150,9 +151,9 @@ select
     when variant_id in ('off','control') then 'off' 
     when variant_id not in ('off', 'control') then concat("variant - ", case when ranked1 = 1 then 1 when ranked1 = 2 then 2 else ranked1 end) else null end as variant_id_clean, --- cleaning up variants for google sheet
   total_trust_building_actions/total_funnel_progression as tpi,
-  convos_sent_count,
 from (
   select
+    launch_id,
     experiment_id,
     variant_id,
     platform,
@@ -174,8 +175,36 @@ from (
       ) then total_events else null end) as total_funnel_progression,    
     sum(case when event_id in ('backend_send_convo') then total_events else null end) as convos_sent_count,
   from 
-    `etsy-data-warehouse-dev.madelinecollins.web_trust_experiments_events_q2`
-  group by all)
+   events
+  group by all
+  )
+group by all
 );
 
+select
+  launch_id,
+  end_date, 
+  config_flag, 
+  status,
+  ramp_decision,
+  k.platform,
+  subteam,
+  group_name,
+  initiative,
+  variant_id_clean,
+  coverage_name,
+  coverage_value,
+  metric_display_name,
+  metric_value_control,
+  metric_value_treatment,
+  relative_change,
+  total_funnel_progression,
+  convos_sent_count,
+  tpi,
+  convos_sent_count,
+from key_metrics k
+inner join trust_measurements t using (launch_id, platform)
+order by 2 asc
+
+; 
 END
