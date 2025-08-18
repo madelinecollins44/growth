@@ -204,7 +204,7 @@ select
   convos_sent_count,
 from key_metrics k
 inner join trust_measurements t using (launch_id, platform)
-order by 2 asc
+order by end_date,variant_id_clean asc 
 
 ; 
 END
