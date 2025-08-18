@@ -56,7 +56,7 @@ where 1=1
 ---------------------------------------------------------------------------------
 -- PULL TRUST INDICATOR METRICS
 ---------------------------------------------------------------------------------
-create or replace table `etsy-data-warehouse-dev.cdonica.boe_trust_experiments_events_q2` as
+create or replace table `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events_q2` as
 with experiments as (
 select 
   launch_id,
@@ -114,7 +114,7 @@ select
   platform,
   count(case when variant_id != 'off' then variant_id else null end) over (partition by experiment_id) as total_variants,
   case when variant_id != 'off' then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
-from `etsy-data-warehouse-dev.cdonica.boe_trust_experiments_events` 
+from `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events` 
 group by all);
 
 select 
@@ -129,45 +129,19 @@ select
   platform,
   count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
   case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
-  sum(case when (platform = 'BOE iOS' and event_id in (
-        'view_listing',
-        'listing_item_details_read_more_description_tapped', --iOS
-        'shop_home', 
-        'cart_view',
-        'search', 
-        'listing_page_image_carousel_changed',
-        'listing_image_swipe',
-          ---- Review Engagement Events
-      'listing_see_all_reviews_tapped', --iOS
-      'listing_screen_review_card_swipe', --iOS
-      'review_card_tapped',-- iOS
-      'review_updates_view_shop_home_reviews', --iOS
-      'listing_screen_reviews_seen', --iOS
-      'fullscreen_review_media_screen', --iOS + Android
-      'reviews_sort_suggested_clicked', --iOS
-      'reviews_sort_most_recent_clicked', --iOS
-      'reviews_sort_highest_rated_clicked', --iOS
-      'reviews_sort_lowest_rated_clicked' ---iOS
-        )) OR   
-    (platform = 'BOE Android' and event_id in (
-        'view_listing',
-        'listing_item_details_read_description_clicked', 
-        'shop_home', 
-        'cart_view',
-        'search', 
-        'listing_media_gallery_scrolled',
-        'listing_page_image_carousel_changed',
-        --- Review Engagement
-        'see_all_reviews_clicked', --Android
-        'highlighted_review_clicked',
-        'listing_reviews_carousel_scrolled',
-        'listing_all_reviews_screen',
-        'reviews_sort_button_clicked'
-    )) then total_events else null end) as total_trust_building_actions,
+  sum(case when event_id in (
+      'view_listing',  --view listing
+      'listing_expand_description_open','product_details_content_toggle_open' --- open description
+      'shop_home', --- shop home
+      'cart_view', -- cart view
+      'search', --search
+      'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+      'listing_page_review_engagement_frontend', -- engagement
+    ) then total_events else null end) as total_trust_building_actions,
   sum(case when event_id in ('add_to_cart',
         'backend_favorite_item2',
         'checkout_start',
         'backend_cart_payment') then total_events else null end) as total_funnel_progression
 from 
-  `etsy-data-warehouse-dev.cdonica.boe_trust_experiments_events_q2`
+  `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events_q2`
 group by all);
