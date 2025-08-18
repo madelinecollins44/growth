@@ -61,7 +61,7 @@ where 1=1
 ---------------------------------------------------------------------------------
 -- PULL TRUST INDICATOR METRICS
 ---------------------------------------------------------------------------------
-create or replace table `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events_q2` as (
+create or replace table `etsy-data-warehouse-dev.madelinecollins.web_trust_experiments_events_q2` as (
 with experiments as (
 select 
   launch_id,
@@ -107,4 +107,46 @@ and event_id in
   'backend_cart_payment', --- conversion rate
   'backend_send_convo' -- convo
   )
+group by all);
+
+select
+  *,
+  concat("variant - ", abs(ranked1 - total_variants)) as variant_id --- cleaning up variants for google sheet
+from (
+select
+  experiment_id,
+  variant_id,
+  platform,
+  count(case when variant_id != 'off' then variant_id else null end) over (partition by experiment_id) as total_variants,
+  case when variant_id != 'off' then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
+from `etsy-data-warehouse-dev.madelinecollins.web_trust_experiments_events_q2` 
+group by all);
+
+select 
+  *,
+  case when variant_id in ('off','control') then 'off' 
+    when variant_id not in ('off', 'control') then concat("variant - ", case when ranked1 = 1 then 1 when ranked1 = 2 then 2 else ranked1 end) else null end as variant_id_clean, --- cleaning up variants for google sheet
+  total_trust_building_actions/total_funnel_progression as tpi
+from (
+select
+  experiment_id,
+  variant_id,
+  platform,
+  count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
+  case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
+  sum(case when event_id in (
+      'view_listing',  --view listing
+      'listing_expand_description_open','product_details_content_toggle_open' --- open description
+      'shop_home', --- shop home
+      'cart_view', -- cart view
+      'search', --search
+      'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+      'listing_page_review_engagement_frontend' -- engagement
+    ) then total_events else null end) as total_trust_building_actions,
+  sum(case when event_id in ('add_to_cart',
+        'backend_favorite_item2',
+        'checkout_start',
+        'backend_cart_payment') then total_events else null end) as total_funnel_progression
+from 
+  `etsy-data-warehouse-dev.madelinecollins.web_trust_experiments_events_q2`
 group by all);
