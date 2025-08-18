@@ -24,8 +24,8 @@ where 1=1
 , coverages as (
 select 
   e.launch_id,
-  coverage_name,
-  coverage_value,
+  max(case when coverage_name in ('GMS coverage') then coverage_value end) as gms_coverage,
+  max(case when coverage_name in ('Traffic coverage') then coverage_value end) as traffic_coverage,
 from 
   etsy-data-warehouse-prod.catapult.results_coverage_day rcd
 inner join 
@@ -37,15 +37,26 @@ where 1=1
   and unit in ('PERCENTAGE')
   and lower(segmentation) in ('any')
   and lower(segment) in('all')
+group by all
 )
 , metrics as (
 select
   e.launch_id,
-  metric_display_name,
-  metric_value_control,
-  metric_value_treatment,
-  relative_change,
-  p_value
+  metric_variant_name,
+  max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end) as ads_cr_control,
+  max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end) as ads_cr_treatment,
+  max(case when metric_display_name in ('Ads Conversion Rate') then relative_change end) as ads_cr_change,
+  max(case when metric_display_name in ('Ads Conversion Rate') then p_value end) as ads_cr_pvalue,
+
+  max(case when metric_display_name in ('GMS per Unit') then metric_value_control end) as gpu_control,
+  max(case when metric_display_name in ('GMS per Unit') then metric_value_treatment end) as gpu_treatment,
+  max(case when metric_display_name in ('GMS per Unit') then relative_change end) as gpu_change,
+  max(case when metric_display_name in ('GMS per Unit') then p_value end) as gpu_pvalue,
+
+  max(case when metric_display_name in ('Conversion Rate') then metric_value_control end) as cr_control,
+  max(case when metric_display_name in ('Conversion Rate') then metric_value_treatment end) as cr_treatment,
+  max(case when metric_display_name in ('Conversion Rate') then relative_change end) as cr_change,
+  max(case when metric_display_name in ('Conversion Rate') then p_value end) as cr_pvalue,
 from 
   etsy-data-warehouse-prod.catapult.results_metric_day rmd
 inner join 
@@ -59,16 +70,25 @@ where 1=1
       1029227163677, -- CR
       1275588643427, -- GMS per Unit
       1227229423992 -- Ads CR
-  ))
+  )
+group by all )
 select
   e.*,
-  coverage_name,
-  coverage_value,
-  metric_display_name,
-  metric_value_control,
-  metric_value_treatment,
-  relative_change,
-  p_value,
+  metric_variant_name,
+  gms_coverage,
+  traffic_coverage,
+  ads_cr_control,
+  ads_cr_treatment,
+  ads_cr_change,
+  ads_cr_pvalue,
+  gpu_control,
+  gpu_treatment,
+  gpu_change,
+  gpu_pvalue,
+  cr_control,
+  cr_treatment,
+  cr_change,
+  cr_pvalue,
  from 
   experiments e
 inner join
@@ -77,6 +97,7 @@ inner join
 inner join 
   coverages cvg
     on cvg.launch_id=e.launch_id
+order by  end_date, metric_variant_name asc
 );
 
 ---------------------------------------------------------------------------------
@@ -147,11 +168,13 @@ group by all
 -- group by all)
 -- )
 select 
-  *,
-  case 
-    when variant_id in ('off','control') then 'off' 
-    when variant_id not in ('off', 'control') then concat("variant - ", case when ranked1 = 1 then 1 when ranked1 = 2 then 2 else ranked1 end) else null end as variant_id_clean, --- cleaning up variants for google sheet
+  launch_id,
+  variant_id,
+  experiment_id,
+  total_trust_building_actions,
+  total_funnel_progression,
   total_trust_building_actions/total_funnel_progression as tpi,
+  convos_sent_count
 from (
   select
     launch_id,
@@ -183,7 +206,7 @@ group by all
 );
 
 select
-  launch_id,
+  k.launch_id,
   end_date, 
   config_flag, 
   status,
@@ -192,31 +215,30 @@ select
   subteam,
   group_name,
   initiative,
-  variant_id_clean,
-  case when coverage_name in ('GMS coverage') then coverage_value end as gms_coverage,
-  case when coverage_name in ('Traffic coverage') then coverage_value end as traffic_coverage,
-  case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end as ads_cr_control,
-  case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end as ads_cr_treatment,
-  case when metric_display_name in ('Ads Conversion Rate') then relative_change end as ads_cr_change,
-  case when metric_display_name in ('Ads Conversion Rate') then p_value end as ads_cr_pvalue,
-
-    case when metric_display_name in ('GMS per Unit') then metric_value_control end as gpu_control,
-  case when metric_display_name in ('GMS per Unit') then metric_value_treatment end as gpu_treatment,
-  case when metric_display_name in ('GMS per Unit') then relative_change end as gpu_change,
-  case when metric_display_name in ('GMS per Unit') then p_value end as gpu_pvalue,
-
-  case when metric_display_name in ('Conversion Rate') then metric_value_control end as cr_control,
-  case when metric_display_name in ('Conversion Rate') then metric_value_treatment end as cr_treatment,
-  case when metric_display_name in ('Conversion Rate') then relative_change end as cr_change,
-  case when metric_display_name in ('Conversion Rate') then p_value end as cr_pvalue,
-
+  variant_id,
+  gms_coverage,
+  traffic_coverage,
+  ads_cr_control,
+  ads_cr_treatment,
+  ads_cr_change,
+  ads_cr_pvalue,
+  gpu_control,
+  gpu_treatment,
+  gpu_change,
+  gpu_pvalue,
+  cr_control,
+  cr_treatment,
+  cr_change,
+  cr_pvalue,
   total_funnel_progression,
   convos_sent_count,
   tpi,
   convos_sent_count,
 from key_metrics k
-inner join trust_measurements t using (launch_id, platform)
-order by end_date,variant_id_clean asc 
-
+inner join trust_measurements t 
+  on k.launch_id=t.launch_id
+  and k.metric_variant_name=t.variant_id
+order by end_date,variant_id asc 
 ; 
+
 END
