@@ -230,9 +230,10 @@ select
   cr_treatment,
   cr_change,
   cr_pvalue,
+  total_trust_building_actions,
   total_funnel_progression,
-  convos_sent_count,
   tpi,
+  convos_sent_count,
   convos_sent_count,
 from key_metrics k
 inner join trust_measurements t 
