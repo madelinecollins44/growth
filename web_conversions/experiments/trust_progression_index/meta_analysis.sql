@@ -1,3 +1,4 @@
+BEGIN
 ---------------------------------------------------------------------------------
 -- PULL EXPERIMENT BACKGROUND INFO 
 ---------------------------------------------------------------------------------
@@ -37,8 +38,9 @@ where 1=1
   and lower(segmentation) in ('any')
   and lower(segment) in('all')
 )
+, metrics as (
 select
-  e.*,
+  e.launch_id,
   metric_display_name,
   metric_value_control,
   metric_value_treatment,
@@ -57,8 +59,24 @@ where 1=1
       1029227163677, -- CR
       1275588643427, -- GMS per Unit
       1227229423992 -- Ads CR
-  )); 
-
+  ))
+select
+  e.*,
+  coverage_name,
+  coverage_value,
+  metric_display_name,
+  metric_value_control,
+  metric_value_treatment,
+  relative_change,
+ from 
+  experiments e
+inner join
+  metrics mtcs
+   on rmd.launch_id=e.launch_id
+inner join 
+  coverages cvg
+    on cvg.launch_id=e.launch_id
+);
 
 ---------------------------------------------------------------------------------
 -- PULL TRUST INDICATOR METRICS
@@ -156,3 +174,5 @@ from (
     `etsy-data-warehouse-dev.madelinecollins.web_trust_experiments_events_q2`
   group by all)
 );
+
+END
