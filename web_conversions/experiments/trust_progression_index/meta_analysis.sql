@@ -68,6 +68,7 @@ select
   metric_value_control,
   metric_value_treatment,
   relative_change,
+  p_value,
  from 
   experiments e
 inner join
@@ -192,12 +193,23 @@ select
   group_name,
   initiative,
   variant_id_clean,
-  coverage_name,
-  coverage_value,
-  metric_display_name,
-  metric_value_control,
-  metric_value_treatment,
-  relative_change,
+  case when coverage_name in ('GMS coverage') then coverage_value end as gms_coverage,
+  case when coverage_name in ('Traffic coverage') then coverage_value end as traffic_coverage,
+  case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end as ads_cr_control,
+  case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end as ads_cr_treatment,
+  case when metric_display_name in ('Ads Conversion Rate') then relative_change end as ads_cr_change,
+  case when metric_display_name in ('Ads Conversion Rate') then p_value end as ads_cr_pvalue,
+
+    case when metric_display_name in ('GMS per Unit') then metric_value_control end as gpu_control,
+  case when metric_display_name in ('GMS per Unit') then metric_value_treatment end as gpu_treatment,
+  case when metric_display_name in ('GMS per Unit') then relative_change end as gpu_change,
+  case when metric_display_name in ('GMS per Unit') then p_value end as gpu_pvalue,
+
+  case when metric_display_name in ('Conversion Rate') then metric_value_control end as cr_control,
+  case when metric_display_name in ('Conversion Rate') then metric_value_treatment end as cr_treatment,
+  case when metric_display_name in ('Conversion Rate') then relative_change end as cr_change,
+  case when metric_display_name in ('Conversion Rate') then p_value end as cr_pvalue,
+
   total_funnel_progression,
   convos_sent_count,
   tpi,
