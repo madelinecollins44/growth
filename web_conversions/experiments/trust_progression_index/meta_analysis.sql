@@ -9,11 +9,16 @@ select
   status,
   ramp_decision,
   platform,
+  subteam,
+  group_name,
+  initiative
 from 
   etsy-data-warehouse-prod.rollups.experiment_reports 
 where 1=1
   and group_name in ('Drive Conversion')
   and subteam in ('RegX')
+  and end_date >= '2025-04-01'
+  and platform in ('mobile_web','desktop')
 )
 , coverages as (
 select 
