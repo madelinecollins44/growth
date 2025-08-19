@@ -46,7 +46,7 @@ select
       'listing_page_review_engagement_frontend' -- engagement
       ) then 'trust_building_actions'
      when event_id in (
-        'add_to_cart',
+        'backend_add_to_cart',
         'backend_favorite_item2',
         'checkout_start',
         'backend_cart_payment'
