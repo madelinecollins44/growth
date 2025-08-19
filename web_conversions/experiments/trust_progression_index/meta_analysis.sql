@@ -145,7 +145,7 @@ and event_id in
   'shop_home', --- shop home
   'cart_view', -- cart view
   'search', --search
-  'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+  'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
   'listing_page_review_engagement_frontend', -- engagement
  /* FUNNEL PROGRESSION */
   'backend_favorite_item2', -- favorited
@@ -192,7 +192,7 @@ from (
         'shop_home', --- shop home
         'cart_view', -- cart view
         'search', --search
-        'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+        'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
         'listing_page_review_engagement_frontend' -- engagement
       ) then total_events else null end) as total_trust_building_actions,
     sum(case when event_id in ('add_to_cart',
@@ -289,7 +289,7 @@ and event_id in
   'shop_home', --- shop home
   'cart_view', -- cart view
   'search', --search
-  'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+  'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
   'listing_page_review_engagement_frontend', -- engagement
  /* FUNNEL PROGRESSION */
   'backend_favorite_item2', -- favorited
@@ -341,7 +341,7 @@ from (
         'shop_home', --- shop home
         'cart_view', -- cart view
         'search', --search
-        'listing_page_image_carousel_changed','image_carousel_swipe' ---image scrolling
+        'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
         'listing_page_review_engagement_frontend' -- engagement
       ) then total_events else null end) as total_trust_building_actions,
     sum(case when event_id in ('add_to_cart',
