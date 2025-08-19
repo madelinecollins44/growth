@@ -1,4 +1,4 @@
-create or replace table `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events_q2` as
+-- create or replace table `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events_q2` as
 with experiments as (
 select 
   launch_id,
@@ -25,6 +25,7 @@ select
   variant_id,
   platform,
   event_id,
+  filter_flag,
   case when filter_flag is null then total_events else filtered_events end as total_events,
   case when filter_flag is null then unique_count else unique_filtered_count end as total_uniques
 from (
@@ -79,17 +80,5 @@ and event_id in
   'backend_cart_payment', --- conversion rate
   'backend_send_convo' -- convo
   )
-group by all);
-
-select
-  *,
-  concat("variant - ", abs(ranked1 - total_variants)) as variant_id --- cleaning up variants for google sheet
-from (
-select
-  experiment_id,
-  variant_id,
-  platform,
-  count(case when variant_id != 'off' then variant_id else null end) over (partition by experiment_id) as total_variants,
-  case when variant_id != 'off' then rank() over (partition by experiment_id order by variant_id desc) else null end as ranked1,
-from `etsy-data-warehouse-dev.madelinecollins.boe_trust_experiments_events` 
-group by all);
+group by all
+)
