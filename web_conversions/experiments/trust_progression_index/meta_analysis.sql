@@ -18,7 +18,7 @@ from
   etsy-data-warehouse-prod.rollups.experiment_reports 
 where 1=1
   and (trim(lower(initiative)) like '%drive conversion%')
-  and end_date >= '2025-04-01'
+  and end_date >= '2025-03-01'
   and subteam in ('RegX')
 )
 , coverages as (
@@ -81,14 +81,17 @@ select
   ads_cr_treatment,
   ads_cr_change,
   ads_cr_pvalue,
+  case when ads_cr_pvalue <= 0.05 then 1 else 0 end as ads_cr_sig,
   gpu_control,
   gpu_treatment,
   gpu_change,
   gpu_pvalue,
+  case when gpu_pvalue <= 0.05 then 1 else 0 end as gpu_sig,
   cr_control,
   cr_treatment,
   cr_change,
   cr_pvalue,
+  case when cr_pvalue <= 0.05 then 1 else 0 end as cr_sig,
  from 
   experiments e
 inner join
@@ -222,18 +225,20 @@ select
   ads_cr_treatment,
   ads_cr_change,
   ads_cr_pvalue,
+  ads_cr_sig,
   gpu_control,
   gpu_treatment,
   gpu_change,
   gpu_pvalue,
+  gpu_sig,
   cr_control,
   cr_treatment,
   cr_change,
   cr_pvalue,
+  cr_sig,
   total_trust_building_actions,
   total_funnel_progression,
   tpi,
-  convos_sent_count,
   convos_sent_count,
 from key_metrics k
 inner join trust_measurements t 
@@ -243,8 +248,7 @@ order by end_date,variant_id asc
 ; 
 END
 
-
--- COMPARING TRUST METRICS
+/* COMPARING TRUST METRICS INDIVUALLY, WITHOUT KHM */
 with experiments as (
 select 
   launch_id,
