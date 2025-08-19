@@ -122,7 +122,7 @@ from
   etsy-data-warehouse-prod.rollups.experiment_reports 
 where 1=1
   and (trim(lower(initiative)) like '%drive conversion%')
-  and end_date >= '2025-04-01'
+  and end_date >= '2025-03-01'
   and subteam in ('RegX')
 )
 , events as (
@@ -137,7 +137,7 @@ select
 from 
   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
 inner join experiments c on a.experiment_id = c.config_flag
-where a._date >= '2025-04-01'
+where a._date >= '2025-03-01'
 and event_id in 
   ( /* TRUST BUILDING */
     'view_listing',  --view listing
@@ -264,7 +264,7 @@ from
   etsy-data-warehouse-prod.rollups.experiment_reports 
 where 1=1
   and (trim(lower(initiative)) like '%drive conversion%')
-  and end_date >= '2025-04-01'
+  and end_date >= '2025-03-01'
   and subteam in ('RegX')
 )
 , events as (
@@ -281,7 +281,7 @@ select
 from 
   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
 inner join experiments c on a.experiment_id = c.config_flag
-where a._date >= '2025-04-01'
+where a._date >= '2025-03-01'
 and event_id in 
   ( /* TRUST BUILDING */
     'view_listing',  --view listing
