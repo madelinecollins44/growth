@@ -355,4 +355,4 @@ from (
   group by all
   )
 group by all
-order by platform, experiment_id, variant_id desc
+order by end_date, platform, experiment_id, variant_id desc
