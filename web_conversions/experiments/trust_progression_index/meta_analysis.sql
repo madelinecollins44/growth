@@ -111,6 +111,7 @@ with experiments as (
 select 
   launch_id,
   end_date, 
+  start_date,
   config_flag, 
   status,
   ramp_decision,
@@ -130,6 +131,7 @@ select
   launch_id,
   a.experiment_id,
   variant_id,
+  start_date,
   platform,
   a.event_id,
   count(*) as counts, 
@@ -159,6 +161,7 @@ group by all
 select 
   launch_id,
   variant_id,
+  -- start_date,
   experiment_id,
   total_trust_building_actions,
   total_funnel_progression,
@@ -169,6 +172,7 @@ from (
     launch_id,
     experiment_id,
     variant_id,
+    start_date,
     platform,
     count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
     coalesce(case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end,0) as ranked1,
@@ -245,6 +249,7 @@ select
   status,
   ramp_decision,
   platform,
+  start_date,
   subteam,
   group_name,
   initiative
@@ -264,6 +269,7 @@ select
   ramp_decision,
   platform,
   a.event_id,
+  start_date,
   count(*) as counts, 
   sum(event_value) as total_events
 from 
@@ -291,6 +297,7 @@ group by all
 select 
   platform,
   end_date,
+  -- start_date,
   experiment_id,
   launch_id,
   variant_id,
@@ -307,6 +314,7 @@ from (
     platform,
     ramp_decision,
     end_date,
+    start_date,
     count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
     coalesce(case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end,0) as ranked1,
     sum(case when event_id in (
@@ -330,7 +338,6 @@ from (
   )
 group by all
 order by end_date, platform, experiment_id, variant_id desc
-
 
 
 ---------------------------------------------------------------------------------
