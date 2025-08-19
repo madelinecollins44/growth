@@ -1,7 +1,6 @@
 BEGIN
----------------------------------------------------------------------------------
+  
 -- PULL EXPERIMENT BACKGROUND INFO 
----------------------------------------------------------------------------------
 create or replace temp table key_metrics as (
 with experiments as (
 select 
@@ -103,17 +102,15 @@ inner join
 order by  end_date, metric_variant_name asc
 );
 
----------------------------------------------------------------------------------
 -- PULL TRUST INDICATOR METRICS
----------------------------------------------------------------------------------
 create or replace temp table trust_measurements as (
 with experiments as (
 select 
   launch_id,
   end_date, 
-  start_date,
   config_flag, 
   status,
+  start_date,
   ramp_decision,
   platform,
   subteam,
@@ -126,59 +123,14 @@ where 1=1
   and end_date >= '2025-03-01'
   and subteam in ('RegX')
 )
-, events as (
-select 
+select
   launch_id,
-  a.experiment_id,
-  variant_id,
-  start_date,
+  end_date, 
+  config_flag, 
+  ramp_decision,
   platform,
-  case when filtered_bucketing_ts is not null then 1 else 0 end as event_filtered,
-  a.event_id,
-  count(*) as counts, 
-  sum(event_value) as total_events,
-  sum(filtered_event_value) as total_filtered_events
-from 
-  etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
-inner join experiments c on a.experiment_id = c.config_flag and a._date between start_date and end_date
-where a._date >= '2025-03-01'
-and event_id in 
-  ( /* TRUST BUILDING */
-    'view_listing',  --view listing
-  'product_details_content_toggle_open' --- open description
-  'shop_home', --- shop home
-  'cart_view', -- cart view
-  'search', --search
-  'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
-  'listing_page_review_engagement_frontend', -- engagement
- /* FUNNEL PROGRESSION */
-  'backend_favorite_item2', -- favorited
-  'add_to_cart', --A2C
-  'checkout_start', --- checkout start
-  'backend_cart_payment', --- conversion rate
-  'backend_send_convo' -- convo
-  )
-group by all
-)
-select 
-  launch_id,
   variant_id,
-  -- start_date,
-  experiment_id,
-  total_trust_building_actions,
-  total_funnel_progression,
-  total_trust_building_actions/total_funnel_progression as tpi,
-  convos_sent_count
-from (
-  select
-    launch_id,
-    experiment_id,
-    variant_id,
-    start_date,
-    platform,
-    count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
-    coalesce(case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end,0) as ranked1,
-    sum(case 
+  sum(case 
       when event_id in (
       'view_listing',
       'listing_expand_description_open',
@@ -190,12 +142,7 @@ from (
       'image_carousel_swipe',
       'listing_page_review_engagement_frontend'
     )
-      then case
-           when event_filtered = 0 then total_events
-           when event_filtered = 1 then total_filtered_events
-           else null
-         end
-    else null end) as total_trust_building_actions,
+  then coalesce(event_value,filtered_event_value) else null end) as total_trust_building_actions,
   sum(case 
     when event_id in (
       'add_to_cart',
@@ -203,38 +150,47 @@ from (
       'checkout_start',
       'backend_cart_payment'
     )
-    then case 
-          when event_filtered = 0 then total_events
-          when event_filtered = 1 then total_filtered_events
-          else null
-        end
-      else null end) as total_funnel_progression,    
-    sum(case 
-      when event_id in ('backend_send_convo') 
-      then case 
-          when event_filtered = 0 then total_events
-          when event_filtered = 1 then total_filtered_events
-          else null
-        end
-      else null end) as convos_sent_count,
-  from 
-   events
-  group by all
-  )
-group by all
+  then coalesce(event_value,filtered_event_value) else null end) as total_funnel_progression,
+   sum(case when event_id in ('backend_send_convo') then coalesce(event_value,filtered_event_value) else null end) as convos_sent_count,
+  count(distinct bucketing_id) as count
+from  
+  etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
+inner join 
+  experiments c 
+    on a.experiment_id = c.config_flag
+    and a._date between start_date and end_date -- dates experiment was live
+where 1=1
+  and event_id in 
+    ( /* TRUST BUILDING */
+      'view_listing',  --view listing
+    'product_details_content_toggle_open' --- open description
+    'shop_home', --- shop home
+    'cart_view', -- cart view
+    'search', --search
+    'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe', ---image scrolling
+    'listing_page_review_engagement_frontend', -- engagement
+  /* FUNNEL PROGRESSION */
+    'backend_favorite_item2', -- favorited
+    'backend_add_to_cart', --A2C
+    'checkout_start', --- checkout start
+    'backend_cart_payment', --- conversion rate
+    'backend_send_convo' -- convo
+    )
+    -- and experiment_id in ('growth_regx.lp_bb_tenure_mweb')
+group by all 
 );
 
 select
   k.launch_id,
-  end_date, 
-  config_flag, 
-  status,
-  ramp_decision,
+  k.end_date, 
+  k.config_flag, 
+  k.status,
+  k.ramp_decision,
   k.platform,
-  subteam,
+  k.subteam,
   group_name,
-  initiative,
-  variant_id,
+  k.initiative,
+  k.variant_id,
   gms_coverage,
   traffic_coverage,
   ads_cr_control,
@@ -273,9 +229,9 @@ select
   end_date, 
   config_flag, 
   status,
+  start_date,
   ramp_decision,
   platform,
-  start_date,
   subteam,
   group_name,
   initiative
@@ -286,66 +242,14 @@ where 1=1
   and end_date >= '2025-03-01'
   and subteam in ('RegX')
 )
-, events as (
-select 
+select
   launch_id,
   end_date, 
-  a.experiment_id,
-  variant_id,
+  config_flag, 
   ramp_decision,
   platform,
-  a.event_id,
-  start_date,
-  count(*) as counts, 
-  sum(event_value) as total_events,
-  case when filtered_bucketing_ts is not null then 1 else 0 end as event_filtered,
-  sum(filtered_event_value) as total_filtered_events,
-from 
-  etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
-inner join experiments c on a.experiment_id = c.config_flag and a._date between start_date and end_date
-where a._date >= '2025-03-01'
-and event_id in 
-  ( /* TRUST BUILDING */
-    'view_listing',  --view listing
-  'product_details_content_toggle_open' --- open description
-  'shop_home', --- shop home
-  'cart_view', -- cart view
-  'search', --search
-  'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
-  'listing_page_review_engagement_frontend', -- engagement
- /* FUNNEL PROGRESSION */
-  'backend_favorite_item2', -- favorited
-  'add_to_cart', --A2C
-  'checkout_start', --- checkout start
-  'backend_cart_payment', --- conversion rate
-  'backend_send_convo' -- convo
-  )
-group by all
-)
-select 
-  platform,
-  end_date,
-  -- start_date,
-  experiment_id,
-  launch_id,
   variant_id,
-  ramp_decision,
-  total_trust_building_actions,
-  total_funnel_progression,
-  total_trust_building_actions/total_funnel_progression as tpi,
-  -- convos_sent_count
-from (
-  select
-    platform,
-    end_date,
-    -- start_date,
-    experiment_id,
-    launch_id,
-    variant_id,
-    ramp_decision,
-    count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
-    coalesce(case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end,0) as ranked1,
-    sum(case 
+   sum(case 
       when event_id in (
       'view_listing',
       'listing_expand_description_open',
@@ -357,12 +261,7 @@ from (
       'image_carousel_swipe',
       'listing_page_review_engagement_frontend'
     )
-      then case
-           when event_filtered = 0 then total_events
-           when event_filtered = 1 then total_filtered_events
-           else null
-         end
-    else null end) as total_trust_building_actions,
+  then coalesce(event_value,filtered_event_value) else null end) as total_trust_building_actions,
   sum(case 
     when event_id in (
       'add_to_cart',
@@ -370,26 +269,34 @@ from (
       'checkout_start',
       'backend_cart_payment'
     )
-    then case 
-          when event_filtered = 0 then total_events
-          when event_filtered = 1 then total_filtered_events
-          else null
-        end
-      else null end) as total_funnel_progression,    
-    sum(case 
-      when event_id in ('backend_send_convo') 
-      then case 
-          when event_filtered = 0 then total_events
-          when event_filtered = 1 then total_filtered_events
-          else null
-        end
-      else null end) as convos_sent_count,
-  from 
-   events
-  group by all
-  )
-group by all
-order by end_date, platform, experiment_id, variant_id desc
+  then coalesce(event_value,filtered_event_value) else null end) as total_funnel_progression,
+  --  sum(case when event_id in ('backend_send_convo') then coalesce(event_value,filtered_event_value) else null end) as convos_sent_count,
+  -- count(distinct bucketing_id) as count
+from  
+  etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
+inner join 
+  experiments c 
+    on a.experiment_id = c.config_flag
+    and a._date between start_date and end_date -- dates experiment was live
+where 1=1
+  and event_id in 
+    ( /* TRUST BUILDING */
+      'view_listing',  --view listing
+    'product_details_content_toggle_open' --- open description
+    'shop_home', --- shop home
+    'cart_view', -- cart view
+    'search', --search
+    'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe', ---image scrolling
+    'listing_page_review_engagement_frontend', -- engagement
+  /* FUNNEL PROGRESSION */
+    'backend_favorite_item2', -- favorited
+    'backend_add_to_cart', --A2C
+    'checkout_start', --- checkout start
+    'backend_cart_payment', --- conversion rate
+    'backend_send_convo' -- convo
+    )
+    -- and experiment_id in ('growth_regx.lp_bb_tenure_mweb')
+group by all 
 
 ---------------------------------------------------------------------------------
   -- ELEMENT BREAKDOWN
@@ -413,56 +320,42 @@ where 1=1
   and end_date >= '2025-03-01'
   and subteam in ('RegX')
 )
-select 
-  platform,
-  end_date,
-  experiment_id,
-  case when filtered_bucketing_ts is not null then 1 else 0 end as event_filtered,
+select
   launch_id,
-  variant_id,
+  end_date, 
+  config_flag, 
   ramp_decision,
-  a.event_id,
-  case 
-    when event_id in (
-      'view_listing',  --view listing
-      'listing_expand_description_open','product_details_content_toggle_open' --- open description
-      'shop_home', --- shop home
-      'cart_view', -- cart view
-      'search', --search
-      'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
-      'listing_page_review_engagement_frontend' -- engagement
-      ) then 'trust_building_actions'
-     when event_id in (
-        'add_to_cart',
-        'backend_favorite_item2',
-        'checkout_start',
-        'backend_cart_payment'
-      ) then 'funnel_progression'
-      else 'none'
-    end as tpi_element,
-  count(distinct bucketing_id) as counts, 
-  sum(case
-    when filtered_bucketing_ts is null then event_value
-    when filtered_bucketing_ts is not null  then filtered_event_value
-  else null end) as total_events
-from 
+  platform,
+  variant_id,
+  event_id,
+  sum(case 
+    when bucketing_ts is not null then event_value 
+    when filtered_bucketing_ts is not null then filtered_event_value 
+  end) as event_value_case,
+  sum(coalesce(event_value,filtered_event_value)) as event_value_coalesce,
+  count(distinct bucketing_id) as count
+from  
   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
-inner join experiments c on a.experiment_id = c.config_flag and a._date between start_date and end_date
-where a._date >= '2025-03-01'
-and event_id in 
-  ( /* TRUST BUILDING */
-    'view_listing',  --view listing
-  'product_details_content_toggle_open' --- open description
-  'shop_home', --- shop home
-  'cart_view', -- cart view
-  'search', --search
-  'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
-  'listing_page_review_engagement_frontend', -- engagement
- /* FUNNEL PROGRESSION */
-  'backend_favorite_item2', -- favorited
-  'add_to_cart', --A2C
-  'checkout_start', --- checkout start
-  'backend_cart_payment', --- conversion rate
-  'backend_send_convo' -- convo
-  )
-group by all
+inner join 
+  experiments c 
+    on a.experiment_id = c.config_flag
+    and a._date between start_date and end_date -- dates experiment was live
+where 1=1
+  and event_id in 
+    ( /* TRUST BUILDING */
+      'view_listing',  --view listing
+    'product_details_content_toggle_open' --- open description
+    'shop_home', --- shop home
+    'cart_view', -- cart view
+    'search', --search
+    'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe', ---image scrolling
+    'listing_page_review_engagement_frontend', -- engagement
+  /* FUNNEL PROGRESSION */
+    'backend_favorite_item2', -- favorited
+    'backend_add_to_cart', --A2C
+    'checkout_start', --- checkout start
+    'backend_cart_payment', --- conversion rate
+    'backend_send_convo' -- convo
+    )
+    -- and experiment_id in ('growth_regx.lp_bb_tenure_mweb')
+group by all 
