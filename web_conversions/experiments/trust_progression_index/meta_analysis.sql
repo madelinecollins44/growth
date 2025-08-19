@@ -248,7 +248,9 @@ order by end_date,variant_id asc
 ; 
 END
 
-/* COMPARING TRUST METRICS INDIVUALLY, WITHOUT KHM */
+---------------------------------------------------------------------------------
+--  COMPARING TRUST METRICS INDIVUALLY, WITHOUT KHM 
+---------------------------------------------------------------------------------
 with experiments as (
 select 
   launch_id,
@@ -359,7 +361,9 @@ order by end_date, platform, experiment_id, variant_id desc
 
 
 
-/* ELEMENT BREAKDOWN*/
+---------------------------------------------------------------------------------
+  -- ELEMENT BREAKDOWN
+---------------------------------------------------------------------------------
 with experiments as (
 select 
   launch_id,
