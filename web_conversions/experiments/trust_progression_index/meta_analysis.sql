@@ -244,7 +244,7 @@ order by end_date,variant_id asc
 END
 
 
-/*  -- COMPARING TRUST METRICS
+-- COMPARING TRUST METRICS
 with experiments as (
 select 
   launch_id,
@@ -266,8 +266,10 @@ where 1=1
 , events as (
 select 
   launch_id,
+  end_date, 
   a.experiment_id,
   variant_id,
+  ramp_decision,
   platform,
   a.event_id,
   count(*) as counts, 
@@ -309,19 +311,24 @@ group by all
 -- group by all)
 -- )
 select 
+  platform,
+  end_date,
+  experiment_id,
   launch_id,
   variant_id,
-  experiment_id,
+  ramp_decision,
   total_trust_building_actions,
   total_funnel_progression,
   total_trust_building_actions/total_funnel_progression as tpi,
-  convos_sent_count
+  -- convos_sent_count
 from (
   select
     launch_id,
     experiment_id,
     variant_id,
     platform,
+    ramp_decision,
+    end_date,
     count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
     coalesce(case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end,0) as ranked1,
     sum(case when event_id in (
@@ -344,6 +351,4 @@ from (
   group by all
   )
 group by all
-order by experiment_id, variant_id desc
-
-*/
+order by platform, experiment_id, variant_id desc
