@@ -263,7 +263,7 @@ inner join trust_measurements t
 order by end_date,variant_id asc 
 ; 
 END
-
+  
 ---------------------------------------------------------------------------------
 --  COMPARING TRUST METRICS INDIVUALLY, WITHOUT KHM 
 ---------------------------------------------------------------------------------
@@ -297,7 +297,9 @@ select
   a.event_id,
   start_date,
   count(*) as counts, 
-  sum(event_value) as total_events
+  sum(event_value) as total_events,
+  case when filtered_bucketing_ts is not null then 1 else 0 end as event_filtered,
+  sum(filtered_event_value) as total_filtered_events,
 from 
   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
 inner join experiments c on a.experiment_id = c.config_flag and a._date between start_date and end_date
@@ -334,37 +336,60 @@ select
   -- convos_sent_count
 from (
   select
-    launch_id,
-    experiment_id,
-    variant_id,
     platform,
-    ramp_decision,
     end_date,
-    start_date,
+    -- start_date,
+    experiment_id,
+    launch_id,
+    variant_id,
+    ramp_decision,
     count(case when variant_id not in ('off', 'control') then variant_id else null end) over (partition by experiment_id) as total_variants,
     coalesce(case when variant_id not in ('off', 'control') then rank() over (partition by experiment_id order by variant_id desc) else null end,0) as ranked1,
-    sum(case when event_id in (
-        'view_listing',  --view listing
-        'listing_expand_description_open','product_details_content_toggle_open' --- open description
-        'shop_home', --- shop home
-        'cart_view', -- cart view
-        'search', --search
-        'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe' ---image scrolling
-        'listing_page_review_engagement_frontend' -- engagement
-      ) then total_events else null end) as total_trust_building_actions,
-    sum(case when event_id in ('add_to_cart',
-        'backend_favorite_item2',
-        'checkout_start',
-        'backend_cart_payment'
-      ) then total_events else null end) as total_funnel_progression,    
-    sum(case when event_id in ('backend_send_convo') then total_events else null end) as convos_sent_count,
+    sum(case 
+      when event_id in (
+      'view_listing',
+      'listing_expand_description_open',
+      'product_details_content_toggle_open',
+      'shop_home',
+      'cart_view',
+      'search',
+      'appreciation_photo_carousel_thumbnails_pressed_next_listing_page',
+      'image_carousel_swipe',
+      'listing_page_review_engagement_frontend'
+    )
+      then case
+           when event_filtered = 0 then total_events
+           when event_filtered = 1 then total_filtered_events
+           else null
+         end
+    else null end) as total_trust_building_actions,
+  sum(case 
+    when event_id in (
+      'add_to_cart',
+      'backend_favorite_item2',
+      'checkout_start',
+      'backend_cart_payment'
+    )
+    then case 
+          when event_filtered = 0 then total_events
+          when event_filtered = 1 then total_filtered_events
+          else null
+        end
+      else null end) as total_funnel_progression,    
+    sum(case 
+      when event_id in ('backend_send_convo') 
+      then case 
+          when event_filtered = 0 then total_events
+          when event_filtered = 1 then total_filtered_events
+          else null
+        end
+      else null end) as convos_sent_count,
   from 
    events
   group by all
   )
 group by all
 order by end_date, platform, experiment_id, variant_id desc
-
 
 ---------------------------------------------------------------------------------
   -- ELEMENT BREAKDOWN
@@ -392,6 +417,7 @@ select
   platform,
   end_date,
   experiment_id,
+  case when filtered_bucketing_ts is not null then 1 else 0 end as event_filtered,
   launch_id,
   variant_id,
   ramp_decision,
@@ -415,7 +441,10 @@ select
       else 'none'
     end as tpi_element,
   count(distinct bucketing_id) as counts, 
-  sum(event_value) as total_events
+  sum(case
+    when filtered_bucketing_ts is null then event_value
+    when filtered_bucketing_ts is not null  then filtered_event_value
+  else null end) as total_events
 from 
   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
 inner join experiments c on a.experiment_id = c.config_flag and a._date between start_date and end_date
