@@ -90,7 +90,7 @@ inner join
     -- and v.event_timestamp >= cast(unix_seconds(bucketing_ts) as int64)-- everything after bucketing moment 
 where
 	_date between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
-	and event_name in ('reviews_anchor_click','view_listing','checkout_start','listing_page_reviews_seen')
+	and event_name in ('reviews_anchor_click','view_listing','listing_page_reviews_seen')
 group by all 
 );
 
@@ -103,7 +103,6 @@ select
   listing_id,
   sum(case when event_name in ('view_listing') then 1 else 0 end) as listing_views, 
   sum(case when event_name in ('reviews_anchor_click') then  1 else 0 end) as review_clicks,   
-  sum(case when event_name in ('checkout_start') then  1 else 0 end) as checkout_starts, 
   sum(case when event_name in ('listing_page_reviews_seen') then  1 else 0 end) as reviews_seen,
 from
 	etsy-data-warehouse-dev.madelinecollins.beacons_events 
@@ -141,7 +140,6 @@ select
   -- count(distinct bucketing_id) as browsers, 
   sum(e.listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
-  sum(checkout_starts) as checkout_starts,
   sum(reviews_seen) as reviews_seen,
   sum(views) as views,
   sum(atc) as atc,
@@ -161,7 +159,6 @@ select
   coalesce(review_count, 'no reviews') as rating_status,
   sum(listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
-  sum(checkout_starts) as checkout_starts,
   sum(views) as views,
   sum(atc) as atc,
   sum(purchase) as purchase,
