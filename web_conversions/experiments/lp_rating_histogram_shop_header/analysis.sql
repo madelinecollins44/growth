@@ -80,9 +80,7 @@ select
   variant_id,
   event_name,
   event_timestamp as sequence_number,
-  coalesce((select kv.value from unnest(properties.map) as kv where kv.key = "listing_id"), -- view_listing
-            (regexp_extract(loc, r'listing/(\d+)'))) -- reviews_anchor_click, checkout_start, listing_page_reviews_seen
-  as listing_id,
+  coalesce((regexp_extract(loc, r'listing/(\d+)')),(regexp_extract(loc, r'cart/(\d+)'))) as listing_id
 from
 	etsy-visit-pipe-prod.canonical.beacon_main_2025_06 v
 inner join 
