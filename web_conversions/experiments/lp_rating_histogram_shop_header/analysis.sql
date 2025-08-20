@@ -86,11 +86,13 @@ from
 inner join 
   etsy-data-warehouse-dev.madelinecollins.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= v.browser_id -- joining on browser_id
+    and timestamp_seconds(v.event_timestamp) >= bl.listing_ts -- everything after bucketing moment 
 where
 	_date between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
 	and event_name in ('reviews_anchor_click','view_listing','checkout_start','listing_page_reviews_seen')
 group by all 
 );
+
 
 -- PUT IT ALL TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
