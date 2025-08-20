@@ -95,7 +95,7 @@ group by all
 );
 */
 
--- PUT IT ALL TOGETHER
+-- PUT IT TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
 	browser_id,
@@ -112,10 +112,10 @@ group by all
 , listing_stats as (
 select 
   variant_id,
-  bucketing_id,
+  browser_id,
   v.listing_id,
   count(v.sequence_number) as views,
-  count(case when event_name in ('view_listing') then e.sequence_number end) as listing_views, 
+  count(case when event_name in ('view_listing') then e.event_timestamp end) as listing_views, 
   sum(added_to_cart) as atc,
   sum(purchased_after_view) as purchase,
   avg(coalesce(v.price_usd, l.price_usd/100)) as avg_price_usd
@@ -152,7 +152,7 @@ from
 inner join 
   listing_stats s 
     on e.variant_id=s.variant_id
-    and e.browser_id=s.bucketing_id 
+    and e.browser_id=s.browser_id 
     and e.listing_id=cast(s.listing_id as string)
 group by all
 )
