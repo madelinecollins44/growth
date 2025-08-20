@@ -86,13 +86,11 @@ from
 inner join 
   etsy-data-warehouse-dev.madelinecollins.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= v.browser_id -- joining on browser_id
-    and timestamp_seconds(v.event_timestamp) >= bl.listing_ts -- everything after bucketing moment 
 where
 	_date between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
 	and event_name in ('reviews_anchor_click','view_listing','checkout_start','listing_page_reviews_seen')
 group by all 
 );
-
 
 -- PUT IT ALL TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
@@ -111,7 +109,6 @@ group by all
 , listing_stats as (
 select 
   variant_id,
-  e.visit_id,
   bucketing_id,
   v.listing_id,
   count(v.sequence_number) as views,
@@ -123,8 +120,8 @@ from
   etsy-data-warehouse-prod.analytics.listing_views  v
 inner join
   etsy-data-warehouse-dev.madelinecollins.beacons_events  e
-    on e.visit_id =  v.visit_id
-    and e.sequence_number =  v.sequence_number
+    on e.browser_id=split(v.visit_id, ".")[0] 
+    and e.event_timestamp=timestamp_millis(v.epoch_ms) -- matching timestamps
     and e.listing_id= cast(v.listing_id as string)
     and event_name in ('view_listing')
 inner join 
@@ -152,8 +149,7 @@ from
 inner join 
   listing_stats s 
     on e.variant_id=s.variant_id
-    and e.visit_id=s.visit_id
-    and e.bucketing_id=s.bucketing_id 
+    and e.browser_id=s.bucketing_id 
     and e.listing_id=cast(s.listing_id as string)
 group by all
 )
