@@ -96,6 +96,7 @@ group by all
 
 
 -- PUT IT TOGETHER
+-- PUT IT TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
 select
 	browser_id,
@@ -103,6 +104,7 @@ select
   listing_id,
   sum(case when event_name in ('view_listing') then 1 else 0 end) as listing_views, 
   sum(case when event_name in ('reviews_anchor_click') then  1 else 0 end) as review_clicks,   
+  sum(case when event_name in ('checkout_start') then  1 else 0 end) as checkout_starts, 
   sum(case when event_name in ('listing_page_reviews_seen') then  1 else 0 end) as reviews_seen,
 from
 	etsy-data-warehouse-dev.madelinecollins.beacons_events 
@@ -114,18 +116,25 @@ select
   browser_id,
   v.listing_id,
   count(v.sequence_number) as views,
-  count(case when event_name in ('view_listing') then e.event_timestamp end) as listing_views, 
+  sum(views) as listing_views, 
   sum(added_to_cart) as atc,
   sum(purchased_after_view) as purchase,
   avg(coalesce(v.price_usd, l.price_usd/100)) as avg_price_usd
 from 
   etsy-data-warehouse-prod.analytics.listing_views  v
 inner join
-  etsy-data-warehouse-dev.madelinecollins.beacons_events  e
-    on e.browser_id=split(v.visit_id, ".")[0] 
-    -- and e.event_timestamp=v.epoch_ms -- matching timestamps
-    and e.listing_id= cast(v.listing_id as string)
-    and event_name in ('view_listing')
+  (select
+      browser_id,
+      listing_id,
+      variant_id,
+      count(*) as views,
+    from
+      etsy-data-warehouse-dev.madelinecollins.beacons_events 
+    where event_name in ('view_listing')
+    group by 1,2,3) e
+  on e.browser_id=split(v.visit_id, ".")[0] 
+  -- and e.event_timestamp=v.epoch_ms -- matching timestamps
+  and e.listing_id= cast(v.listing_id as string)
 inner join 
   etsy-data-warehouse-prod.listing_mart.listings l    
     on v.listing_id=l.listing_id
@@ -140,6 +149,7 @@ select
   -- count(distinct bucketing_id) as browsers, 
   sum(e.listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
+  sum(checkout_starts) as checkout_starts,
   sum(reviews_seen) as reviews_seen,
   sum(views) as views,
   sum(atc) as atc,
@@ -159,6 +169,7 @@ select
   coalesce(review_count, 'no reviews') as rating_status,
   sum(listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
+  sum(checkout_starts) as checkout_starts,
   sum(views) as views,
   sum(atc) as atc,
   sum(purchase) as purchase,
