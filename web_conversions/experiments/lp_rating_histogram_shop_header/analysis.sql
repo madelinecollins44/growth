@@ -102,10 +102,10 @@ select
 	browser_id,
   variant_id,
   listing_id,
-  count(case when event_name in ('view_listing') then event_timestamp end) as listing_views, 
-  count(case when event_name in ('reviews_anchor_click') then event_timestamp end) as review_clicks,   
-  count(case when event_name in ('checkout_start') then event_timestamp end) as checkout_starts, 
-  count(case when event_name in ('listing_page_reviews_seen') then event_timestamp end) as reviews_seen, 
+  count(case when event_name in ('view_listing') then event_name end) as listing_views, 
+  count(case when event_name in ('reviews_anchor_click') then event_name end) as review_clicks,   
+  count(case when event_name in ('checkout_start') then event_name end) as checkout_starts, 
+  count(case when event_name in ('listing_page_reviews_seen') then event_name end) as reviews_seen, 
 from
 	etsy-data-warehouse-dev.madelinecollins.beacons_events 
 group by all 
