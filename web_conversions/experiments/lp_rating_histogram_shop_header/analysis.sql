@@ -1,4 +1,4 @@
-/*
+
 -- CREATE TABLE TO GET REVIEWS ACROSS ALL LISTINGS
 create or replace table etsy-data-warehouse-dev.madelinecollins.holder_table as ( -- looks across all purchased listings, not just viewed listings
 with listings_agg as (
@@ -53,7 +53,7 @@ select
 from
   `etsy-data-warehouse-prod.catapult_unified.bucketing`
 where
-  experiment_id = 'growth_regx.lp_rating_histogram_shop_header_mweb'
+  experiment_id = 'growth_regx.lp_rating_histogram_shop_header_desktop'
 group by all 
 ) 
 select
@@ -94,7 +94,6 @@ where
 group by all 
 );
 
-*/
 
 -- PUT IT TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
@@ -102,10 +101,10 @@ select
 	browser_id,
   variant_id,
   listing_id,
-  count(case when event_name in ('view_listing') then event_name end) as listing_views, 
-  count(case when event_name in ('reviews_anchor_click') then event_name end) as review_clicks,   
-  count(case when event_name in ('checkout_start') then event_name end) as checkout_starts, 
-  count(case when event_name in ('listing_page_reviews_seen') then event_name end) as reviews_seen, 
+  sum(case when event_name in ('view_listing') then 1 else 0 end) as listing_views, 
+  sum(case when event_name in ('reviews_anchor_click') then  1 else 0 end) as review_clicks,   
+  sum(case when event_name in ('checkout_start') then  1 else 0 end) as checkout_starts, 
+  sum(case when event_name in ('listing_page_reviews_seen') then  1 else 0 end) as reviews_seen,
 from
 	etsy-data-warehouse-dev.madelinecollins.beacons_events 
 group by all 
@@ -125,7 +124,7 @@ from
 inner join
   etsy-data-warehouse-dev.madelinecollins.beacons_events  e
     on e.browser_id=split(v.visit_id, ".")[0] 
-    and e.event_timestamp=v.epoch_ms -- matching timestamps
+    -- and e.event_timestamp=v.epoch_ms -- matching timestamps
     and e.listing_id= cast(v.listing_id as string)
     and event_name in ('view_listing')
 inner join 
@@ -159,7 +158,7 @@ group by all
 )
 select
   variant_id,
-  coalesce(review_count, 'error') as rating_status,
+  coalesce(review_count, 'no reviews') as rating_status,
   sum(listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
   sum(checkout_starts) as checkout_starts,
