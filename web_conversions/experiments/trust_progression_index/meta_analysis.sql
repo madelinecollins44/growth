@@ -163,7 +163,7 @@ where 1=1
   and event_id in 
     ( /* TRUST BUILDING */
       'view_listing',  --view listing
-    'product_details_content_toggle_open' --- open description
+    'product_details_content_toggle_open' , --- open description
     'shop_home', --- shop home
     'cart_view', -- cart view
     'search', --search
@@ -282,7 +282,7 @@ where 1=1
   and event_id in 
     ( /* TRUST BUILDING */
       'view_listing',  --view listing
-    'product_details_content_toggle_open' --- open description
+    'product_details_content_toggle_open' , --- open description
     'shop_home', --- shop home
     'cart_view', -- cart view
     'search', --search
@@ -344,7 +344,7 @@ where 1=1
   and event_id in 
     ( /* TRUST BUILDING */
       'view_listing',  --view listing
-    'product_details_content_toggle_open' --- open description
+    'product_details_content_toggle_open' , --- open description
     'shop_home', --- shop home
     'cart_view', -- cart view
     'search', --search
