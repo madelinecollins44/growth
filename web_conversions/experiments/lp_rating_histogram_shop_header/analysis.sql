@@ -1,3 +1,4 @@
+/*
 -- CREATE TABLE TO GET REVIEWS ACROSS ALL LISTINGS
 create or replace table etsy-data-warehouse-dev.madelinecollins.holder_table as ( -- looks across all purchased listings, not just viewed listings
 with listings_agg as (
@@ -78,19 +79,21 @@ create or replace table etsy-data-warehouse-dev.madelinecollins.beacons_events a
 select
 	v.browser_id,
   variant_id,
-  event_name,
-  event_timestamp as sequence_number,
+  event_name, 
+  event_timestamp,
   coalesce((regexp_extract(loc, r'listing/(\d+)')),(regexp_extract(loc, r'cart/(\d+)'))) as listing_id
 from
 	etsy-visit-pipe-prod.canonical.beacon_main_2025_06 v
 inner join 
   etsy-data-warehouse-dev.madelinecollins.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= v.browser_id -- joining on browser_id
+    and timestamp_seconds(v.event_timestamp) >= bl.listing_ts -- everything after bucketing moment 
 where
 	_date between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
 	and event_name in ('reviews_anchor_click','view_listing','checkout_start','listing_page_reviews_seen')
 group by all 
 );
+*/
 
 -- PUT IT ALL TOGETHER
 with listing_events as ( -- get listing_id for all clicks on review signals in buy box + listing views 
