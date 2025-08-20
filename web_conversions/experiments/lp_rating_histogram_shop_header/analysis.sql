@@ -87,7 +87,7 @@ from
 inner join 
   etsy-data-warehouse-dev.madelinecollins.bucketing_listing bl -- only looking at browsers in the experiment 
     on bl.bucketing_id= v.browser_id -- joining on browser_id
-    and timestamp_seconds(v.event_timestamp) >= bl.listing_ts -- everything after bucketing moment 
+    and v.event_timestamp >= cast(unix_seconds(listing_ts) as int64)-- everything after bucketing moment 
 where
 	_date between date('2025-06-13') and date('2025-06-22') -- dates of the experiment 
 	and event_name in ('reviews_anchor_click','view_listing','checkout_start','listing_page_reviews_seen')
@@ -124,7 +124,7 @@ from
 inner join
   etsy-data-warehouse-dev.madelinecollins.beacons_events  e
     on e.browser_id=split(v.visit_id, ".")[0] 
-    and e.event_timestamp=timestamp_millis(v.epoch_ms) -- matching timestamps
+    and e.event_timestamp=v.epoch_ms -- matching timestamps
     and e.listing_id= cast(v.listing_id as string)
     and event_name in ('view_listing')
 inner join 
