@@ -162,7 +162,7 @@ select
       'listing_media_gallery_scrolled',--Android: review engagement 
       'listing_page_image_carousel_changed',--Android: review engagement 
       'listing_item_details_read_description_clicked',-- Android: description expanded
-      'listing_item_details_read_more_description_tapped', -- iOS: description expanded 
+      'listing_item_details_read_more_description_tapped' -- iOS: description expanded 
     ) then coalesce(event_value,filtered_event_value) else null end) as total_trust_building_actions,
   sum(case 
     when event_id in (
@@ -224,3 +224,43 @@ where 1=1
     )
 group by all 
 );
+
+select
+  k.launch_id,
+  k.end_date, 
+  k.config_flag, 
+  k.status,
+  k.ramp_decision,
+  k.platform,
+  k.subteam,
+  group_name,
+  k.initiative,
+  k.variant_id,
+  gms_coverage,
+  traffic_coverage,
+  ads_cr_control,
+  ads_cr_treatment,
+  ads_cr_change,
+  ads_cr_pvalue,
+  ads_cr_sig,
+  gpu_control,
+  gpu_treatment,
+  gpu_change,
+  gpu_pvalue,
+  gpu_sig,
+  cr_control,
+  cr_treatment,
+  cr_change,
+  cr_pvalue,
+  cr_sig,
+  total_trust_building_actions,
+  total_funnel_progression,
+  tpi,
+  convos_sent_count,
+from key_metrics k
+inner join trust_measurements t 
+  on k.launch_id=t.launch_id
+  and k.metric_variant_name=t.variant_id
+order by end_date,variant_id asc 
+; 
+END
