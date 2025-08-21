@@ -166,7 +166,7 @@ group by all
 )
 select
   variant_id,
-  coalesce(review_count, 'no reviews') as rating_status,
+  coalesce(review_count, 'no transactions') as rating_status,
   sum(listing_views) as listing_views, 
   sum(review_clicks) as review_clicks,   
   sum(checkout_starts) as checkout_starts,
