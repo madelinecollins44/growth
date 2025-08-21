@@ -5,6 +5,7 @@ with experiments as (
 select 
   launch_id,
   end_date, 
+  start_date,
   config_flag, 
   status,
   ramp_decision,
@@ -114,20 +115,31 @@ select
   platform,
   subteam,
   group_name,
-  initiative
+  initiative,
+  gms_coverage,
+  traffic_coverage,
+  ads_cr_control,
+  gpu_control,
+  cr_control,
 from 
-  etsy-data-warehouse-prod.rollups.experiment_reports 
-where 1=1
-  and (trim(lower(initiative)) like '%drive conversion%')
-  and end_date >= '2025-03-01'
-  and (lower(platform) like ('%boe ios%') or lower(platform) like ('%boe android%') or lower(platform) like ('%desktop%') or lower(platform) like ('%mweb%'))
+  key_metrics
 )
 select
   launch_id,
   end_date, 
   config_flag, 
+  status,
+  start_date,
   ramp_decision,
   platform,
+  subteam,
+  group_name,
+  initiative,
+  gms_coverage,
+  traffic_coverage,
+  ads_cr_control,
+  gpu_control,
+  cr_control,
   variant_id,
   sum(case 
       when event_id in (
@@ -226,29 +238,29 @@ group by all
 );
 
 select
-  k.launch_id,
-  k.end_date, 
-  k.config_flag, 
-  k.status,
-  k.ramp_decision,
-  k.platform,
-  k.subteam,
-  group_name,
-  k.initiative,
+  coalesce(k.launch_id,t.launch_id) as launch_id,
+  coalesce(k.end_date,t.end_date) as end_date,
+  coalesce(k.config_flag,t.config_flag) as config_flag,
+  coalesce(k.status,t.status) as status,
+  coalesce(k.ramp_decision,t.ramp_decision) as ramp_decision,
+  coalesce(k.platform,t.platform) as platform,
+  coalesce(k.subteam,t.subteam) as subteam,
+  coalesce(k.group_name,t.group_name) as group_name,
+  coalesce(k.initiative,t.initiative) as initiative,
   variant_id,
-  gms_coverage,
-  traffic_coverage,
-  ads_cr_control,
+  coalesce(k.gms_coverage,t.gms_coverage) as gms_coverage,
+  coalesce(k.traffic_coverage,t.traffic_coverage) as traffic_coverage,
+  coalesce(k.ads_cr_control,t.ads_cr_control) as ads_cr_control,
   ads_cr_treatment,
   ads_cr_change,
   ads_cr_pvalue,
   ads_cr_sig,
-  gpu_control,
+  coalesce(k.gpu_control,t.gpu_control) as gpu_control,
   gpu_treatment,
   gpu_change,
   gpu_pvalue,
   gpu_sig,
-  cr_control,
+  coalesce(k.cr_control,t.cr_control) as cr_control,
   cr_treatment,
   cr_change,
   cr_pvalue,
@@ -257,10 +269,10 @@ select
   total_funnel_progression,
   total_trust_building_actions/total_funnel_progression as tpi,
   convos_sent_count,
-from key_metrics k
-inner join trust_measurements t 
+from trust_measurements t
+left join key_metrics k 
   on k.launch_id=t.launch_id
-  and k.metric_variant_name=t.variant_id
+  and (k.metric_variant_name=t.variant_id OR t.variant_id is null) -- allows me to join even on 'off'
 order by end_date,variant_id asc 
 ; 
 END
