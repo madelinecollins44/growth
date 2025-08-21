@@ -235,7 +235,7 @@ select
   k.subteam,
   group_name,
   k.initiative,
-  k.variant_id,
+  variant_id,
   gms_coverage,
   traffic_coverage,
   ads_cr_control,
@@ -255,7 +255,7 @@ select
   cr_sig,
   total_trust_building_actions,
   total_funnel_progression,
-  tpi,
+  total_trust_building_actions/total_funnel_progression as tpi,
   convos_sent_count,
 from key_metrics k
 inner join trust_measurements t 
