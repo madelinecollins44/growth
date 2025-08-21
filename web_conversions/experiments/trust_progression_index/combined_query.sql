@@ -139,8 +139,8 @@ select
       'search', -- all platforms: search
       'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
       'image_carousel_swipe', -- web: image scrolling
-      'listing_page_image_carousel_changed' -- boe: image scrolling
-      'listing_page_review_engagement_frontend' -- web: listing engagement 
+      'listing_page_image_carousel_changed', -- boe: image scrolling
+      'listing_page_review_engagement_frontend', -- web: listing engagement 
       'listing_see_all_reviews_tapped', --iOS: review engagement 
       'listing_screen_review_card_swipe', --iOS: review engagement 
       'review_card_tapped',--iOS: review engagement 
@@ -158,11 +158,11 @@ select
       'reviews_sort_button_clicked', --Android: review engagement 
       'review_details_bottom_sheet', --Android: review engagement 
       'highlighted_review_clicked', --Android: review engagement 
-      'fullscreen_review_media_screen' --Android: review engagement 
+      'fullscreen_review_media_screen', --Android: review engagement 
       'listing_media_gallery_scrolled',--Android: review engagement 
       'listing_page_image_carousel_changed',--Android: review engagement 
-      'listing_item_details_read_description_clicked'-- Android: description expanded
-      'listing_item_details_read_more_description_tapped' -- iOS: description expanded 
+      'listing_item_details_read_description_clicked',-- Android: description expanded
+      'listing_item_details_read_more_description_tapped', -- iOS: description expanded 
     ) then coalesce(event_value,filtered_event_value) else null end) as total_trust_building_actions,
   sum(case 
     when event_id in (
@@ -182,91 +182,45 @@ inner join
 where 1=1
   and event_id in 
     ( /* TRUST BUILDING */
-      'view_listing',  --view listing
-    'product_details_content_toggle_open' , --- open description
-    'shop_home', --- shop home
-    'cart_view', -- cart view
-    'search', --search
-    'appreciation_photo_carousel_thumbnails_pressed_next_listing_page','image_carousel_swipe', ---image scrolling
-    'listing_page_review_engagement_frontend', -- engagement
-    'listing_expand_description_open', -- web: open description 
-    'product_details_content_toggle_open',-- web: open description 
-    'shop_home', -- all platforms: shop home
-    'cart_view', -- all platforms: cart
-    'search', -- all platforms: search
-    'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
-    'image_carousel_swipe', -- web: image scrolling
-    'listing_page_image_carousel_changed' -- boe: image scrolling
-    'listing_page_review_engagement_frontend' -- web: listing engagement 
-    'listing_see_all_reviews_tapped', --iOS: review engagement 
-    'listing_screen_review_card_swipe', --iOS: review engagement 
-    'review_card_tapped',--iOS: review engagement 
-    'review_updates_view_shop_home_reviews', --iOS: review engagement 
-    'listing_screen_reviews_seen',--iOS: review engagement 
-    'fullscreen_review_media_screen', --iOS: review engagement 
-    'reviews_sort_suggested_clicked', --iOS: review engagement 
-    'reviews_sort_most_recent_clicked', --iOS: review engagement 
-    'reviews_sort_highest_rated_clicked', --iOS: review engagement 
-    'reviews_sort_lowest_rated_clicked', --iOS: review engagement  
-    'listing_image_swipe',--iOS: review engagement 
-    'see_all_reviews_clicked', --Android: review engagement 
-    'listing_reviews_carousel_scrolled', --Android: review engagement 
-    'listing_all_reviews_screen', --Android: review engagement 
-    'reviews_sort_button_clicked', --Android: review engagement 
-    'review_details_bottom_sheet', --Android: review engagement 
-    'highlighted_review_clicked', --Android: review engagement 
-    'fullscreen_review_media_screen' --Android: review engagement 
-    'listing_media_gallery_scrolled',--Android: review engagement 
-    'listing_page_image_carousel_changed',--Android: review engagement 
-      'listing_item_details_read_description_clicked'-- Android: description expanded
-      'listing_item_details_read_more_description_tapped' -- iOS: description expanded 
+      'view_listing', -- all platforms: listing view
+      'listing_expand_description_open', -- web: open description 
+      'product_details_content_toggle_open',-- web: open description 
+      'shop_home', -- all platforms: shop home
+      'cart_view', -- all platforms: cart
+      'search', -- all platforms: search
+      'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
+      'image_carousel_swipe', -- web: image scrolling
+      'listing_page_image_carousel_changed', -- boe: image scrolling
+      'listing_page_review_engagement_frontend', -- web: listing engagement 
+      'listing_see_all_reviews_tapped', --iOS: review engagement 
+      'listing_screen_review_card_swipe', --iOS: review engagement 
+      'review_card_tapped',--iOS: review engagement 
+      'review_updates_view_shop_home_reviews', --iOS: review engagement 
+      'listing_screen_reviews_seen',--iOS: review engagement 
+      'fullscreen_review_media_screen', --iOS: review engagement 
+      'reviews_sort_suggested_clicked', --iOS: review engagement 
+      'reviews_sort_most_recent_clicked', --iOS: review engagement 
+      'reviews_sort_highest_rated_clicked', --iOS: review engagement 
+      'reviews_sort_lowest_rated_clicked', --iOS: review engagement  
+      'listing_image_swipe',--iOS: review engagement 
+      'see_all_reviews_clicked', --Android: review engagement 
+      'listing_reviews_carousel_scrolled', --Android: review engagement 
+      'listing_all_reviews_screen', --Android: review engagement 
+      'reviews_sort_button_clicked', --Android: review engagement 
+      'review_details_bottom_sheet', --Android: review engagement 
+      'highlighted_review_clicked', --Android: review engagement 
+      'fullscreen_review_media_screen', --Android: review engagement 
+      'listing_media_gallery_scrolled',--Android: review engagement 
+      'listing_page_image_carousel_changed',--Android: review engagement 
+      'listing_item_details_read_description_clicked',-- Android: description expanded
+      'listing_item_details_read_more_description_tapped', -- iOS: description expanded 
   /* FUNNEL PROGRESSION */
-    'backend_favorite_item2', -- favorited
-    'backend_add_to_cart', --A2C
-    'checkout_start', --- checkout start
-    'backend_cart_payment', --- conversion rate
-    'backend_send_convo' -- convo
+      'backend_add_to_cart', -- all platforms: add to cart
+      'backend_favorite_item2', -- all platforms: favorite
+      'checkout_start', -- all platforms: checkout start
+      'backend_cart_payment',-- all platforms: conversion rate 
+  /* OTHER*/
+      'backend_send_convo' -- convos
     )
-    -- and experiment_id in ('growth_regx.lp_bb_tenure_mweb')
 group by all 
 );
-
-select
-  k.launch_id,
-  k.end_date, 
-  k.config_flag, 
-  k.status,
-  k.ramp_decision,
-  k.platform,
-  k.subteam,
-  group_name,
-  k.initiative,
-  k.variant_id,
-  gms_coverage,
-  traffic_coverage,
-  ads_cr_control,
-  ads_cr_treatment,
-  ads_cr_change,
-  ads_cr_pvalue,
-  ads_cr_sig,
-  gpu_control,
-  gpu_treatment,
-  gpu_change,
-  gpu_pvalue,
-  gpu_sig,
-  cr_control,
-  cr_treatment,
-  cr_change,
-  cr_pvalue,
-  cr_sig,
-  total_trust_building_actions,
-  total_funnel_progression,
-  tpi,
-  convos_sent_count,
-from key_metrics k
-inner join trust_measurements t 
-  on k.launch_id=t.launch_id
-  and k.metric_variant_name=t.variant_id
-order by end_date,variant_id asc 
-; 
-END
