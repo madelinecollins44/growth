@@ -275,7 +275,7 @@ where 1=1
 group by all 
 );
 
--- create or replace table etsy-data-warehouse-dev.rollups.trust_progression_index_experiments as (
+create or replace table etsy-data-warehouse-dev.rollups.trust_progression_index_experiments as (
 select
   coalesce(k.launch_id,t.launch_id) as launch_id,
   coalesce(k.end_date,t.end_date) as end_date,
@@ -325,5 +325,5 @@ left join key_metrics k
   on k.launch_id=t.launch_id
   and (k.metric_variant_name=t.variant_id OR t.variant_id is null) -- allows me to join even on 'off'
 order by end_date,variant_id asc 
-; 
+); 
 END
