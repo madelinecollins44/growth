@@ -286,7 +286,7 @@ select
   coalesce(k.subteam,t.subteam) as subteam,
   coalesce(k.group_name,t.group_name) as group_name,
   coalesce(k.initiative,t.initiative) as initiative,
-  variant_rnk,
+   coalesce(variant_rnk,0) as variant_rnk,
   variant_id,
   coalesce(k.gms_coverage,t.gms_coverage) as gms_coverage,
   coalesce(k.traffic_coverage,t.traffic_coverage) as traffic_coverage,
