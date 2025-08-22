@@ -43,7 +43,7 @@ select
   e.launch_id,
   boundary_start_sec,
   metric_variant_name,
-   coalesce(dense_rank() over(partition by e.launch_id, boundary_start_sec order by metric_variant_name asc),0)as variant_rnk,
+  coalesce(dense_rank() over(partition by e.launch_id, boundary_start_sec order by metric_variant_name asc),0)as variant_rnk,
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end) as ads_cr_control,
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end) as ads_cr_treatment,
   max(case when metric_display_name in ('Ads Conversion Rate') then relative_change end) as ads_cr_change,
@@ -76,6 +76,7 @@ group by all )
 select
   e.*,
   metric_variant_name,
+  variant_rnk,
   gms_coverage,
   traffic_coverage,
   ads_cr_control,
