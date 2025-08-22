@@ -41,7 +41,9 @@ group by all
 , metrics as (
 select
   e.launch_id,
+  boundary_start_sec,
   metric_variant_name,
+   coalesce(dense_rank() over(partition by e.launch_id, boundary_start_sec order by metric_variant_name asc),0)as variant_rnk,
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end) as ads_cr_control,
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end) as ads_cr_treatment,
   max(case when metric_display_name in ('Ads Conversion Rate') then relative_change end) as ads_cr_change,
@@ -248,6 +250,7 @@ select
   coalesce(k.subteam,t.subteam) as subteam,
   coalesce(k.group_name,t.group_name) as group_name,
   coalesce(k.initiative,t.initiative) as initiative,
+  coalesce(variant_rnk,0) as variant_rnk,
   variant_id,
   coalesce(k.gms_coverage,t.gms_coverage) as gms_coverage,
   coalesce(k.traffic_coverage,t.traffic_coverage) as traffic_coverage,
