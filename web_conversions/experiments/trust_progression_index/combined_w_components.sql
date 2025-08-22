@@ -41,7 +41,10 @@ group by all
 , metrics as (
 select
   e.launch_id,
+  boundary_start_sec,
   metric_variant_name,
+ coalesce(dense_rank() over(partition by e.launch_id, boundary_start_sec order by metric_variant_name asc),0)as variant_rnk,
+
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end) as ads_cr_control,
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end) as ads_cr_treatment,
   max(case when metric_display_name in ('Ads Conversion Rate') then relative_change end) as ads_cr_change,
@@ -74,6 +77,7 @@ group by all )
 select
   e.*,
   metric_variant_name,
+  variant_rnk,
   gms_coverage,
   traffic_coverage,
   ads_cr_control,
@@ -271,7 +275,7 @@ where 1=1
 group by all 
 );
 
-create or replace table etsy-data-warehouse-dev.rollups.trust_progression_index_experiments as (
+-- create or replace table etsy-data-warehouse-dev.rollups.trust_progression_index_experiments as (
 select
   coalesce(k.launch_id,t.launch_id) as launch_id,
   coalesce(k.end_date,t.end_date) as end_date,
@@ -282,6 +286,7 @@ select
   coalesce(k.subteam,t.subteam) as subteam,
   coalesce(k.group_name,t.group_name) as group_name,
   coalesce(k.initiative,t.initiative) as initiative,
+  variant_rnk,
   variant_id,
   coalesce(k.gms_coverage,t.gms_coverage) as gms_coverage,
   coalesce(k.traffic_coverage,t.traffic_coverage) as traffic_coverage,
@@ -313,7 +318,6 @@ select
   checkout_start_actions,  
   conversion_actions,  
   total_funnel_progression,
-  convos_sent_count, 
   total_trust_building_actions/total_funnel_progression as tpi,
   convos_sent_count,
 from trust_measurements t
@@ -321,5 +325,5 @@ left join key_metrics k
   on k.launch_id=t.launch_id
   and (k.metric_variant_name=t.variant_id OR t.variant_id is null) -- allows me to join even on 'off'
 order by end_date,variant_id asc 
-); 
+; 
 END
