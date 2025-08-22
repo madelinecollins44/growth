@@ -275,6 +275,7 @@ where 1=1
 group by all 
 );
 
+------------------------- BRING IT ALL TOGETHER 
 create or replace table etsy-data-warehouse-dev.rollups.trust_progression_index_experiments as (
 select
   coalesce(k.launch_id,t.launch_id) as launch_id,
@@ -286,7 +287,7 @@ select
   coalesce(k.subteam,t.subteam) as subteam,
   coalesce(k.group_name,t.group_name) as group_name,
   coalesce(k.initiative,t.initiative) as initiative,
-   coalesce(variant_rnk,0) as variant_rnk,
+  coalesce(variant_rnk,0) as variant_rnk, -- 0 is the 'off' group
   variant_id,
   coalesce(k.gms_coverage,t.gms_coverage) as gms_coverage,
   coalesce(k.traffic_coverage,t.traffic_coverage) as traffic_coverage,
