@@ -1,6 +1,4 @@
-BEGIN
 ------------------------- PULL ALL KEY METRICS
-create or replace temp table key_metrics as (
 with coverages as (
 select 
   launch_id,
@@ -21,7 +19,7 @@ select
   launch_id,
   boundary_start_sec,
   metric_variant_name,
- coalesce(dense_rank() over(partition by launch_id, boundary_start_sec order by metric_variant_name asc),0)as variant_rnk,
+  coalesce(dense_rank() over(partition by launch_id, boundary_start_sec order by metric_variant_name asc),0)as variant_rnk,
 
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_control end) as ads_cr_control,
   max(case when metric_display_name in ('Ads Conversion Rate') then metric_value_treatment end) as ads_cr_treatment,
@@ -76,46 +74,10 @@ inner join
   coverages cvg
     on cvg.launch_id=mtcs.launch_id
 order by metric_variant_name asc
-);
 
 ------------------------- PULL ALL TRUST METRICS 
-create or replace temp table trust_measurements as (
-with experiments as (
-select 
-  launch_id,
-  end_date, 
-  config_flag, 
-  status,
-  start_date,
-  ramp_decision,
-  platform,
-  subteam,
-  group_name,
-  initiative,
-  gms_coverage,
-  traffic_coverage,
-  ads_cr_control,
-  gpu_control,
-  cr_control,
-from 
-  key_metrics
-)
 select
-  launch_id,
-  end_date, 
-  config_flag, 
-  status,
-  start_date,
-  ramp_decision,
-  platform,
-  subteam,
-  group_name,
-  initiative,
-  gms_coverage,
-  traffic_coverage,
-  ads_cr_control,
-  gpu_control,
-  cr_control,
+  experiment_id,
   variant_id,
   /* TRUST BUILDING AGGS */
    sum(case when event_id in ('view_listing') then coalesce(event_value,filtered_event_value) else null end) as view_listing_actions,
@@ -197,11 +159,9 @@ select
   count(distinct bucketing_id) as bucketed_count
 from  
   etsy-data-warehouse-prod.catapult_unified.aggregated_event_daily a
-inner join 
-  experiments c 
-    on a.experiment_id = c.config_flag
-    and a._date between start_date and end_date -- dates experiment was live
 where 1=1
+  and lower(experiment_id) in ('local_pe.q2_2025.buyer_trust_accelerator.user','local_pe.q2_2025.buyer_trust_accelerator.browser')
+  and a._date between '2025-04-22' and '2025-07-29' -- dates experiment was live
   and event_id in 
     ( /* TRUST BUILDING */
       'view_listing', -- all platforms: listing view
@@ -245,59 +205,3 @@ where 1=1
       'backend_send_convo' -- convos
     )
 group by all 
-);
-
-------------------------- BRING IT ALL TOGETHER 
--- create or replace table etsy-data-warehouse-dev.rollups.trust_progression_index_experiments as (
-select
-  coalesce(k.launch_id,t.launch_id) as launch_id,
-  coalesce(k.end_date,t.end_date) as end_date,
-  coalesce(k.config_flag,t.config_flag) as config_flag,
-  coalesce(k.status,t.status) as status,
-  coalesce(k.ramp_decision,t.ramp_decision) as ramp_decision,
-  coalesce(k.platform,t.platform) as platform,
-  coalesce(k.subteam,t.subteam) as subteam,
-  coalesce(k.group_name,t.group_name) as group_name,
-  coalesce(k.initiative,t.initiative) as initiative,
-  coalesce(variant_rnk,0) as variant_rnk, -- 0 is the 'off' group
-  variant_id,
-  coalesce(k.gms_coverage,t.gms_coverage) as gms_coverage,
-  coalesce(k.traffic_coverage,t.traffic_coverage) as traffic_coverage,
-  coalesce(k.ads_cr_control,t.ads_cr_control) as ads_cr_control,
-  ads_cr_treatment,
-  ads_cr_change,
-  ads_cr_pvalue,
-  ads_cr_sig,
-  coalesce(k.gpu_control,t.gpu_control) as gpu_control,
-  gpu_treatment,
-  gpu_change,
-  gpu_pvalue,
-  gpu_sig,
-  coalesce(k.cr_control,t.cr_control) as cr_control,
-  cr_treatment,
-  cr_change,
-  cr_pvalue,
-  cr_sig,
-  view_listing_actions,
-  open_description_count,
-  image_scrolling_count,
-  shop_home_count,
-  cart_view_count,
-  search_count,
-  review_engagement_actions,
-  total_trust_building_actions,
-  atc_actions,
-  favorting_actions,  
-  checkout_start_actions,  
-  conversion_actions,  
-  total_funnel_progression,
-  total_trust_building_actions/total_funnel_progression as tpi,
-  convos_sent_count,
-from trust_measurements t
-left join key_metrics k 
-  on k.launch_id=t.launch_id
-  and (k.metric_variant_name=t.variant_id OR t.variant_id is null) -- allows me to join even on 'off'
-order by end_date,variant_id asc 
--- )
-; 
-END
