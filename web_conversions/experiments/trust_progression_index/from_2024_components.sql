@@ -182,12 +182,12 @@ select
       when event_id in (
       'view_listing', -- all platforms: listing view
       'listing_expand_description_open', -- web: open description 
-      -- 'product_details_content_toggle_open',-- web: open description 
+      'product_details_content_toggle_open',-- web: open description 
       'shop_home', -- all platforms: shop home
       -- 'cart_view', -- all platforms: cart
       'search', -- all platforms: search
-      -- 'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
-      -- 'image_carousel_swipe', -- web: image scrolling
+      'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
+      'image_carousel_swipe', -- web: image scrolling
       'listing_page_image_carousel_changed', -- boe: image scrolling
       'listing_page_reviews_pagination', -- web: listing engagement 
       'appreciation_photo_overlay_opened', -- web: listing engagement 
