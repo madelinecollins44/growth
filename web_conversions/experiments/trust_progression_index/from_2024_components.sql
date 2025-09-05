@@ -249,7 +249,10 @@ where 1=1
       'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
       'image_carousel_swipe', -- web: image scrolling
       'listing_page_image_carousel_changed', -- boe: image scrolling
-      'listing_page_review_engagement_frontend', -- web: listing engagement 
+      'listing_page_reviews_pagination', -- web: listing engagement 
+      'appreciation_photo_overlay_opened', -- web: listing engagement 
+      'listing_page_reviews_content_toggle_opened', -- web: listing engagement 
+      'sort_reviews', -- web: listing engagement 
       'listing_see_all_reviews_tapped', --iOS: review engagement 
       'listing_screen_review_card_swipe', --iOS: review engagement 
       'review_card_tapped',--iOS: review engagement 
