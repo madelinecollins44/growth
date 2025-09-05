@@ -17,7 +17,7 @@ from
   etsy-data-warehouse-prod.rollups.experiment_reports 
 where 1=1
   and ((trim(lower(initiative)) like '%drive conversion%') or group_name in ('Buyer Experience'))
-  and end_date >= '2024-03-12'
+  and start_date >= '2024-03-12'
   and (lower(platform) like ('%boe ios%') or lower(platform) like ('%boe android%') or lower(platform) like ('%desktop%') or lower(platform) like ('%mweb%'))
   )
 , coverages as (
