@@ -150,9 +150,13 @@ select
  sum(case when event_id in ('listing_expand_description_open','product_details_content_toggle_open','listing_item_details_read_description_clicked','listing_item_details_read_more_description_tapped') then coalesce(event_value,filtered_event_value) else null end) as open_description_count,
  sum(case when event_id in ('listing_page_image_carousel_changed','image_carousel_swipe','appreciation_photo_carousel_thumbnails_pressed_next_listing_page') then coalesce(event_value,filtered_event_value) else null end) as image_scrolling_count,
  sum(case when event_id in ('shop_home') then coalesce(event_value,filtered_event_value) else null end) as shop_home_count,
-  sum(case when event_id in ('cart_view') then coalesce(event_value,filtered_event_value) else null end) as cart_view_count,
+  -- sum(case when event_id in ('cart_view') then coalesce(event_value,filtered_event_value) else null end) as cart_view_count,
   sum(case when event_id in ('search') then coalesce(event_value,filtered_event_value) else null end) as search_count,
-   sum(case when event_id in ('listing_page_review_engagement_frontend', -- web: listing engagement 
+   sum(case when event_id in ('listing_page_reviews_pagination', -- web: listing engagement 
+      'appreciation_photo_overlay_opened', -- web: listing engagement 
+      'listing_page_reviews_content_toggle_opened', -- web: listing engagement 
+      'sort_reviews', -- web: listing engagement 
+      'reviews_categorical_tag_clicked', -- web: listing engagement 
       'listing_see_all_reviews_tapped', --iOS: review engagement 
       'listing_screen_review_card_swipe', --iOS: review engagement 
       'review_card_tapped',--iOS: review engagement 
@@ -171,21 +175,25 @@ select
       'review_details_bottom_sheet', --Android: review engagement 
       'highlighted_review_clicked', --Android: review engagement 
       'fullscreen_review_media_screen', --Android: review engagement 
-      'listing_media_gallery_scrolled',--Android: review engagement 
-      'listing_page_image_carousel_changed'--Android: review engagement 
+      'listing_media_gallery_scrolled'--Android: review engagement 
+      -- 'listing_page_image_carousel_changed'--Android: review engagement 
     ) then coalesce(event_value,filtered_event_value) else null end) as review_engagement_actions,
   sum(case 
       when event_id in (
       'view_listing', -- all platforms: listing view
       'listing_expand_description_open', -- web: open description 
-      'product_details_content_toggle_open',-- web: open description 
+      -- 'product_details_content_toggle_open',-- web: open description 
       'shop_home', -- all platforms: shop home
-      'cart_view', -- all platforms: cart
+      -- 'cart_view', -- all platforms: cart
       'search', -- all platforms: search
-      'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
-      'image_carousel_swipe', -- web: image scrolling
+      -- 'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
+      -- 'image_carousel_swipe', -- web: image scrolling
       'listing_page_image_carousel_changed', -- boe: image scrolling
-      'listing_page_review_engagement_frontend', -- web: listing engagement 
+      'listing_page_reviews_pagination', -- web: listing engagement 
+      'appreciation_photo_overlay_opened', -- web: listing engagement 
+      'listing_page_reviews_content_toggle_opened', -- web: listing engagement 
+      'sort_reviews', -- web: listing engagement 
+      'reviews_categorical_tag_clicked', -- web: listing engagement 
       'listing_see_all_reviews_tapped', --iOS: review engagement 
       'listing_screen_review_card_swipe', --iOS: review engagement 
       'review_card_tapped',--iOS: review engagement 
@@ -205,7 +213,7 @@ select
       'highlighted_review_clicked', --Android: review engagement 
       'fullscreen_review_media_screen', --Android: review engagement 
       'listing_media_gallery_scrolled',--Android: review engagement 
-      'listing_page_image_carousel_changed',--Android: review engagement 
+      -- 'listing_page_image_carousel_changed',--Android: review engagement 
       'listing_item_details_read_description_clicked',-- Android: description expanded
       'listing_item_details_read_more_description_tapped' -- iOS: description expanded 
     ) then coalesce(event_value,filtered_event_value) else null end) as total_trust_building_actions,
@@ -236,7 +244,7 @@ where 1=1
       'listing_expand_description_open', -- web: open description 
       'product_details_content_toggle_open',-- web: open description 
       'shop_home', -- all platforms: shop home
-      'cart_view', -- all platforms: cart
+      -- 'cart_view', -- all platforms: cart
       'search', -- all platforms: search
       'appreciation_photo_carousel_thumbnails_pressed_next_listing_page', -- web: image scrolling
       'image_carousel_swipe', -- web: image scrolling
@@ -310,7 +318,7 @@ select
   open_description_count,
   image_scrolling_count,
   shop_home_count,
-  cart_view_count,
+  -- cart_view_count,
   search_count,
   review_engagement_actions,
   total_trust_building_actions,
